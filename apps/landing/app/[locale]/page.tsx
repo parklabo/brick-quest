@@ -4,9 +4,10 @@ import { Footer } from '@/components/Footer';
 import { OrganizationJsonLd, FAQJsonLd } from '@/components/JsonLd';
 import {
   HeroSection,
-  FeaturesSection,
-  BeforeAfterSection,
+  CreateModeSection,
+  MyBricksModeSection,
   HowItWorksSection,
+  FeaturesSection,
   FAQSection,
   CTASection,
 } from '@/components/sections';
@@ -20,7 +21,7 @@ export default async function HomePage({ params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'marketing.faq' });
-  const faqItems = ['1', '2', '3'].map((key) => ({
+  const faqItems = ['1', '2', '3', '4', '5', '6'].map((key) => ({
     q: t(`${key}.q`),
     a: t(`${key}.a`),
   }));
@@ -32,9 +33,10 @@ export default async function HomePage({ params }: Props) {
       <Navigation />
       <main>
         <HeroSection />
-        <FeaturesSection />
-        <BeforeAfterSection />
+        <CreateModeSection />
+        <MyBricksModeSection />
         <HowItWorksSection />
+        <FeaturesSection />
         <FAQSection />
         <CTASection />
       </main>
