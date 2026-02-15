@@ -13,6 +13,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // User profiles: authenticated users can read/write their own, admins can read all
+    match /users/{uid} {
+      allow read: if isAdmin()
+        || (request.auth != null && request.auth.uid == uid);
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Inventories: authenticated users can read/write their own, admins can list all
     match /inventories/{uid} {
       allow read: if isAdmin()

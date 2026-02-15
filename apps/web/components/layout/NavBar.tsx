@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, ScanLine, Package, Hammer, Box, LogOut, LayoutDashboard, ChevronDown, Blocks } from 'lucide-react';
+import { Sparkles, ScanLine, Package, Hammer, Box, LogOut, LayoutDashboard, ChevronDown, Blocks, Settings } from 'lucide-react';
 import { useJobsStore, selectUnseenScanCount, selectUnseenBuildCount, selectUnseenDesignCount } from '../../lib/stores/jobs';
+import { useProfileStore } from '../../lib/stores/profile';
 import { logout } from '../../lib/hooks/useAuth';
 
 const MY_BRICKS_ITEMS = [
@@ -93,6 +94,8 @@ export function NavBar() {
   const unseenScanCount = useJobsStore(selectUnseenScanCount);
   const unseenBuildCount = useJobsStore(selectUnseenBuildCount);
   const unseenDesignCount = useJobsStore(selectUnseenDesignCount);
+  const profile = useProfileStore((s) => s.profile);
+  const initial = profile?.displayName?.charAt(0).toUpperCase() ?? '?';
 
   if (pathname === '/') return null;
 
@@ -162,13 +165,19 @@ export function NavBar() {
             </Link>
 
             <div className="w-px h-6 bg-lego-border mx-2" />
-            <button
-              onClick={() => logout()}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-              title="Sign out"
+            <Link
+              href="/settings"
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${
+                pathname === '/settings'
+                  ? 'bg-lego-yellow/10'
+                  : 'hover:bg-white/5'
+              }`}
+              title="Settings"
             >
-              <LogOut className="w-4 h-4" />
-            </button>
+              <div className="w-7 h-7 rounded-full bg-lego-yellow/15 border border-lego-yellow/30 flex items-center justify-center text-xs font-extrabold text-lego-yellow">
+                {initial}
+              </div>
+            </Link>
           </div>
         </div>
         <div className="flex justify-center pb-1">
@@ -231,6 +240,19 @@ export function NavBar() {
           >
             <Box className="w-5 h-5" />
             Workspace
+          </Link>
+
+          {/* Settings */}
+          <Link
+            href="/settings"
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
+              pathname === '/settings' ? 'text-lego-yellow' : 'text-slate-500'
+            }`}
+          >
+            <div className="w-5 h-5 rounded-full bg-lego-yellow/15 flex items-center justify-center text-[9px] font-extrabold text-lego-yellow">
+              {initial}
+            </div>
+            Me
           </Link>
         </div>
       </nav>

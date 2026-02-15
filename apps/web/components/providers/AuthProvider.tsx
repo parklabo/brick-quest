@@ -4,22 +4,25 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '../../lib/hooks/useAuth';
 import { useInventoryStore } from '../../lib/stores/inventory';
 import { useJobsStore } from '../../lib/stores/jobs';
+import { useProfileStore } from '../../lib/stores/profile';
 import { useToastStore } from '../../lib/stores/toasts';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { uid } = useAuth();
+  const { user, uid } = useAuth();
   const prevJobsRef = useRef<Map<string, string>>(new Map());
 
-  // Init Firestore sync for inventory & jobs
+  // Init Firestore sync for profile, inventory & jobs
   useEffect(() => {
     if (!uid) return;
+    const unsubProfile = useProfileStore.getState()._initProfileSync(uid, user?.email ?? null);
     const unsubInventory = useInventoryStore.getState()._initFirestoreSync(uid);
     const unsubJobs = useJobsStore.getState()._initJobsListener(uid);
     return () => {
+      unsubProfile();
       unsubInventory();
       unsubJobs();
     };
-  }, [uid]);
+  }, [uid, user?.email]);
 
   // Toast on job completion
   useEffect(() => {
