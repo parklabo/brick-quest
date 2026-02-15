@@ -250,92 +250,134 @@ export async function generateDesignFromPhoto(
     : '';
 
   const viewsInstruction = compositeView
-    ? `\nCOMPOSITE VIEW PROVIDED: You have been given a single image containing a 2×2 grid of 4 views (hero 3/4 angle, front, right side, back) of the LEGO model. Use all 4 views to design accurate building instructions. The views show the exact shape, proportions, and color placement from each angle. Match your build plan to these views precisely.\n`
+    ? `
+COMPOSITE VIEW PROVIDED:
+You have a 2×2 grid image showing 4 views of the target LEGO model:
+- Top-left: Hero 3/4 angle (overall shape + depth)
+- Top-right: Front view (face details, front colors)
+- Bottom-left: Right side view (profile, depth, side features)
+- Bottom-right: Back view (rear details)
+
+BEFORE generating any bricks, analyze these views carefully:
+1. FRONT VIEW → determines what you see on the Z=0 face (colors, eyes, mouth, details per X column)
+2. SIDE VIEW → determines what you see on the X=max face (depth, profile shape per Z column)
+3. BACK VIEW → determines what you see on the Z=max face (back details, colors)
+4. HERO VIEW → confirms overall 3D shape, proportions, and color placement
+Use these views as your BLUEPRINT. Every layer you generate must match what the views show at that Y height.
+`
     : '';
 
-  const prompt = `You are a world-class LEGO Master Builder designing a Brickheadz-style model.
+  const prompt = `You are a LEGO Master Builder. Your job is to convert the reference image into a SOLID Brickheadz-style LEGO model with PRECISE brick-by-brick assembly instructions.
 ${viewsInstruction}
-TASK:
-1. Describe what you see in the photo (1-2 sentences)
-2. Design a SOLID, COMPLETE Brickheadz-style LEGO model with NO gaps or holes
-3. Generate step-by-step 3D assembly instructions — LAYER BY LAYER from bottom to top
-
 ${themeInstruction}
 DETAIL LEVEL: ${detail.toUpperCase()}
 ${complexityInstruction}
-TARGET: ${cfg.brickRange}. Do NOT generate fewer than ${cfg.minBricks} bricks — an incomplete model is worse than no model.
+TARGET: ${cfg.brickRange}. Do NOT generate fewer than ${cfg.minBricks} bricks.
 
 SHAPES (use exact shape IDs):
 ${getGeminiShapeDescriptions()}
 
-BRICKHEADZ BUILD STRATEGY:
-The model is a chunky, blocky character built on a roughly 6x6 to 10x10 stud footprint.
-Think of the model as a stack of LAYERS. Each layer is a horizontal slice at a certain Y height.
+═══════════════════════════════════════
+COORDINATE SYSTEM
+═══════════════════════════════════════
+- X axis = left-right, Z axis = front-back, Y axis = up
+- 1 stud = 1 unit on X and Z
+- Y value = BOTTOM of the brick
+- Brick height = 1.2 units, Plate/tile height = 0.4 units
+- Position = CENTER of the brick
 
-TYPICAL STRUCTURE (bottom to top):
-- Y=0.0 to Y=2.4: FEET/BASE — 2-3 layers of bricks forming a solid rectangular base
-- Y=2.4 to Y=6.0: BODY/TORSO — 3-4 layers, slightly wider, with color details (shirt, logo, arms)
-- Y=6.0 to Y=10.8: HEAD — 4-5 layers, large cubic head with face details (eyes, mouth, nose)
-- Y=10.8+: TOP — hair, hat, ears, accessories on top of head
+POSITION RULES (center-based):
+  Even dimension → x or z ends in .5 (examples: 0.5, 1.5, 2.5)
+  Odd dimension  → x or z is integer (examples: 0, 1, 2, 3)
 
-EACH LAYER should:
-- Fill the ENTIRE footprint for that section (no missing bricks = no gaps in the surface)
-- Use multiple bricks side by side to cover the width and depth
-- Example: a 6-wide body layer at Y=2.4 might need: 2x4 brick at x=1, 2x2 brick at x=5 (filling the row)
+COVERAGE: a brick at position (px, pz) with size WxL covers:
+  X range: [px - W/2, px + W/2]
+  Z range: [pz - L/2, pz + L/2]
 
-PART SELECTION RULES:
-- Prefer LARGER bricks (2x4, 2x6, 2x3) to fill areas efficiently
-- Use 1x1, 1x2 bricks for color details and fine adjustments
-- Use plates (height=0.4) for thin color stripes or eyes
-- Use slopes for head top, shoulders, feet angles
-- Use round/dome for eyes or rounded features
-- Match colors to the reference photo/views
+═══════════════════════════════════════
+LAYER-BY-LAYER BUILD METHOD (MANDATORY)
+═══════════════════════════════════════
+You MUST build the model as a stack of horizontal layers. Each layer is at a specific Y height.
 
-3D COORDINATE RULES (CRITICAL):
-- Grid: 1 stud = 1 unit on X (left-right) and Z (front-back)
-- Y axis = vertical (up). y value = BOTTOM of the part
-- Heights: brick/slope = 1.2 units, plate/tile = 0.4 units
+STEP 1 — DEFINE THE MODEL:
+- Bounding box: decide width (X), depth (Z), and height (number of layers)
+- Typical Brickheadz: 8 wide × 6 deep × 10-12 layers tall
+- Sections: feet (2 layers) → body (3-4 layers) → head (4-5 layers) → top features
 
-POSITION FORMULA — center of the brick:
-- Even dimension → position = n + 0.5 (where n is an integer: 0.5, 1.5, 2.5, …)
-- Odd dimension  → position = n (where n is an integer: 0, 1, 2, 3, …)
-EXAMPLES:
-- 2x4 brick: W=2(even)→x=0.5 or 1.5, L=4(even)→z=1.5 or 3.5
-- 1x1 brick: W=1(odd)→x=0 or 1 or 2, L=1(odd)→z=0 or 1 or 2
-- 1x2 plate: W=1(odd)→x=3, L=2(even)→z=0.5
-- 2x2 brick: W=2(even)→x=2.5, L=2(even)→z=2.5
+STEP 2 — FOR EACH LAYER (from bottom Y=0.0 upward):
+a) Determine the FOOTPRINT of this layer (which stud positions are filled)
+b) Determine the COLOR of each stud position (match the reference views)
+c) TILE the footprint completely with bricks — NO gaps allowed
+d) Use larger bricks (2x4, 2x3, 2x2) first, fill remaining gaps with 1x2 and 1x1
 
-STACKING (calculate Y carefully):
-- Layer 0: y=0.0 (ground level, bricks)
-- Layer 1: y=1.2 (on top of layer 0 bricks)
-- Layer 2: y=2.4 (on top of layer 1 bricks)
-- Layer 3: y=3.6, Layer 4: y=4.8, Layer 5: y=6.0, etc.
-- If using plates: y increments by 0.4 instead of 1.2
+TILING RULE: For each layer, mentally draw a grid of the footprint. EVERY cell must be covered by exactly one brick. If you can't fit a large brick, use smaller ones.
 
-WORKED EXAMPLE — filling a 6×6 base layer at y=0.0:
-  stepId=1: 2x4 brick at x=0.5, z=1.5 (covers studs 0-1 wide, 0-3 deep)
-  stepId=2: 2x4 brick at x=0.5, z=5.5 (covers studs 0-1 wide, 4-7 deep — error: too far! should be z=4.5 → 3-5)
-  CORRECTED stepId=2: 2x4 brick at x=0.5, z=4.5 (studs 0-1 wide, 3-5 deep — no overlap with step 1)
-  stepId=3: 2x4 brick at x=2.5, z=1.5
-  stepId=4: 2x4 brick at x=2.5, z=4.5
-  stepId=5: 2x4 brick at x=4.5, z=1.5
-  stepId=6: 2x4 brick at x=4.5, z=4.5
-  → 6 bricks tile a 6×6 base with NO gaps and NO overlaps.
+STEP 3 — ADD DETAILS:
+- Eyes: use 1x1 plates or tiles at the correct Y height on the front face
+- Accessories: glasses, hair, hats, ears — add as extra bricks on the appropriate layer
 
-PLANNING PROCESS — follow these steps mentally before generating:
-1. Decide the bounding box (e.g., 6 wide × 6 deep × 12 tall)
-2. Divide into layers at each Y increment (0.0, 1.2, 2.4, …)
-3. For each layer, decide what shape/color fills each region
-4. Generate all steps for that layer before moving to the next
+═══════════════════════════════════════
+COMPLETE WORKED EXAMPLE — 4×4 base, 3 layers
+═══════════════════════════════════════
+Model footprint: 4 wide (X: 0-3) × 4 deep (Z: 0-3)
+
+LAYER 0 (y=0.0) — fill entire 4×4 with blue bricks:
+  Grid:  [B B B B]   (B = blue, each cell = 1 stud)
+         [B B B B]
+         [B B B B]
+         [B B B B]
+  Tiling with 2x4 bricks:
+    step 1: 2x4 blue brick → x=0.5, y=0.0, z=1.5 (covers X:0-1, Z:0-3) ✓
+    step 2: 2x4 blue brick → x=2.5, y=0.0, z=1.5 (covers X:2-3, Z:0-3) ✓
+  CHECK: 2 bricks × 8 studs = 16 studs = 4×4 footprint ✓ No gaps ✓
+
+LAYER 1 (y=1.2) — fill 4×4 with blue, white face stripe:
+  Grid:  [B B B B]
+         [W W W W]   ← white face row at Z=1
+         [W W W W]   ← white face row at Z=2
+         [B B B B]
+  Tiling:
+    step 3: 1x4 blue brick → x=0.5, y=1.2, z=0 (covers X:0-1, Z:0) — WAIT, 1x4 means W=1,L=4 → x=integer, z=.5
+    CORRECT: step 3: 2x1 blue brick → x=0.5, y=1.2, z=0 (covers X:0-1, Z:0)
+    step 4: 2x1 blue brick → x=2.5, y=1.2, z=0 (covers X:2-3, Z:0)
+    step 5: 2x2 white brick → x=0.5, y=1.2, z=1.5 (covers X:0-1, Z:1-2)
+    step 6: 2x2 white brick → x=2.5, y=1.2, z=1.5 (covers X:2-3, Z:1-2)
+    step 7: 2x1 blue brick → x=0.5, y=1.2, z=3 (covers X:0-1, Z:3)
+    step 8: 2x1 blue brick → x=2.5, y=1.2, z=3 (covers X:2-3, Z:3)
+  CHECK: covers all 16 studs ✓ Colors match grid ✓
+
+LAYER 2 (y=2.4) — eyes on white face:
+  Grid:  [B B B B]
+         [B K B K]   ← K = black 1x1 eyes at (1,1) and (3,1)
+         [W W W W]
+         [B B B B]
+  Tiling:
+    step 9:  2x1 blue brick → x=0.5, y=2.4, z=0
+    step 10: 2x1 blue brick → x=2.5, y=2.4, z=0
+    step 11: 1x1 blue brick → x=0, y=2.4, z=1
+    step 12: 1x1 black brick → x=1, y=2.4, z=1 ← LEFT EYE
+    step 13: 1x1 blue brick → x=2, y=2.4, z=1
+    step 14: 1x1 black brick → x=3, y=2.4, z=1 ← RIGHT EYE
+    step 15: 2x2 white brick → x=0.5, y=2.4, z=2.5 — WAIT, Z:2-3 but row Z=3 should be blue
+    CORRECT:
+    step 15: 2x1 white brick → x=0.5, y=2.4, z=2
+    step 16: 2x1 white brick → x=2.5, y=2.4, z=2
+    step 17: 2x1 blue brick → x=0.5, y=2.4, z=3
+    step 18: 2x1 blue brick → x=2.5, y=2.4, z=3
+  CHECK: 10 bricks, all 16 studs covered ✓ Eyes placed correctly ✓
+
+═══════════════════════════════════════
+CRITICAL RULES
+═══════════════════════════════════════
+1. ZERO GAPS: Every stud position within the layer footprint MUST be covered. Count the studs!
+2. ZERO OVERLAPS: No two bricks on the same layer can cover the same stud position.
+3. LAYER STACKING: Each layer must sit on the previous layer. Y increments: +1.2 for bricks, +0.4 for plates.
+4. SOLID FROM ALL SIDES: Looking at the model from front, back, left, right — no holes visible.
+5. MATCH THE REFERENCE: Colors and features must match the reference photo/views at each layer height.
+6. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
 
 BRICK COUNT: ${cfg.brickRange}
-You MUST generate at least ${cfg.minBricks} bricks. A model with fewer bricks will look incomplete and broken.
-
-VALIDATION RULES:
-- NO floating parts — every part (except y=0) must rest on parts below
-- NO overlapping — parts at the same Y cannot share the same XZ space
-- SOLID model — from any viewing angle, you should NOT see through the model
-- BUILD ORDER — strictly bottom-to-top, layer by layer (low Y first, high Y last)
+You MUST generate at least ${cfg.minBricks} bricks.
 
 Keep step descriptions SHORT (3-8 words).
 Return ONLY valid JSON.`;
