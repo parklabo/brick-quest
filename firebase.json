@@ -1,0 +1,33 @@
+{
+  "functions": {
+    "source": "packages/functions",
+    "runtime": "nodejs22",
+    "predeploy": ["pnpm --filter @brick-quest/shared build", "pnpm --filter @brick-quest/functions build"]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "emulators": {
+    "ui": {
+      "enabled": true,
+      "port": 7020
+    },
+    "functions": {
+      "port": 7021
+    },
+    "firestore": {
+      "port": 7022
+    },
+    "storage": {
+      "port": 7023
+    },
+    "auth": {
+      "port": 7024
+    },
+    "singleProjectMode": true
+  }
+}

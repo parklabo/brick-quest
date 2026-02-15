@@ -1,0 +1,63 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  --color-brand-primary: #ffd700;
+  --color-brand-secondary: #ff4500;
+  --color-brand-accent: #00bfff;
+  --color-brand-dark: #0f172a;
+  --color-brand-darker: #020617;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-50 font-sans antialiased;
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(255, 69, 0, 0.08), transparent 25%),
+      radial-gradient(circle at 85% 30%, rgba(0, 191, 255, 0.08), transparent 25%);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500;
+  }
+
+  .glass-card {
+    @apply bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 shadow-xl;
+  }
+
+  .glass-button {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px -5px var(--color-brand-primary);
+  }
+  to {
+    box-shadow: 0 0 25px 5px var(--color-brand-primary);
+  }
+}

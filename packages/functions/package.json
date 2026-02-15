@@ -1,0 +1,21 @@
+{
+  "name": "@brick-quest/functions",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@brick-quest/shared": "workspace:*",
+    "@google/genai": "^1.41.0",
+    "firebase-admin": "^13.6.1",
+    "firebase-functions": "^7.0.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

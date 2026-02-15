@@ -1,0 +1,501 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  CheckCircle,
+  Camera,
+  Sparkles,
+  Plus,
+  X,
+  Package,
+  ScanLine,
+  PackageCheck,
+  Tag,
+  Undo2,
+} from 'lucide-react';
+import { BrickIcon } from '../ui/BrickIcon';
+import { PartDetailModal } from './PartDetailModal';
+import { useInventoryStore } from '../../lib/stores/inventory';
+import type { ScanResult, DetectedPart } from '@brick-quest/shared';
+
+interface ScanReviewPanelProps {
+  result: ScanResult;
+  imageUrl?: string;
+  alreadyAdded?: boolean;
+  onAdded?: () => void;
+  onUnmarked?: () => void;
+}
+
+export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdded, onUnmarked }: ScanReviewPanelProps) {
+  const router = useRouter();
+  const [phase, setPhase] = useState<'review' | 'added'>('review');
+  const [addedCount, setAddedCount] = useState(0);
+  const [scannedParts, setScannedParts] = useState<DetectedPart[]>(result.parts);
+  const [inspectedPart, setInspectedPart] = useState<DetectedPart | null>(null);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [scanTags, setScanTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [removedPartIds, setRemovedPartIds] = useState<Set<string>>(new Set());
+
+  const addParts = useInventoryStore((s) => s.addParts);
+  const removeParts = useInventoryStore((s) => s.removeParts);
+
+  const handleAddTag = () => {
+    const trimmed = tagInput.trim().toLowerCase();
+    if (trimmed && !scanTags.includes(trimmed)) {
+      setScanTags((prev) => [...prev, trimmed]);
+    }
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setScanTags((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const handleAddToInventory = () => {
+    if (scannedParts.length > 0) {
+      const totalPieces = scannedParts.reduce((sum, p) => sum + p.count, 0);
+      const partsWithTags = scanTags.length > 0
+        ? scannedParts.map((p) => ({ ...p, tags: [...(p.tags ?? []), ...scanTags] }))
+        : scannedParts;
+      addParts(partsWithTags);
+      setAddedCount(totalPieces);
+      setPhase('added');
+      onAdded?.();
+    }
+  };
+
+  const handleRemoveFromInventory = (part: DetectedPart) => {
+    removeParts([part]);
+    setRemovedPartIds((prev) => new Set(prev).add(part.id));
+  };
+
+  const allPartsRemoved = alreadyAdded && removedPartIds.size === scannedParts.length;
+
+  const handleDeletePart = (part: DetectedPart) => {
+    setScannedParts((prev) => prev.filter((p) => p.id !== part.id));
+    setInspectedPart(null);
+  };
+
+  const handleUpdateCount = (part: DetectedPart, newCount: number) => {
+    setScannedParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, count: newCount } : p)));
+  };
+
+  const isAdded = alreadyAdded || phase === 'added';
+
+  // --- ADDED SUCCESS STATE ---
+  if (phase === 'added') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-xs w-full">
+          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
+            <CheckCircle className="w-10 h-10 text-green-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white text-center">Added!</h2>
+          <p className="text-slate-400 text-sm mt-2 text-center">
+            {addedCount} bricks added to your inventory.
+          </p>
+          <div className="flex flex-col gap-3 w-full mt-8">
+            <button
+              onClick={() => router.push('/inventory')}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <Package className="w-5 h-5" />
+              View Inventory
+            </button>
+            <button
+              onClick={() => router.push('/scan')}
+              className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <ScanLine className="w-5 h-5" />
+              Scan More
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Action button (shared between desktop/mobile)
+  const addButton = isAdded ? (
+    <button
+      disabled
+      className="flex-1 py-3 bg-slate-800 text-slate-500 font-bold rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
+    >
+      <PackageCheck className="w-5 h-5" />
+      Already Added
+    </button>
+  ) : (
+    <button
+      onClick={handleAddToInventory}
+      className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors active:bg-blue-500"
+    >
+      <Plus className="w-5 h-5" />
+      Add to Inventory
+    </button>
+  );
+
+  // --- REVIEW STATE ---
+  return (
+    <div className="space-y-0">
+      {/* Mobile Image Preview Overlay */}
+      {showImagePreview && imageUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setShowImagePreview(false)}
+        >
+          <img src={imageUrl} alt="Original" className="max-w-full max-h-full object-contain rounded-lg" />
+          <button className="absolute top-4 right-4 text-white p-2 bg-black/50 rounded-full">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Desktop Layout */}
+      <div className="hidden md:block">
+        <div className="bg-slate-900 border border-slate-800 rounded-t-xl px-6 py-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <CheckCircle className="w-6 h-6 text-green-500" />
+            Scan Review
+          </h2>
+          <div className="flex items-center gap-2">
+            {isAdded && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+                <PackageCheck className="w-3.5 h-3.5" />
+                In Inventory
+              </span>
+            )}
+            <span className="bg-slate-800 text-white text-sm font-medium px-4 py-1.5 rounded-lg border border-slate-700">
+              {scannedParts.length} parts found
+            </span>
+          </div>
+        </div>
+
+        <div className="flex border border-t-0 border-slate-800 rounded-b-xl overflow-hidden">
+          {/* Left: Image + Insight */}
+          <div className="w-1/2 flex flex-col border-r border-slate-800 bg-slate-900/50">
+            <div className="flex-1 relative flex items-center justify-center p-6">
+              {imageUrl && (
+                <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 p-2">
+                  <img src={imageUrl} alt="Original" className="max-w-full max-h-[40vh] object-contain rounded-lg" />
+                </div>
+              )}
+              {imageUrl && (
+                <div className="absolute top-6 left-6 bg-black/80 backdrop-blur-md text-white px-3 py-1.5 rounded-lg text-xs font-medium border border-white/10 flex items-center gap-2">
+                  <Camera className="w-3 h-3" /> Original
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-slate-800 bg-slate-900">
+              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-white text-sm mb-1">AI Insight</h3>
+                    <p className="text-slate-300 text-sm leading-relaxed italic">&ldquo;{result.aiInsight}&rdquo;</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Parts Grid */}
+          <div className="w-1/2 bg-slate-900/80 flex flex-col">
+            <div className="p-4 bg-slate-900 border-b border-slate-800 flex-none">
+              <h3 className="font-bold text-slate-400 text-xs uppercase tracking-widest">Detected Inventory</h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 max-h-[50vh]">
+              <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
+                {scannedParts.map((part) => {
+                  const isRemoved = removedPartIds.has(part.id);
+                  return (
+                    <button
+                      key={part.id}
+                      type="button"
+                      onClick={() => {
+                        if (isAdded && !isRemoved) {
+                          handleRemoveFromInventory(part);
+                        } else if (!isAdded) {
+                          setInspectedPart(part);
+                        }
+                      }}
+                      className={`bg-slate-800 rounded-xl p-3 flex flex-col items-center cursor-pointer border transition-colors relative ${
+                        isRemoved
+                          ? 'opacity-40 border-slate-700 cursor-default'
+                          : isAdded
+                            ? 'border-red-500/50 hover:border-red-500 hover:bg-red-900/20'
+                            : 'border-slate-700 hover:bg-slate-700 hover:border-blue-500'
+                      }`}
+                    >
+                      {isRemoved && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 rounded-xl">
+                          <span className="text-[10px] font-bold text-red-400 uppercase">Removed</span>
+                        </div>
+                      )}
+                      <BrickIcon
+                        width={part.dimensions.width}
+                        length={part.dimensions.length}
+                        hexColor={part.hexColor}
+                        type={part.type}
+                        shape={part.shape}
+                        maxSize={50}
+                        className="mb-2"
+                      />
+                      <span className="font-bold text-white text-lg">{part.count}x</span>
+                      <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide text-center line-clamp-1">
+                        {part.color}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Tag Input (before adding) */}
+            {!isAdded && (
+              <div className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex-none">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="text-xs text-slate-500 font-medium">Tags (optional)</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
+                    placeholder="e.g. castle, red-set"
+                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    disabled={!tagInput.trim()}
+                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Add
+                  </button>
+                </div>
+                {scanTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {scanTags.map((tag) => (
+                      <span key={tag} className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full">
+                        {tag}
+                        <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-blue-200">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Removal info */}
+            {isAdded && removedPartIds.size > 0 && (
+              <div className="px-4 py-2 bg-slate-900 border-t border-slate-800 flex-none">
+                <p className="text-xs text-red-400">{removedPartIds.size} of {scannedParts.length} part(s) removed from inventory</p>
+              </div>
+            )}
+            <div className="p-4 bg-slate-900 border-t border-slate-800 flex gap-3 flex-none">
+              <button
+                onClick={() => router.back()}
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-colors"
+              >
+                Back
+              </button>
+              {allPartsRemoved ? (
+                <button
+                  onClick={() => onUnmarked?.()}
+                  className="flex-1 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Undo2 className="w-5 h-5" />
+                  Unmark Added
+                </button>
+              ) : addButton}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Layout */}
+      <div className="md:hidden space-y-0">
+        {imageUrl && (
+          <div className="bg-slate-900 border border-slate-800 rounded-t-xl overflow-hidden">
+            <div
+              className="relative aspect-[2/1] bg-slate-950 cursor-pointer active:opacity-90 transition-opacity"
+              onClick={() => setShowImagePreview(true)}
+            >
+              <img src={imageUrl} alt="Scanned" className="w-full h-full object-contain p-4" />
+              <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[10px] font-medium border border-white/10 flex items-center gap-1.5">
+                <Camera className="w-3 h-3" /> Tap to view
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-t border-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 text-xs font-medium">Detected:</span>
+                <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-0.5 rounded">
+                  {scannedParts.length} types
+                </span>
+                <span className="bg-slate-700 text-slate-300 text-xs font-bold px-2.5 py-0.5 rounded">
+                  {scannedParts.reduce((acc, p) => acc + p.count, 0)} pcs
+                </span>
+              </div>
+              {isAdded && (
+                <span className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                  <PackageCheck className="w-3 h-3" /> Added
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Parts Grid */}
+        <div className={`border-x border-slate-800 bg-slate-900 p-3 ${!imageUrl ? 'rounded-t-xl border-t' : ''}`}>
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 px-1">
+            Inventory
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            {scannedParts.map((part) => {
+              const isRemoved = removedPartIds.has(part.id);
+              return (
+                <button
+                  key={part.id}
+                  type="button"
+                  onClick={() => {
+                    if (isAdded && !isRemoved) {
+                      handleRemoveFromInventory(part);
+                    } else if (!isAdded) {
+                      setInspectedPart(part);
+                    }
+                  }}
+                  className={`bg-slate-800 rounded-xl p-3 flex flex-col items-center transition-colors cursor-pointer border relative ${
+                    isRemoved
+                      ? 'opacity-40 border-slate-700 cursor-default'
+                      : isAdded
+                        ? 'border-red-500/50 active:bg-red-900/20'
+                        : 'border-slate-700 active:bg-slate-700'
+                  }`}
+                >
+                  {isRemoved && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 rounded-xl">
+                      <span className="text-[10px] font-bold text-red-400 uppercase">Removed</span>
+                    </div>
+                  )}
+                  <div className="mb-2">
+                    <BrickIcon
+                      width={part.dimensions.width}
+                      length={part.dimensions.length}
+                      hexColor={part.hexColor}
+                      type={part.type}
+                      shape={part.shape}
+                      maxSize={44}
+                    />
+                  </div>
+                  <span className="font-bold text-white text-lg leading-none mb-1">{part.count}x</span>
+                  <span className="text-[10px] text-slate-400 font-medium uppercase text-center w-full truncate">
+                    {part.color}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tag Input (before adding) - Mobile */}
+        {!isAdded && (
+          <div className="border-x border-slate-800 bg-slate-900 px-3 pb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-xs text-slate-500 font-medium">Tags (optional)</span>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
+                placeholder="e.g. castle, red-set"
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddTag}
+                disabled={!tagInput.trim()}
+                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+            {scanTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {scanTags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full">
+                    {tag}
+                    <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-blue-200">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Removal info - Mobile */}
+        {isAdded && removedPartIds.size > 0 && (
+          <div className="border-x border-slate-800 bg-slate-900 px-3 pb-2">
+            <p className="text-xs text-red-400">{removedPartIds.size} of {scannedParts.length} part(s) removed from inventory</p>
+          </div>
+        )}
+
+        {/* AI Insight */}
+        <div className="border-x border-slate-800 bg-slate-900 p-3 pt-0">
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="font-bold text-white text-xs uppercase mb-1 tracking-wide">AI Insight</h4>
+                <p className="text-slate-300 text-xs leading-relaxed italic">&ldquo;{result.aiInsight}&rdquo;</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="border border-t-0 border-slate-800 rounded-b-xl bg-slate-900 p-3">
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.back()}
+              className="flex-1 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl transition-colors active:bg-slate-700"
+            >
+              Back
+            </button>
+            {allPartsRemoved ? (
+              <button
+                onClick={() => onUnmarked?.()}
+                className="flex-1 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+              >
+                <Undo2 className="w-5 h-5" />
+                Unmark Added
+              </button>
+            ) : addButton}
+          </div>
+        </div>
+      </div>
+
+      {/* Part Detail Modal */}
+      {inspectedPart && (
+        <PartDetailModal
+          part={inspectedPart}
+          onClose={() => setInspectedPart(null)}
+          onDelete={handleDeletePart}
+          onUpdateCount={handleUpdateCount}
+        />
+      )}
+    </div>
+  );
+}

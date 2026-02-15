@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "title": "Brick Quest - AI-Powered LEGO Builder & 3D Instructions",
+    "description": "Scan your LEGO bricks with AI, build a digital inventory, and get step-by-step 3D building instructions. Works with any brick brand."
+  },
+  "hero": {
+    "title": "Build Amazing LEGO Creations with AI",
+    "subtitle": "Unleash the hidden potential of your brick collection section. Scan your loose parts and let our AI guide you on a building adventure.",
+    "cta": "Start Your Quest",
+    "secondary": "Explore Features"
+  },
+  "features": {
+    "title": "Equipment for Your Journey",
+    "scan": {
+      "title": "Visual Analysis",
+      "description": "Snap a photo of your chaos. Our advanced AI vision identifies every brick type, color, and size instantly."
+    },
+    "build": {
+      "title": "AI Blueprint Generation",
+      "description": "Choose your destiny. The AI generates custom, step-by-step 3D building instructions based on what you own."
+    },
+    "view": {
+      "title": "Interactive Construction",
+      "description": "Follow the 3D guide with rotatable, zoomable steps. Never lose your way in the building process again."
+    }
+  },
+  "marketing": {
+    "beforeAfter": {
+      "title": "From Chaos to Masterpiece",
+      "before": "The Messy Pile",
+      "after": "The Epic Build",
+      "beforeAlt": "Loose LEGO bricks scattered in a pile before scanning",
+      "afterAlt": "Completed 3D LEGO model built with AI instructions"
+    },
+    "faq": {
+      "title": "Common Questions",
+      "1": {
+        "q": "Does it work with non-LEGO brands?",
+        "a": "Yes! Our AI can identify most standard brick types regardless of the brand."
+      },
+      "2": {
+        "q": "Is the app free to use?",
+        "a": "You can get started for free. Premium features like unlimited scans and advanced models are available with a subscription."
+      },
+      "3": {
+        "q": "Can I save my digital inventory?",
+        "a": "Absolutely. Your brick collection is saved to your profile so you can build anytime."
+      }
+    },
+    "howItWorks": {
+      "label": "Process",
+      "title": "Turn Chaos into Creation",
+      "description": "Our advanced AI analyzes your pile of bricks and suggests step-by-step instructions for models you can build right now. No more searching for missing pieces.",
+      "steps": {
+        "1": { "title": "Scatter", "desc": "Spread out your loose bricks" },
+        "2": { "title": "Snap", "desc": "Take a quick photo with the app" },
+        "3": { "title": "Select", "desc": "Choose a model from AI suggestions" },
+        "4": { "title": "Assemble", "desc": "Follow the 3D guide to build" }
+      }
+    },
+    "ctaSection": {
+      "title": "Ready to Start Your Quest?",
+      "description": "Download Brick Quest today and discover the hidden potential of your brick collection.",
+      "button": "Start Building"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "getStarted": "Get App"
+  },
+  "footer": {
+    "tagline": "Your AI companion for endless creativity.",
+    "rights": "All rights reserved. Level up your building skills."
+  }
+}

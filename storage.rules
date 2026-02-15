@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Scan images: authenticated users can read (jobId is unguessable)
+    match /scans/{jobId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Design images (reference, views, preview): authenticated users can read
+    match /designs/{jobId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Deny all other access by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
