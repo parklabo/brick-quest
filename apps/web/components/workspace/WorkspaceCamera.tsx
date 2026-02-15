@@ -95,14 +95,16 @@ export function WorkspaceCamera({ keysRef }: WorkspaceCameraProps) {
     if (keys.elevateDown) elevationRef.current = Math.max(MIN_ELEVATION, elevationRef.current - ELEVATE_SPEED * delta);
 
     // WASD pan (relative to camera azimuth)
+    // Camera looks FROM (target + offset) TO target, so view direction = -offset.
+    // Moving target in the view direction makes the camera pan forward.
     const azimuth = azimuthRef.current;
     const forwardX = Math.sin(azimuth);
     const forwardZ = Math.cos(azimuth);
     let dx = 0, dz = 0;
-    if (keys.forward) { dx += forwardX; dz += forwardZ; }
-    if (keys.backward) { dx -= forwardX; dz -= forwardZ; }
-    if (keys.left) { dx += forwardZ; dz -= forwardX; }
-    if (keys.right) { dx -= forwardZ; dz += forwardX; }
+    if (keys.forward) { dx -= forwardX; dz -= forwardZ; }
+    if (keys.backward) { dx += forwardX; dz += forwardZ; }
+    if (keys.left) { dx -= forwardZ; dz += forwardX; }
+    if (keys.right) { dx += forwardZ; dz -= forwardX; }
 
     const len = Math.sqrt(dx * dx + dz * dz);
     if (len > 0) {
