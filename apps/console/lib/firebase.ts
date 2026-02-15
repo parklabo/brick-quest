@@ -11,28 +11,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-function getApp() {
-  if (getApps().length > 0) return getApps()[0];
-  return initializeApp(firebaseConfig);
-}
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Lazy-init: only runs on client side (avoids prerender crash when env vars are missing)
-let _firestore: ReturnType<typeof getFirestore> | undefined;
-let _auth: ReturnType<typeof getAuth> | undefined;
+export const firestore = getFirestore(app);
+export const auth = getAuth(app);
 
-function initServices() {
-  if (_firestore) return;
-  const app = getApp();
-  _firestore = getFirestore(app);
-  _auth = getAuth(app);
-
-  if (process.env.NODE_ENV === 'development') {
-    connectFirestoreEmulator(_firestore, 'localhost', 7022);
-    if (!_auth.emulatorConfig) {
-      connectAuthEmulator(_auth, 'http://localhost:7024', { disableWarnings: true });
-    }
+// Connect to emulators in development
+if (process.env.NODE_ENV === 'development') {
+  connectFirestoreEmulator(firestore, 'localhost', 7022);
+  if (!auth.emulatorConfig) {
+    connectAuthEmulator(auth, 'http://localhost:7024', { disableWarnings: true });
   }
 }
-
-export const firestore = new Proxy({} as ReturnType<typeof getFirestore>, { get: (_, prop) => { initServices(); return (_firestore as any)[prop]; } });
-export const auth = new Proxy({} as ReturnType<typeof getAuth>, { get: (_, prop) => { initServices(); return (_auth as any)[prop]; } });
