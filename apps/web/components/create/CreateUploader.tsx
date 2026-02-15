@@ -49,7 +49,7 @@ export function CreateUploader() {
     setPhase('submitting');
     setError(null);
     try {
-      const { jobId } = await apiClient.submitDesign(image, 'standard', userPrompt);
+      const { jobId } = await apiClient.submitDesign(image, 'detailed', userPrompt);
       addJob(jobId, 'design');
       useToastStore.getState().addToast({
         message: t('queued'),

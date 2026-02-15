@@ -12,7 +12,7 @@ export const submitDesign = onCall(
       throw new HttpsError('unauthenticated', 'Authentication required');
     }
 
-    const { image, mimeType = 'image/jpeg', detail = 'standard', userPrompt = '' } = request.data as {
+    const { image, mimeType = 'image/jpeg', detail = 'detailed', userPrompt = '' } = request.data as {
       image: string;
       mimeType?: string;
       detail?: DesignDetail;

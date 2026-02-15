@@ -27,7 +27,7 @@ export const apiClient = {
 
   async submitDesign(
     image: string,
-    detail: DesignDetail = 'standard',
+    detail: DesignDetail = 'detailed',
     userPrompt = '',
   ): Promise<{ jobId: string }> {
     const callable = httpsCallable<
