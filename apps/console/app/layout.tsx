@@ -4,6 +4,8 @@ import { AuthGuard } from '../components/layout/AuthGuard';
 import { AppShell } from '../components/layout/AppShell';
 import './globals.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Brick Quest Console',
   description: 'Admin console for Brick Quest',

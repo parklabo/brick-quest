@@ -5,6 +5,8 @@ import { AuthGate } from '../components/providers/AuthGate';
 import { ToastContainer } from '../components/ui/ToastContainer';
 import './globals.css';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Brick Quest - AI LEGO Builder',
   description: 'Scan your LEGO bricks and get AI-powered 3D building instructions',
