@@ -12,6 +12,7 @@ const geminiApiKey = defineSecret('GEMINI_API_KEY');
 export const processJob = onDocumentCreated(
   {
     document: 'jobs/{jobId}',
+    region: 'asia-northeast1',
     memory: '1GiB',
     timeoutSeconds: 540,
     secrets: [geminiApiKey],
@@ -126,6 +127,7 @@ export const processJob = onDocumentCreated(
 export const processDesignUpdate = onDocumentUpdated(
   {
     document: 'jobs/{jobId}',
+    region: 'asia-northeast1',
     memory: '1GiB',
     timeoutSeconds: 540,
     secrets: [geminiApiKey],

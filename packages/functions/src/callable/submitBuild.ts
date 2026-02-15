@@ -3,7 +3,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import type { DetectedPart, Difficulty } from '@brick-quest/shared';
 
 export const submitBuild = onCall(
-  { maxInstances: 10 },
+  { maxInstances: 10, region: 'asia-northeast1' },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {

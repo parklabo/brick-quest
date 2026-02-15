@@ -5,7 +5,7 @@ import { getStorage } from 'firebase-admin/storage';
 import type { DesignDetail } from '@brick-quest/shared';
 
 export const submitDesign = onCall(
-  { maxInstances: 10 },
+  { maxInstances: 10, region: 'asia-northeast1' },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {

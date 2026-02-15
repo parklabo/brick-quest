@@ -3,7 +3,7 @@ import { getAuth } from 'firebase-admin/auth';
 
 const ADMIN_EMAILS = ['admin@brickquest.dev'];
 
-export const setAdminRole = onCall(async (request) => {
+export const setAdminRole = onCall({ region: 'asia-northeast1' }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError('unauthenticated', 'Authentication required');

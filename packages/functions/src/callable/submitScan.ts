@@ -4,7 +4,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
 export const submitScan = onCall(
-  { maxInstances: 10 },
+  { maxInstances: 10, region: 'asia-northeast1' },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
