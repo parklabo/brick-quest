@@ -10,11 +10,11 @@ import { logout } from '../../lib/hooks/useAuth';
 
 const MY_BRICKS_ITEMS = [
   { href: '/scan', label: 'Scan Bricks', icon: ScanLine },
-  { href: '/build', label: 'Build', icon: Hammer },
+  { href: '/builds', label: 'Build', icon: Hammer },
   { href: '/inventory', label: 'Inventory', icon: Package },
 ] as const;
 
-const MY_BRICKS_PATHS = ['/scan', '/build', '/inventory'];
+const MY_BRICKS_PATHS = ['/scan', '/builds', '/inventory'];
 
 function StudRow({ count, className }: { count: number; className?: string }) {
   return (
@@ -97,7 +97,7 @@ export function NavBar() {
   const profile = useProfileStore((s) => s.profile);
   const initial = profile?.displayName?.charAt(0).toUpperCase() ?? '?';
 
-  if (pathname === '/') return null;
+  if (pathname === '/' || pathname === '/workspace') return null;
 
   const isMyBricksActive = MY_BRICKS_PATHS.some((p) => pathname.startsWith(p));
   const myBricksBadge = unseenScanCount + unseenBuildCount;

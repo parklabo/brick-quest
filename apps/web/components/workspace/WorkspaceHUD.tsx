@@ -18,7 +18,7 @@ export function WorkspaceHUD() {
       {/* Back to Build — top left */}
       <div className="absolute top-4 left-4 z-10">
         <Link
-          href="/build"
+          href="/builds"
           className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -26,8 +26,8 @@ export function WorkspaceHUD() {
         </Link>
       </div>
 
-      {/* Controls hint bar — bottom center */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+      {/* Desktop: keyboard controls hint */}
+      <div className="hidden sm:block absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
         <div className="bg-black/60 backdrop-blur-md rounded-xl px-6 py-3 text-xs text-slate-300 flex gap-4 items-center">
           <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white">WASD</kbd> pan</span>
           <span className="text-slate-600">|</span>
@@ -40,6 +40,17 @@ export function WorkspaceHUD() {
           <span>Scroll zoom</span>
           <span className="text-slate-600">|</span>
           <span>Click brick to select</span>
+        </div>
+      </div>
+
+      {/* Mobile: touch gesture hint */}
+      <div className="sm:hidden absolute bottom-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+        <div className="bg-black/60 backdrop-blur-md rounded-xl px-4 py-2 text-[10px] text-slate-400 flex gap-3 items-center">
+          <span>1-finger: orbit</span>
+          <span className="text-slate-600">|</span>
+          <span>pinch: zoom</span>
+          <span className="text-slate-600">|</span>
+          <span>2-finger drag: pan</span>
         </div>
       </div>
 

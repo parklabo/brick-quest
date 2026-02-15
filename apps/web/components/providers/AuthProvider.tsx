@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const reviewPath =
               job.type === 'scan'
                 ? `/scan/${job.id}/review`
-                : `/build/${job.id}/view`;
+                : `/builds/${job.id}/view`;
             useToastStore.getState().addToast({
               message: `${label} complete!`,
               variant: 'success',

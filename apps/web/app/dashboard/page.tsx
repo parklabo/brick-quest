@@ -115,7 +115,7 @@ export default function DashboardPage() {
         {[
           { href: '/create', icon: <Sparkles className="w-6 h-6" />, title: 'Create from Photo', description: 'Turn any photo into LEGO instructions', iconColor: 'text-lego-yellow', stud: 'bg-lego-yellow/40', hover: 'hover:border-lego-yellow/40' },
           { href: '/scan', icon: <ScanLine className="w-6 h-6" />, title: 'Scan Bricks', description: 'Photograph your bricks to identify them', iconColor: 'text-lego-blue', stud: 'bg-lego-blue/40', hover: 'hover:border-lego-blue/40' },
-          { href: '/build', icon: <Hammer className="w-6 h-6" />, title: 'Build', description: 'Get AI build plans from your inventory', iconColor: 'text-lego-orange', stud: 'bg-lego-orange/40', hover: 'hover:border-lego-orange/40' },
+          { href: '/builds', icon: <Hammer className="w-6 h-6" />, title: 'Build', description: 'Get AI build plans from your inventory', iconColor: 'text-lego-orange', stud: 'bg-lego-orange/40', hover: 'hover:border-lego-orange/40' },
           { href: '/inventory', icon: <Package className="w-6 h-6" />, title: 'Inventory', description: 'Browse and manage your brick collection', iconColor: 'text-lego-green', stud: 'bg-lego-green/40', hover: 'hover:border-lego-green/40' },
           { href: '/workspace', icon: <Box className="w-6 h-6" />, title: 'Workspace', description: 'Interactive 3D workspace for builds', iconColor: 'text-lego-red', stud: 'bg-lego-red/40', hover: 'hover:border-lego-red/40' },
         ].map((action) => (

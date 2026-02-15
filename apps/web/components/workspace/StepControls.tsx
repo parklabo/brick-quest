@@ -14,7 +14,7 @@ export function StepControls() {
   const step = currentStep + 1; // 1-indexed for display
 
   return (
-    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10">
+    <div className="absolute bottom-8 sm:bottom-20 left-1/2 -translate-x-1/2 z-10">
       <div className="bg-black/70 backdrop-blur-md rounded-xl px-4 py-2 flex items-center gap-3 border border-slate-700">
         <button
           onClick={() => setCurrentStep(0)}

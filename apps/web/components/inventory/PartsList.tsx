@@ -143,7 +143,7 @@ export function PartsList() {
 
       {/* Build Button */}
       <div className="pt-2">
-        <Link href="/build" className="block">
+        <Link href="/builds" className="block">
           <button className="w-full py-4 px-6 bg-lego-yellow hover:bg-yellow-300 text-slate-900 font-extrabold rounded-lg transition-all flex items-center justify-center gap-3 text-lg shadow-[0_3px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-[3px]">
             <Hammer className="w-6 h-6" />
             Build Something!

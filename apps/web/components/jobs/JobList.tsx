@@ -112,7 +112,7 @@ function getJobHref(job: TrackedJob): string | undefined {
   if (job.status !== 'completed') return undefined;
   if (job.type === 'scan') return `/scan/${job.id}/review`;
   if (job.type === 'design') return `/create/${job.id}/result`;
-  return `/build/${job.id}/view`;
+  return `/builds/${job.id}/view`;
 }
 
 export function JobCard({ job }: { job: TrackedJob }) {
