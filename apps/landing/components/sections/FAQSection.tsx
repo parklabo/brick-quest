@@ -1,7 +1,7 @@
 import { useTranslations } from 'next-intl';
 import { ChevronDown } from 'lucide-react';
 
-const FAQ_KEYS = ['1', '2', '3'] as const;
+const FAQ_KEYS = ['1', '2', '3', '4', '5', '6'] as const;
 
 export function FAQSection() {
   const t = useTranslations('marketing.faq');

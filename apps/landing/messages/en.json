@@ -1,67 +1,116 @@
 {
   "metadata": {
     "title": "Brick Quest - AI-Powered LEGO Builder & 3D Instructions",
-    "description": "Scan your LEGO bricks with AI, build a digital inventory, and get step-by-step 3D building instructions. Works with any brick brand."
+    "description": "Turn any photo into LEGO instructions or scan your bricks to build. AI-powered 3D step-by-step guides with BrickLink parts lists."
   },
   "hero": {
     "title": "Build Amazing LEGO Creations with AI",
-    "subtitle": "Unleash the hidden potential of your brick collection section. Scan your loose parts and let our AI guide you on a building adventure.",
+    "subtitle": "Turn any photo into buildable LEGO designs, or scan your brick collection and let AI create custom 3D instructions.",
     "cta": "Start Your Quest",
-    "secondary": "Explore Features"
+    "secondary": "Explore Features",
+    "pillCreate": "Photo to LEGO",
+    "pillScan": "Scan & Build"
+  },
+  "createMode": {
+    "label": "Create Mode",
+    "title": "Turn Any Photo into LEGO",
+    "description": "Upload a photo of anything — a pet, a landmark, your favorite character — and our AI transforms it into a buildable LEGO design with full 3D step-by-step instructions.",
+    "bullet1": "Works with any photo — no bricks required",
+    "bullet2": "AI generates orthographic LEGO views for approval",
+    "bullet3": "Get a complete BrickLink parts list to order every piece",
+    "step1": "Upload Photo",
+    "step2": "AI LEGO Views",
+    "step3": "3D Instructions + Parts List"
+  },
+  "myBricksMode": {
+    "label": "My Bricks Mode",
+    "title": "Your Bricks, Infinite Possibilities",
+    "description": "Already have a pile of bricks? Scan them, build a digital inventory, and let AI suggest models you can build with exactly what you own.",
+    "step1title": "Scan",
+    "step1desc": "Photograph your loose bricks",
+    "step2title": "Review",
+    "step2desc": "AI identifies every piece",
+    "step3title": "Collect",
+    "step3desc": "Build your digital inventory",
+    "step4title": "Build",
+    "step4desc": "Get custom 3D instructions"
   },
   "features": {
     "title": "Equipment for Your Journey",
-    "scan": {
-      "title": "Visual Analysis",
-      "description": "Snap a photo of your chaos. Our advanced AI vision identifies every brick type, color, and size instantly."
+    "aiPhoto": {
+      "title": "AI Photo Analysis",
+      "description": "Upload any photo and watch AI transform it into a detailed LEGO design with orthographic views."
     },
-    "build": {
-      "title": "AI Blueprint Generation",
-      "description": "Choose your destiny. The AI generates custom, step-by-step 3D building instructions based on what you own."
+    "workspace": {
+      "title": "3D Step-by-Step",
+      "description": "Follow interactive 3D instructions with rotatable, zoomable steps. Never lose your way in the build."
     },
-    "view": {
-      "title": "Interactive Construction",
-      "description": "Follow the 3D guide with rotatable, zoomable steps. Never lose your way in the building process again."
+    "scanner": {
+      "title": "Smart Brick Scanner",
+      "description": "Snap a photo of your bricks. AI identifies every type, color, and size instantly."
+    },
+    "bricklink": {
+      "title": "BrickLink Integration",
+      "description": "Get a complete parts list for any design. One click to order every brick you need."
     }
   },
   "marketing": {
-    "beforeAfter": {
-      "title": "From Chaos to Masterpiece",
-      "before": "The Messy Pile",
-      "after": "The Epic Build",
-      "beforeAlt": "Loose LEGO bricks scattered in a pile before scanning",
-      "afterAlt": "Completed 3D LEGO model built with AI instructions"
-    },
     "faq": {
       "title": "Common Questions",
       "1": {
+        "q": "What is Create mode?",
+        "a": "Create mode lets you upload any photo and our AI transforms it into a buildable LEGO design. You get orthographic views to approve, full 3D step-by-step instructions, and a BrickLink parts list so you can order every piece."
+      },
+      "2": {
+        "q": "What is the BrickLink parts list?",
+        "a": "After your design is generated, we provide an itemized list of every LEGO piece needed. You can use this list to order parts directly from BrickLink or other brick marketplaces."
+      },
+      "3": {
         "q": "Does it work with non-LEGO brands?",
         "a": "Yes! Our AI can identify most standard brick types regardless of the brand."
       },
-      "2": {
+      "4": {
         "q": "Is the app free to use?",
         "a": "You can get started for free. Premium features like unlimited scans and advanced models are available with a subscription."
       },
-      "3": {
+      "5": {
+        "q": "How does the design flow work?",
+        "a": "Upload a photo, and AI generates orthographic LEGO views. Review and approve the views, then AI creates full 3D build instructions. You can regenerate views if you want a different interpretation."
+      },
+      "6": {
         "q": "Can I save my digital inventory?",
         "a": "Absolutely. Your brick collection is saved to your profile so you can build anytime."
       }
     },
     "howItWorks": {
       "label": "Process",
-      "title": "Turn Chaos into Creation",
-      "description": "Our advanced AI analyzes your pile of bricks and suggests step-by-step instructions for models you can build right now. No more searching for missing pieces.",
-      "steps": {
-        "1": { "title": "Scatter", "desc": "Spread out your loose bricks" },
-        "2": { "title": "Snap", "desc": "Take a quick photo with the app" },
-        "3": { "title": "Select", "desc": "Choose a model from AI suggestions" },
-        "4": { "title": "Assemble", "desc": "Follow the 3D guide to build" }
+      "title": "How It Works",
+      "tabCreate": "Create from Photo",
+      "tabMyBricks": "My Bricks",
+      "create": {
+        "description": "Transform any image into buildable LEGO instructions. No bricks needed to start — just a photo and your imagination.",
+        "steps": {
+          "1": { "title": "Upload", "desc": "Choose any photo as your reference" },
+          "2": { "title": "Generate", "desc": "AI creates LEGO orthographic views" },
+          "3": { "title": "Approve", "desc": "Review and approve the design" },
+          "4": { "title": "Build", "desc": "Follow 3D instructions & order parts" }
+        }
+      },
+      "myBricks": {
+        "description": "Scan your existing bricks, build a digital inventory, and get custom building instructions for models you can make right now.",
+        "steps": {
+          "1": { "title": "Scatter", "desc": "Spread out your loose bricks" },
+          "2": { "title": "Snap", "desc": "Take a quick photo with the app" },
+          "3": { "title": "Select", "desc": "Choose a model from AI suggestions" },
+          "4": { "title": "Assemble", "desc": "Follow the 3D guide to build" }
+        }
       }
     },
     "ctaSection": {
       "title": "Ready to Start Your Quest?",
-      "description": "Download Brick Quest today and discover the hidden potential of your brick collection.",
-      "button": "Start Building"
+      "description": "Turn photos into LEGO masterpieces or discover the hidden potential of your brick collection.",
+      "buttonCreate": "Start Creating",
+      "buttonScan": "Scan Your Bricks"
     }
   },
   "nav": {

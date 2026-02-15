@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles, ScanLine } from 'lucide-react';
 import { APP_URL } from '@/lib/constants';
 
 export function HeroSection() {
@@ -26,6 +26,18 @@ export function HeroSection() {
           <span className="text-gradient">Quest</span>
         </h1>
 
+        {/* Mode pills */}
+        <div className="flex flex-wrap justify-center gap-3 mb-6">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-primary/15 text-brand-primary border border-brand-primary/30 text-sm font-medium">
+            <Sparkles className="w-4 h-4" />
+            {t('pillCreate')}
+          </span>
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-accent/15 text-brand-accent border border-brand-accent/30 text-sm font-medium">
+            <ScanLine className="w-4 h-4" />
+            {t('pillScan')}
+          </span>
+        </div>
+
         <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mb-10 leading-relaxed font-light">
           {t('subtitle')}
         </p>
@@ -47,8 +59,8 @@ export function HeroSection() {
 
         <div className="mt-20 relative w-full max-w-4xl aspect-video glass-card rounded-2xl overflow-hidden group">
           <Image
-            src="/images/01_home.webp"
-            alt="App Interface"
+            src="/images/09_play.webp"
+            alt="3D Workspace"
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-700"
             priority
