@@ -8,9 +8,9 @@ Scan your LEGO bricks, build an inventory, and get AI-generated step-by-step 3D 
 
 ### Prerequisites
 
-- Node.js 22+ (see `.nvmrc`)
+- Node.js 22 (see `.nvmrc`)
 - pnpm 9+
-- Firebase CLI (`npm install -g firebase-tools`)
+- Docker (for Firebase emulators)
 
 ### Setup
 
@@ -18,13 +18,13 @@ Scan your LEGO bricks, build an inventory, and get AI-generated step-by-step 3D 
 # Install dependencies
 pnpm install
 
-# Configure environment variables (see CLAUDE.md for details)
-# apps/web/.env.local — Firebase web config
-# packages/functions/.env — GEMINI_API_KEY
+# Configure environment variables
+# apps/web/.env.local       — Firebase web config (NEXT_PUBLIC_FIREBASE_*)
+# apps/console/.env.local   — Firebase web config (same as above)
+# packages/functions/.env.local — GEMINI_API_KEY (local dev only)
 
-# Start Firebase emulators + web app
-pnpm firebase:emulators   # Terminal 1
-pnpm dev:web              # Terminal 2
+# Start Firebase emulators + all apps
+pnpm dev
 ```
 
 ### Services
@@ -33,17 +33,19 @@ pnpm dev:web              # Terminal 2
 |---------|-----|-------------|
 | Landing | http://localhost:7030 | Marketing site (en/ko/ja) |
 | Web App | http://localhost:7031 | Main application |
-| Firebase Emulator UI | http://localhost:4000 | Firestore, Functions, Storage dashboard |
+| Admin Console | http://localhost:7032 | Admin dashboard |
+| Emulator UI | http://localhost:7020 | Firebase emulator dashboard |
 
 ## Architecture
 
 ```
-[Landing] → Marketing/SEO/i18n
-[Web App] → Scan, Inventory, 3D Build Viewer
+[Landing] → Marketing/SEO/i18n (static export)
+[Web App] → Scan, Inventory, Design, 3D Build Viewer
+[Console] → Admin dashboard, shape management
      ↓ (httpsCallable)
-[Firebase Functions] → submitScan, submitBuild
-     ↓ (Firestore trigger)
-[Gemini AI] → Image analysis / 3D build plans
+[Cloud Functions] → submitScan, submitBuild, submitDesign
+     ↓ (Firestore triggers)
+[Gemini AI] → Image analysis / orthographic views / 3D build plans
      ↓ (onSnapshot)
 [Web App] → Real-time result updates
 ```
@@ -51,10 +53,19 @@ pnpm dev:web              # Terminal 2
 ## Tech Stack
 
 - **Monorepo**: Turborepo + pnpm
-- **Frontend**: Next.js 16, React 19, Tailwind CSS v4, Three.js
-- **Backend**: Firebase Functions (2nd gen), Firestore, Cloud Storage
+- **Frontend**: Next.js 16, React 19, Tailwind CSS v4, Three.js, Zustand
+- **Backend**: Firebase Functions (2nd gen), Firestore, Cloud Storage, Secret Manager
 - **AI**: Google Gemini 3 Pro
 - **i18n**: next-intl (English, Korean, Japanese)
+
+## Deployment
+
+| Service | Platform | Trigger |
+|---------|----------|---------|
+| Landing | Firebase Hosting | Push to main (if `apps/landing/` changed) |
+| Web App | Firebase App Hosting | Push to `deploy/web` branch |
+| Console | Firebase App Hosting | Push to `deploy/console` branch |
+| Functions | Cloud Functions (2nd gen) | Manual or push to main (if `packages/functions/` changed) |
 
 ## License
 
