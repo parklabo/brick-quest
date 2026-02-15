@@ -1,4 +1,5 @@
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
@@ -6,11 +7,14 @@ import { analyzeLegoParts } from '../services/geminiScan.js';
 import { generateBuildPlan } from '../services/geminiBuild.js';
 import { generateDesignFromPhoto, generateLegoPreview, generateOrthographicViews } from '../services/geminiDesign.js';
 
+const geminiApiKey = defineSecret('GEMINI_API_KEY');
+
 export const processJob = onDocumentCreated(
   {
     document: 'jobs/{jobId}',
     memory: '1GiB',
     timeoutSeconds: 540,
+    secrets: [geminiApiKey],
   },
   async (event) => {
     const snapshot = event.data;
@@ -124,6 +128,7 @@ export const processDesignUpdate = onDocumentUpdated(
     document: 'jobs/{jobId}',
     memory: '1GiB',
     timeoutSeconds: 540,
+    secrets: [geminiApiKey],
   },
   async (event) => {
     const before = event.data?.before.data();
