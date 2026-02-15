@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ref, getDownloadURL, getBlob } from 'firebase/storage';
@@ -62,9 +63,10 @@ function PartCard({ part }: { part: RequiredPart }) {
 type DesignStep = 1 | 2;
 
 function DesignStepIndicator({ activeStep, completedSteps }: { activeStep: DesignStep; completedSteps: Set<DesignStep> }) {
+  const t = useTranslations('createResult');
   const steps = [
-    { step: 1 as DesignStep, label: 'Generate Views' },
-    { step: 2 as DesignStep, label: 'Build Instructions' },
+    { step: 1 as DesignStep, label: t('stepViews') },
+    { step: 2 as DesignStep, label: t('stepBuild') },
   ];
 
   return (
@@ -139,6 +141,7 @@ function ViewsReview({
   jobId: string;
   referenceUrl?: string;
 }) {
+  const t = useTranslations('createResult');
   const [approving, setApproving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
@@ -170,9 +173,9 @@ function ViewsReview({
         {referenceUrl ? (
           <div className="sticky top-4">
             <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-              <img src={referenceUrl} alt="Your uploaded photo" className="w-full aspect-square object-cover" />
+              <img src={referenceUrl} alt={t('yourPhoto')} className="w-full aspect-square object-cover" />
             </div>
-            <p className="text-[10px] text-slate-500 text-center mt-1.5 font-medium">Original</p>
+            <p className="text-[10px] text-slate-500 text-center mt-1.5 font-medium">{t('original')}</p>
           </div>
         ) : (
           <div />
@@ -182,14 +185,14 @@ function ViewsReview({
         <div>
           <div className="rounded-xl overflow-hidden border border-lego-yellow/20 bg-slate-900">
             {compositeUrl ? (
-              <img src={compositeUrl} alt="Generated LEGO views" className="w-full object-contain" />
+              <img src={compositeUrl} alt={t('generatedViews')} className="w-full object-contain" />
             ) : (
               <div className="w-full aspect-square flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-slate-600 animate-spin" />
               </div>
             )}
           </div>
-          <p className="text-[10px] text-lego-yellow/60 text-center mt-1.5 font-medium">AI Generated Views</p>
+          <p className="text-[10px] text-lego-yellow/60 text-center mt-1.5 font-medium">{t('aiViews')}</p>
         </div>
       </div>
 
@@ -204,12 +207,12 @@ function ViewsReview({
             {approving ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Generating build instructions...
+                {t('generatingBuild')}
               </>
             ) : (
               <>
                 <ArrowRight className="w-5 h-5" />
-                Looks good — Generate Build
+                {t('approveButton')}
               </>
             )}
           </span>
@@ -223,12 +226,12 @@ function ViewsReview({
             {regenerating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Regenerating...
+                {t('regenerating')}
               </>
             ) : (
               <>
                 <RefreshCw className="w-4 h-4" />
-                Not quite right? Regenerate views
+                {t('regenerateButton')}
               </>
             )}
           </span>
@@ -242,6 +245,8 @@ function ViewsReview({
 
 export default function DesignResultPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
+  const t = useTranslations('createResult');
+  const tc = useTranslations('common');
   const job = useJobsStore((s) => s.jobs.find((j) => j.id === jobId));
   const markSeen = useJobsStore((s) => s.markSeen);
   const router = useRouter();
@@ -320,9 +325,9 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
     return (
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto text-center py-20">
-          <p className="text-slate-400">Job not found.</p>
+          <p className="text-slate-400">{t('jobNotFound')}</p>
           <Link href="/create" className="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block">
-            Back to Create
+            {t('backToCreate')}
           </Link>
         </div>
       </main>
@@ -334,10 +339,10 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto text-center py-20">
           {isNewPipeline && <DesignStepIndicator {...getStepState()} />}
-          <p className="text-red-400 font-medium mb-2">Design failed</p>
-          <p className="text-slate-400 text-sm">{job.error || 'Unknown error'}</p>
+          <p className="text-red-400 font-medium mb-2">{t('failed')}</p>
+          <p className="text-slate-400 text-sm">{job.error || t('unknownError')}</p>
           <Link href="/create" className="text-blue-400 hover:text-blue-300 text-sm mt-4 inline-block">
-            Back to Create
+            {t('backToCreate')}
           </Link>
         </div>
       </main>
@@ -350,15 +355,15 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto">
           <Link href="/create" className="text-sm text-slate-500 hover:text-slate-300 transition-colors mb-6 inline-block">
-            &larr; Back to Create
+            &larr; {t('backToCreate')}
           </Link>
           {isNewPipeline && <DesignStepIndicator {...getStepState()} />}
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-10 h-10 text-lego-yellow animate-spin mb-4" />
             <p className="text-white font-medium">
-              {job.status === 'generating_views' ? 'Generating LEGO views...' : 'Designing your LEGO model...'}
+              {job.status === 'generating_views' ? t('generatingViews') : t('designing')}
             </p>
-            <p className="text-slate-400 text-sm mt-1">This may take a few minutes.</p>
+            <p className="text-slate-400 text-sm mt-1">{t('mayTakeMinutes')}</p>
           </div>
         </div>
       </main>
@@ -371,13 +376,13 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
       <main className="min-h-screen p-4 sm:p-8 pb-32">
         <div className="max-w-4xl mx-auto">
           <Link href="/create" className="text-sm text-slate-500 hover:text-slate-300 transition-colors mb-6 inline-block">
-            &larr; Back to Create
+            &larr; {t('backToCreate')}
           </Link>
           <DesignStepIndicator {...getStepState()} />
           <div className="mb-6">
-            <h1 className="text-2xl font-extrabold text-white">Review LEGO Views</h1>
+            <h1 className="text-2xl font-extrabold text-white">{t('reviewTitle')}</h1>
             <p className="text-slate-400 text-sm mt-1">
-              Check the generated views below. If they look good, approve to generate build instructions.
+              {t('reviewDescription')}
             </p>
           </div>
           <ViewsReview views={job.views} jobId={jobId} referenceUrl={referenceUrl} />
@@ -392,7 +397,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto">
           <Link href="/create" className="text-sm text-slate-500 hover:text-slate-300 transition-colors mb-6 inline-block">
-            &larr; Back to Create
+            &larr; {t('backToCreate')}
           </Link>
           <DesignStepIndicator {...getStepState()} />
 
@@ -405,8 +410,8 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
 
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-10 h-10 text-lego-yellow animate-spin mb-4" />
-            <p className="text-white font-medium">Building instructions from views...</p>
-            <p className="text-slate-400 text-sm mt-1">This may take a few minutes.</p>
+            <p className="text-white font-medium">{t('generatingBuild')}</p>
+            <p className="text-slate-400 text-sm mt-1">{t('mayTakeMinutes')}</p>
           </div>
         </div>
       </main>
@@ -419,7 +424,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto flex flex-col items-center justify-center py-20">
           <Loader2 className="w-10 h-10 text-lego-yellow animate-spin mb-4" />
-          <p className="text-white font-medium">Loading result...</p>
+          <p className="text-white font-medium">{t('loadingResult')}</p>
         </div>
       </main>
     );
@@ -432,7 +437,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
         {/* Header */}
         <div className="mb-8">
           <Link href="/create" className="text-sm text-slate-500 hover:text-slate-300 transition-colors mb-3 inline-block">
-            &larr; Back to Create
+            &larr; {t('backToCreate')}
           </Link>
           {isNewPipeline && <DesignStepIndicator {...getStepState()} />}
           <h1 className="text-3xl font-extrabold text-white">{designResult.buildPlan.title}</h1>
@@ -446,17 +451,17 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
               {referenceUrl && (
                 <div>
                   <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-                    <img src={referenceUrl} alt="Your uploaded photo" className="w-full aspect-square object-cover" />
+                    <img src={referenceUrl} alt={t('yourPhoto')} className="w-full aspect-square object-cover" />
                   </div>
-                  <p className="text-[10px] text-slate-500 text-center mt-1.5 font-medium">Original</p>
+                  <p className="text-[10px] text-slate-500 text-center mt-1.5 font-medium">{t('original')}</p>
                 </div>
               )}
               {compositeUrl && (
                 <div>
                   <div className="rounded-xl overflow-hidden border border-lego-yellow/20 bg-slate-900">
-                    <img src={compositeUrl} alt="LEGO design views" className="w-full object-contain" />
+                    <img src={compositeUrl} alt={t('designViews')} className="w-full object-contain" />
                   </div>
-                  <p className="text-[10px] text-lego-yellow/60 text-center mt-1.5 font-medium">AI Generated Views</p>
+                  <p className="text-[10px] text-lego-yellow/60 text-center mt-1.5 font-medium">{t('aiViews')}</p>
                 </div>
               )}
             </div>
@@ -467,15 +472,15 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
         <div className="grid grid-cols-3 gap-3 mb-8">
           <div className="brick-card p-4 text-center">
             <p className="text-2xl font-extrabold text-lego-yellow">{designResult.buildPlan.steps.length}</p>
-            <p className="text-xs text-slate-500 mt-1">Steps</p>
+            <p className="text-xs text-slate-500 mt-1">{t('steps')}</p>
           </div>
           <div className="brick-card p-4 text-center">
             <p className="text-2xl font-extrabold text-lego-blue">{designResult.requiredParts.length}</p>
-            <p className="text-xs text-slate-500 mt-1">Unique Parts</p>
+            <p className="text-xs text-slate-500 mt-1">{t('uniqueParts')}</p>
           </div>
           <div className="brick-card p-4 text-center">
             <p className="text-2xl font-extrabold text-lego-green">{totalParts}</p>
-            <p className="text-xs text-slate-500 mt-1">Total Pieces</p>
+            <p className="text-xs text-slate-500 mt-1">{t('totalPieces')}</p>
           </div>
         </div>
 
@@ -489,10 +494,10 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Required Parts
+              {t('requiredParts')}
             </h2>
             <span className="text-xs text-slate-600">
-              {mappedCount}/{designResult.requiredParts.length} on BrickLink · {totalParts} total
+              {mappedCount}/{designResult.requiredParts.length} {t('onBrickLink')} · {totalParts} {tc('total')}
             </span>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -508,7 +513,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-lego-border text-slate-400 hover:border-lego-blue hover:text-lego-blue transition-colors text-sm font-medium"
             >
               <Download className="w-3.5 h-3.5" />
-              BrickLink Wanted List (.xml)
+              {t('brickLinkXml')}
             </button>
             <a
               href="https://www.lego.com/pick-and-build/pick-a-brick"
@@ -517,7 +522,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-lego-border text-slate-400 hover:border-lego-red hover:text-lego-red transition-colors text-sm font-medium"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              Pick a Brick
+              {t('pickABrick')}
             </a>
           </div>
         </div>
@@ -529,7 +534,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
         >
           <span className="flex items-center justify-center gap-2">
             <Box className="w-4 h-4" />
-            Open 3D Instructions
+            {t('open3D')}
           </span>
         </button>
       </div>

@@ -231,13 +231,13 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
                 className="flex-1 py-3.5 bg-red-900/20 hover:bg-red-900/40 text-red-500 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 text-xs uppercase tracking-wide"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete
+                {t('delete')}
               </button>
               <button
                 onClick={onClose}
                 className="flex-[2] py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors text-xs uppercase tracking-wide"
               >
-                Close
+                {t('close')}
               </button>
             </div>
           </div>

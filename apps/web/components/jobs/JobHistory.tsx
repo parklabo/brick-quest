@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useJobsStore } from '../../lib/stores/jobs';
 import { selectUnseenScanCount, selectUnseenBuildCount, selectUnseenDesignCount } from '../../lib/stores/jobs';
 import { Clock, Sparkles } from 'lucide-react';
-import { groupByDate, JobCard } from './JobList';
+import { groupByDateI18n, JobCard } from './JobList';
 import type { JobType } from '@brick-quest/shared';
 
 interface JobHistoryProps {
@@ -20,10 +20,11 @@ const unseenSelectors = {
 
 export function JobHistory({ type }: JobHistoryProps) {
   const t = useTranslations('jobs');
+  const tc = useTranslations('common');
   const allJobs = useJobsStore((s) => s.jobs);
   const jobs = useMemo(() => allJobs.filter((j) => j.type === type), [allJobs, type]);
   const unseenCount = useJobsStore(unseenSelectors[type]);
-  const groups = groupByDate(jobs);
+  const groups = groupByDateI18n(jobs, tc);
 
   const emptyLabel =
     type === 'scan' ? t('noScans') : type === 'design' ? t('noDesigns') : t('noBuilds');

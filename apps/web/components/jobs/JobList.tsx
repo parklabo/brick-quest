@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useJobsStore } from '../../lib/stores/jobs';
 import {
   ScanLine,
@@ -31,12 +32,33 @@ export function relativeTime(ms: number): string {
   return `${days}d ago`;
 }
 
+function relativeTimeI18n(ms: number, tc: (key: string, values?: Record<string, number>) => string): string {
+  const diff = Date.now() - ms;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return tc('justNow');
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return tc('minutesAgo', { minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return tc('hoursAgo', { hours });
+  const days = Math.floor(hours / 24);
+  return tc('daysAgo', { days });
+}
+
 export function dateLabel(ms: number): string {
   const now = new Date();
   const date = new Date(ms);
   const diffDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function dateLabelI18n(ms: number, tc: (key: string) => string): string {
+  const now = new Date();
+  const date = new Date(ms);
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
+  if (diffDays === 0) return tc('today');
+  if (diffDays === 1) return tc('yesterday');
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -51,60 +73,66 @@ export function groupByDate(jobs: TrackedJob[]): { label: string; jobs: TrackedJ
   return Array.from(groups, ([label, jobs]) => ({ label, jobs }));
 }
 
+export function groupByDateI18n(jobs: TrackedJob[], tc: (key: string) => string): { label: string; jobs: TrackedJob[] }[] {
+  const groups = new Map<string, TrackedJob[]>();
+  for (const job of jobs) {
+    const key = dateLabelI18n(job.createdAt, tc);
+    const existing = groups.get(key);
+    if (existing) existing.push(job);
+    else groups.set(key, [job]);
+  }
+  return Array.from(groups, ([label, jobs]) => ({ label, jobs }));
+}
+
 // --- Components ---
 
 export function StatusBadge({ status }: { status: TrackedJob['status'] }) {
+  const t = useTranslations('jobs');
   switch (status) {
     case 'pending':
     case 'processing':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/20">
           <Loader2 className="w-3 h-3 animate-spin" />
-          {status === 'pending' ? 'Queued' : 'Processing'}
+          {status === 'pending' ? t('queued') : t('processing')}
         </span>
       );
     case 'generating_views':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
           <Loader2 className="w-3 h-3 animate-spin" />
-          Generating Views
+          {t('generatingViews')}
         </span>
       );
     case 'views_ready':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20">
           <Eye className="w-3 h-3" />
-          Views Ready
+          {t('viewsReady')}
         </span>
       );
     case 'generating_build':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/20">
           <Loader2 className="w-3 h-3 animate-spin" />
-          Building Plan
+          {t('buildingPlan')}
         </span>
       );
     case 'completed':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
           <CheckCircle className="w-3 h-3" />
-          Complete
+          {t('complete')}
         </span>
       );
     case 'failed':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/10 text-red-400 ring-1 ring-red-500/20">
           <XCircle className="w-3 h-3" />
-          Failed
+          {t('failed')}
         </span>
       );
   }
-}
-
-function getJobMeta(job: TrackedJob) {
-  if (job.type === 'scan') return { Icon: ScanLine, label: 'Brick Scan', iconBg: 'bg-lego-blue/15 ring-1 ring-lego-blue/25', iconText: 'text-lego-blue' };
-  if (job.type === 'design') return { Icon: Sparkles, label: 'LEGO Design', iconBg: 'bg-lego-yellow/15 ring-1 ring-lego-yellow/25', iconText: 'text-lego-yellow' };
-  return { Icon: Hammer, label: 'Build Plan', iconBg: 'bg-lego-orange/15 ring-1 ring-lego-orange/25', iconText: 'text-lego-orange' };
 }
 
 function getJobHref(job: TrackedJob): string | undefined {
@@ -116,17 +144,25 @@ function getJobHref(job: TrackedJob): string | undefined {
 }
 
 export function JobCard({ job }: { job: TrackedJob }) {
+  const t = useTranslations('jobs');
+  const tc = useTranslations('common');
   const markSeen = useJobsStore((s) => s.markSeen);
-  const { Icon, label, iconBg, iconText } = getJobMeta(job);
+
+  const jobMeta = {
+    scan: { Icon: ScanLine, label: t('scanType'), iconBg: 'bg-lego-blue/15 ring-1 ring-lego-blue/25', iconText: 'text-lego-blue' },
+    design: { Icon: Sparkles, label: t('designType'), iconBg: 'bg-lego-yellow/15 ring-1 ring-lego-yellow/25', iconText: 'text-lego-yellow' },
+    build: { Icon: Hammer, label: t('buildType'), iconBg: 'bg-lego-orange/15 ring-1 ring-lego-orange/25', iconText: 'text-lego-orange' },
+  };
+  const { Icon, label, iconBg, iconText } = jobMeta[job.type];
   const isFinished = job.status === 'completed' || job.status === 'failed' || job.status === 'views_ready';
 
-  let subtitle = job.type === 'scan' ? 'AI brick detection' : job.type === 'design' ? 'AI LEGO design' : 'AI build instructions';
+  let subtitle = job.type === 'scan' ? t('scanSubtitle') : job.type === 'design' ? t('designSubtitle') : t('buildSubtitle');
   if (job.status === 'completed' && job.result) {
     if (job.type === 'scan') {
       const scanResult = job.result as ScanResult;
       const partCount = scanResult.parts?.length ?? 0;
       const totalPcs = scanResult.parts?.reduce((sum, p) => sum + p.count, 0) ?? 0;
-      subtitle = `${partCount} types · ${totalPcs} pcs`;
+      subtitle = t('scanResult', { types: partCount, pcs: totalPcs });
     } else if (job.type === 'design') {
       const designResult = job.result as DesignResult;
       if (designResult.buildPlan?.title) {
@@ -173,7 +209,7 @@ export function JobCard({ job }: { job: TrackedJob }) {
             {job.addedToInventory && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
                 <PackageCheck className="w-2.5 h-2.5" />
-                Added
+                {t('added')}
               </span>
             )}
           </div>
@@ -182,7 +218,7 @@ export function JobCard({ job }: { job: TrackedJob }) {
             <span className="w-1 h-1 rounded-full bg-slate-700" />
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {relativeTime(job.createdAt)}
+              {relativeTimeI18n(job.createdAt, tc)}
             </span>
           </div>
           {job.status === 'failed' && job.error && (
