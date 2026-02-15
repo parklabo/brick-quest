@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Sparkles, ScanLine, Package, Hammer, Box, ArrowRight } from 'lucide-react';
 import { useInventoryStore } from '../../lib/stores/inventory';
 import { useJobsStore } from '../../lib/stores/jobs';
+import { useTranslations } from 'next-intl';
 
 const STAT_STYLES = [
   { bg: 'bg-lego-red/10', border: 'border-lego-red/20', stud: 'bg-lego-red/40', text: 'text-lego-red' },
@@ -15,6 +16,7 @@ const STAT_STYLES = [
 export default function DashboardPage() {
   const parts = useInventoryStore((s) => s.parts);
   const jobs = useJobsStore((s) => s.jobs);
+  const t = useTranslations('dashboard');
 
   const totalBricks = parts.reduce((sum, p) => sum + p.count, 0);
   const uniqueTypes = parts.length;
@@ -22,10 +24,10 @@ export default function DashboardPage() {
   const totalDesigns = jobs.filter((j) => j.type === 'design').length;
 
   const stats = [
-    { label: 'Total Bricks', value: totalBricks },
-    { label: 'Unique Parts', value: uniqueTypes },
-    { label: 'Scans', value: totalScans },
-    { label: 'Designs', value: totalDesigns },
+    { label: t('totalBricks'), value: totalBricks },
+    { label: t('uniqueParts'), value: uniqueTypes },
+    { label: t('scans'), value: totalScans },
+    { label: t('designs'), value: totalDesigns },
   ];
 
   return (
@@ -35,9 +37,9 @@ export default function DashboardPage() {
           <div className="stud-sm bg-lego-red" />
           <div className="stud-sm bg-lego-red" />
         </div>
-        <h1 className="text-3xl font-extrabold">Brick Quest</h1>
+        <h1 className="text-3xl font-extrabold">{t('title')}</h1>
       </div>
-      <p className="text-slate-400 text-sm mb-10 ml-[52px]">What would you like to do?</p>
+      <p className="text-slate-400 text-sm mb-10 ml-[52px]">{t('subtitle')}</p>
 
       {/* Dual-mode hub */}
       <div className="grid gap-4 sm:grid-cols-2 mb-10">
@@ -53,14 +55,14 @@ export default function DashboardPage() {
             <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-lego-yellow transition-colors ml-auto" />
           </div>
           <h2 className="text-xl font-extrabold text-white group-hover:text-lego-yellow transition-colors mb-2">
-            Create
+            {t('createTitle')}
           </h2>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Photograph anything and get LEGO building instructions with a parts list.
+            {t('createDesc')}
           </p>
           <div className="mt-4 flex items-center gap-2">
             <span className="text-[11px] font-semibold text-lego-yellow/60 bg-lego-yellow/10 px-2.5 py-1 rounded-full">
-              Photo &rarr; LEGO
+              {t('createBadge')}
             </span>
           </div>
         </Link>
@@ -77,14 +79,14 @@ export default function DashboardPage() {
             <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-lego-blue transition-colors ml-auto" />
           </div>
           <h2 className="text-xl font-extrabold text-white group-hover:text-lego-blue transition-colors mb-2">
-            My Bricks
+            {t('myBricksTitle')}
           </h2>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Scan your brick collection, build an inventory, and get custom build instructions.
+            {t('myBricksDesc')}
           </p>
           <div className="mt-4 flex items-center gap-2">
             <span className="text-[11px] font-semibold text-lego-blue/60 bg-lego-blue/10 px-2.5 py-1 rounded-full">
-              Scan &rarr; Inventory &rarr; Build
+              {t('myBricksBadge')}
             </span>
           </div>
         </Link>
@@ -109,15 +111,15 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">
-        Quick Actions
+        {t('quickActions')}
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">
         {[
-          { href: '/create', icon: <Sparkles className="w-6 h-6" />, title: 'Create from Photo', description: 'Turn any photo into LEGO instructions', iconColor: 'text-lego-yellow', stud: 'bg-lego-yellow/40', hover: 'hover:border-lego-yellow/40' },
-          { href: '/scan', icon: <ScanLine className="w-6 h-6" />, title: 'Scan Bricks', description: 'Photograph your bricks to identify them', iconColor: 'text-lego-blue', stud: 'bg-lego-blue/40', hover: 'hover:border-lego-blue/40' },
-          { href: '/builds', icon: <Hammer className="w-6 h-6" />, title: 'Build', description: 'Get AI build plans from your inventory', iconColor: 'text-lego-orange', stud: 'bg-lego-orange/40', hover: 'hover:border-lego-orange/40' },
-          { href: '/inventory', icon: <Package className="w-6 h-6" />, title: 'Inventory', description: 'Browse and manage your brick collection', iconColor: 'text-lego-green', stud: 'bg-lego-green/40', hover: 'hover:border-lego-green/40' },
-          { href: '/workspace', icon: <Box className="w-6 h-6" />, title: 'Workspace', description: 'Interactive 3D workspace for builds', iconColor: 'text-lego-red', stud: 'bg-lego-red/40', hover: 'hover:border-lego-red/40' },
+          { href: '/create', icon: <Sparkles className="w-6 h-6" />, title: t('createFromPhoto'), description: t('createFromPhotoDesc'), iconColor: 'text-lego-yellow', stud: 'bg-lego-yellow/40', hover: 'hover:border-lego-yellow/40' },
+          { href: '/scan', icon: <ScanLine className="w-6 h-6" />, title: t('scanBricks'), description: t('scanBricksDesc'), iconColor: 'text-lego-blue', stud: 'bg-lego-blue/40', hover: 'hover:border-lego-blue/40' },
+          { href: '/builds', icon: <Hammer className="w-6 h-6" />, title: t('build'), description: t('buildDesc'), iconColor: 'text-lego-orange', stud: 'bg-lego-orange/40', hover: 'hover:border-lego-orange/40' },
+          { href: '/inventory', icon: <Package className="w-6 h-6" />, title: t('inventory'), description: t('inventoryDesc'), iconColor: 'text-lego-green', stud: 'bg-lego-green/40', hover: 'hover:border-lego-green/40' },
+          { href: '/workspace', icon: <Box className="w-6 h-6" />, title: t('workspace'), description: t('workspaceDesc'), iconColor: 'text-lego-red', stud: 'bg-lego-red/40', hover: 'hover:border-lego-red/40' },
         ].map((action) => (
           <Link
             key={action.href}

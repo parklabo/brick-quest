@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { NavBar } from '../components/layout/NavBar';
 import { AuthProvider } from '../components/providers/AuthProvider';
 import { AuthGate } from '../components/providers/AuthGate';
@@ -16,17 +18,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className="bg-slate-950 text-white antialiased">
-        <AuthProvider>
-          <AuthGate>
-            <NavBar />
-            <ToastContainer />
-            <div className="pb-16 sm:pb-0">{children}</div>
-          </AuthGate>
-        </AuthProvider>
+        <NextIntlClientProvider messages={messages}>
+          <AuthProvider>
+            <AuthGate>
+              <NavBar />
+              <ToastContainer />
+              <div className="pb-16 sm:pb-0">{children}</div>
+            </AuthGate>
+          </AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

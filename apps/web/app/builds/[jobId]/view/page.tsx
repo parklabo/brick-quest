@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useJobsStore } from '../../../../lib/stores/jobs';
 import { useWorkspaceStore } from '../../../../lib/stores/workspace';
@@ -10,6 +11,7 @@ import type { BuildPlan } from '@brick-quest/shared';
 
 export default function BuildViewPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
+  const t = useTranslations('build');
   const job = useJobsStore((s) => s.jobs.find((j) => j.id === jobId));
   const markSeen = useJobsStore((s) => s.markSeen);
   const router = useRouter();
@@ -30,9 +32,9 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
     return (
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto text-center py-20">
-          <p className="text-slate-400">Job not found.</p>
+          <p className="text-slate-400">{t('jobNotFound')}</p>
           <Link href="/builds" className="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block">
-            Back to Builds
+            {t('backToBuilds')}
           </Link>
         </div>
       </main>
@@ -44,8 +46,8 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto flex flex-col items-center justify-center py-20">
           <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-          <p className="text-white font-medium">Build in progress...</p>
-          <p className="text-slate-400 text-sm mt-1">This may take a few minutes.</p>
+          <p className="text-white font-medium">{t('inProgress')}</p>
+          <p className="text-slate-400 text-sm mt-1">{t('mayTakeMinutes')}</p>
         </div>
       </main>
     );
@@ -55,10 +57,10 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
     return (
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto text-center py-20">
-          <p className="text-red-400 font-medium mb-2">Build failed</p>
-          <p className="text-slate-400 text-sm">{job.error || 'Unknown error'}</p>
+          <p className="text-red-400 font-medium mb-2">{t('failed')}</p>
+          <p className="text-slate-400 text-sm">{job.error || t('unknownError')}</p>
           <Link href="/builds" className="text-blue-400 hover:text-blue-300 text-sm mt-4 inline-block">
-            Back to Builds
+            {t('backToBuilds')}
           </Link>
         </div>
       </main>
@@ -70,7 +72,7 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
     <main className="min-h-screen p-4 sm:p-8">
       <div className="max-w-2xl mx-auto flex flex-col items-center justify-center py-20">
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-        <p className="text-white font-medium">Loading workspace...</p>
+        <p className="text-white font-medium">{t('loadingWorkspace')}</p>
       </div>
     </main>
   );

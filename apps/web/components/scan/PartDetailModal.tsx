@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Stage } from '@react-three/drei';
 import { ZoomIn, X, Trash2, Plus, Minus, Tag } from 'lucide-react';
@@ -17,6 +18,8 @@ interface PartDetailModalProps {
 }
 
 export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpdateTags }: PartDetailModalProps) {
+  const t = useTranslations('parts');
+  const tc = useTranslations('common');
   const [localCount, setLocalCount] = useState(part.count);
   const [localTags, setLocalTags] = useState<string[]>(part.tags ?? []);
   const [tagInput, setTagInput] = useState('');
@@ -51,7 +54,7 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
         <div className="p-4 border-b border-slate-800 flex justify-between items-center flex-none">
           <h3 className="font-bold text-white flex items-center gap-2 text-sm">
             <ZoomIn className="w-5 h-5 text-blue-500" />
-            Inspect Brick
+            {t('inspectBrick')}
           </h3>
           <button
             onClick={onClose}
@@ -80,13 +83,13 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Part Name
+                  {t('partName')}
                 </span>
                 <p className="text-xl font-bold text-white leading-tight truncate mt-1">{part.name}</p>
               </div>
               <div className="text-right shrink-0 ml-4">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">
-                  Quantity
+                  {t('quantity')}
                 </span>
                 {onUpdateCount ? (
                   <div className="flex items-center gap-1">
@@ -128,28 +131,28 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
                   style={{ backgroundColor: part.hexColor }}
                 />
                 <div className="min-w-0">
-                  <span className="text-[9px] font-bold text-slate-400 block uppercase">Color</span>
+                  <span className="text-[9px] font-bold text-slate-400 block uppercase">{t('color')}</span>
                   <p className="font-medium text-xs text-white truncate">{part.color}</p>
                 </div>
               </div>
               <div className="bg-slate-800 p-3 rounded-xl">
                 <span className="text-[9px] font-bold text-slate-400 block mb-0.5 uppercase">
-                  Dimensions
+                  {t('dimensions')}
                 </span>
                 <span className="font-mono text-sm text-white font-bold">
                   {part.dimensions.width} x {part.dimensions.length}
                 </span>
-                <span className="text-[10px] text-slate-500 ml-1">studs</span>
+                <span className="text-[10px] text-slate-500 ml-1">{tc('studs')}</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-800 p-3 rounded-xl">
-                <span className="text-[9px] font-bold text-slate-400 block mb-0.5 uppercase">Type</span>
+                <span className="text-[9px] font-bold text-slate-400 block mb-0.5 uppercase">{t('type')}</span>
                 <span className="font-bold text-xs text-blue-400 uppercase">{part.type}</span>
               </div>
               <div className="bg-slate-800 p-3 rounded-xl">
-                <span className="text-[9px] font-bold text-slate-400 block mb-0.5 uppercase">Shape</span>
+                <span className="text-[9px] font-bold text-slate-400 block mb-0.5 uppercase">{t('shape')}</span>
                 <span className="font-bold text-xs text-slate-300 uppercase">{part.shape}</span>
               </div>
             </div>
@@ -159,7 +162,7 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Tag className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Tags</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t('tags')}</span>
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -178,7 +181,7 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
                         setTagInput('');
                       }
                     }}
-                    placeholder="Add tag..."
+                    placeholder={t('addTag')}
                     className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                   />
                   <button
@@ -195,7 +198,7 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
                     disabled={!tagInput.trim()}
                     className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
                   >
-                    Add
+                    {t('add')}
                   </button>
                 </div>
                 {localTags.length > 0 && (

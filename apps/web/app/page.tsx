@@ -5,31 +5,32 @@ import { useRouter } from 'next/navigation';
 import { useAuth, loginWithEmail, signUpWithEmail } from '../lib/hooks/useAuth';
 import { FirebaseError } from 'firebase/app';
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 
 type Tab = 'signin' | 'signup';
 
-function getErrorMessage(error: unknown): string {
+function getErrorMessageKey(error: unknown): string {
   if (error instanceof FirebaseError) {
     switch (error.code) {
       case 'auth/invalid-email':
-        return 'Invalid email address.';
+        return 'invalidEmail';
       case 'auth/user-disabled':
-        return 'This account has been disabled.';
+        return 'accountDisabled';
       case 'auth/user-not-found':
       case 'auth/wrong-password':
       case 'auth/invalid-credential':
-        return 'Invalid email or password.';
+        return 'invalidCredentials';
       case 'auth/email-already-in-use':
-        return 'An account with this email already exists.';
+        return 'emailExists';
       case 'auth/weak-password':
-        return 'Password must be at least 6 characters.';
+        return 'weakPassword';
       case 'auth/too-many-requests':
-        return 'Too many attempts. Please try again later.';
+        return 'tooManyAttempts';
       default:
-        return error.message;
+        return 'unexpectedError';
     }
   }
-  return 'An unexpected error occurred.';
+  return 'unexpectedError';
 }
 
 export default function HomePage() {
@@ -40,6 +41,7 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const t = useTranslations('auth');
 
   useEffect(() => {
     if (uid) {
@@ -66,7 +68,7 @@ export default function HomePage() {
         await signUpWithEmail(email, password);
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessageKey(err));
     } finally {
       setSubmitting(false);
     }
@@ -78,7 +80,7 @@ export default function HomePage() {
         Brick Quest
       </h1>
       <p className="text-slate-400 text-sm mb-8">
-        AI-powered LEGO brick scanner &amp; 3D builder
+        {t('subtitle')}
       </p>
 
       <div className="w-full max-w-sm">
@@ -93,7 +95,7 @@ export default function HomePage() {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Sign In
+            {t('signIn')}
           </button>
           <button
             type="button"
@@ -104,7 +106,7 @@ export default function HomePage() {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Sign Up
+            {t('signUp')}
           </button>
         </div>
 
@@ -112,7 +114,7 @@ export default function HomePage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm text-slate-400 mb-1">
-              Email
+              {t('email')}
             </label>
             <input
               id="email"
@@ -121,13 +123,13 @@ export default function HomePage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="you@example.com"
+              placeholder={t('emailPlaceholder')}
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm text-slate-400 mb-1">
-              Password
+              {t('password')}
             </label>
             <input
               id="password"
@@ -137,12 +139,12 @@ export default function HomePage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="At least 6 characters"
+              placeholder={t('passwordPlaceholder')}
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm">{error}</p>
+            <p className="text-red-400 text-sm">{t(error)}</p>
           )}
 
           <button
@@ -151,10 +153,10 @@ export default function HomePage() {
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
           >
             {submitting
-              ? 'Loading...'
+              ? t('loading')
               : tab === 'signin'
-                ? 'Sign In'
-                : 'Create Account'}
+                ? t('signIn')
+                : t('createAccount')}
           </button>
         </form>
       </div>

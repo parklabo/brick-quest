@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useJobsStore } from '../../lib/stores/jobs';
 import { selectUnseenScanCount, selectUnseenBuildCount, selectUnseenDesignCount } from '../../lib/stores/jobs';
 import { Clock, Sparkles } from 'lucide-react';
@@ -18,16 +19,16 @@ const unseenSelectors = {
 };
 
 export function JobHistory({ type }: JobHistoryProps) {
+  const t = useTranslations('jobs');
   const allJobs = useJobsStore((s) => s.jobs);
   const jobs = useMemo(() => allJobs.filter((j) => j.type === type), [allJobs, type]);
   const unseenCount = useJobsStore(unseenSelectors[type]);
   const groups = groupByDate(jobs);
 
-  const emptyLabel = type === 'scan' ? 'No scans yet' : 'No builds yet';
+  const emptyLabel =
+    type === 'scan' ? t('noScans') : type === 'design' ? t('noDesigns') : t('noBuilds');
   const emptyDescription =
-    type === 'scan'
-      ? 'Upload a photo above to scan your bricks.'
-      : 'Generate a build plan above to get started.';
+    type === 'scan' ? t('noScansDesc') : type === 'design' ? t('noDesignsDesc') : t('noBuildsDesc');
 
   if (jobs.length === 0) {
     return (
@@ -47,7 +48,7 @@ export function JobHistory({ type }: JobHistoryProps) {
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-lego-yellow/5 ring-1 ring-lego-yellow/20">
           <Sparkles className="w-4 h-4 text-lego-yellow shrink-0" />
           <p className="text-sm text-lego-yellow font-medium">
-            {unseenCount} new result{unseenCount > 1 ? 's' : ''} ready to review
+            {t('newResults', { count: unseenCount })}
           </p>
         </div>
       )}

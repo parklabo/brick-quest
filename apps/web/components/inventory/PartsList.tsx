@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useInventoryStore } from '../../lib/stores/inventory';
 import { Button } from '../ui/Button';
 import { BrickIcon } from '../ui/BrickIcon';
@@ -10,6 +11,7 @@ import { Package, Trash2, Box, ArrowRight, Hammer } from 'lucide-react';
 import type { DetectedPart } from '@brick-quest/shared';
 
 export function PartsList() {
+  const t = useTranslations('inventory');
   const parts = useInventoryStore((s) => s.parts);
   const clearParts = useInventoryStore((s) => s.clearParts);
   const removePart = useInventoryStore((s) => s.removePart);
@@ -35,12 +37,12 @@ export function PartsList() {
         <div className="w-24 h-24 bg-slate-900 rounded-2xl flex items-center justify-center mb-6 border border-slate-800">
           <Box className="w-12 h-12 text-slate-700" />
         </div>
-        <p className="text-2xl font-bold text-white">No bricks yet</p>
-        <p className="text-slate-400 mt-2">Scan some bricks to start building.</p>
+        <p className="text-2xl font-bold text-white">{t('empty')}</p>
+        <p className="text-slate-400 mt-2">{t('emptyDesc')}</p>
         <Link href="/scan" className="mt-6">
           <Button>
             <span className="flex items-center gap-2">
-              Start Scanning <ArrowRight className="w-4 h-4" />
+              {t('startScanning')} <ArrowRight className="w-4 h-4" />
             </span>
           </Button>
         </Link>
@@ -55,15 +57,14 @@ export function PartsList() {
         <div className="flex items-center gap-2">
           <Package className="w-5 h-5 text-green-500" />
           <p className="text-slate-400">
-            <span className="text-white font-bold">{totalCount}</span> bricks ·{' '}
-            {filteredParts.length} types
+            {t('summary', { count: totalCount, types: filteredParts.length })}
           </p>
         </div>
         <button
           onClick={clearParts}
           className="text-red-400 hover:text-red-300 text-xs font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors hover:bg-red-900/20"
         >
-          <Trash2 className="w-3.5 h-3.5" /> Clear All
+          <Trash2 className="w-3.5 h-3.5" /> {t('clearAll')}
         </button>
       </div>
 
@@ -78,7 +79,7 @@ export function PartsList() {
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
           >
-            All
+            {t('all')}
           </button>
           {allTags.map((tag) => (
             <button
@@ -146,7 +147,7 @@ export function PartsList() {
         <Link href="/builds" className="block">
           <button className="w-full py-4 px-6 bg-lego-yellow hover:bg-yellow-300 text-slate-900 font-extrabold rounded-lg transition-all flex items-center justify-center gap-3 text-lg shadow-[0_3px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-[3px]">
             <Hammer className="w-6 h-6" />
-            Build Something!
+            {t('buildSomething')}
           </button>
         </Link>
       </div>

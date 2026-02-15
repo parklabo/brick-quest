@@ -3,16 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, ScanLine, Package, Hammer, Box, LogOut, LayoutDashboard, ChevronDown, Blocks, Settings } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Sparkles, ScanLine, Package, Hammer, Box, LayoutDashboard, ChevronDown, Blocks } from 'lucide-react';
 import { useJobsStore, selectUnseenScanCount, selectUnseenBuildCount, selectUnseenDesignCount } from '../../lib/stores/jobs';
 import { useProfileStore } from '../../lib/stores/profile';
-import { logout } from '../../lib/hooks/useAuth';
-
-const MY_BRICKS_ITEMS = [
-  { href: '/scan', label: 'Scan Bricks', icon: ScanLine },
-  { href: '/builds', label: 'Build', icon: Hammer },
-  { href: '/inventory', label: 'Inventory', icon: Package },
-] as const;
 
 const MY_BRICKS_PATHS = ['/scan', '/builds', '/inventory'];
 
@@ -30,6 +24,13 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const t = useTranslations('nav');
+
+  const items = [
+    { href: '/scan', label: t('scanBricks'), icon: ScanLine },
+    { href: '/builds', label: t('build'), icon: Hammer },
+    { href: '/inventory', label: t('inventory'), icon: Package },
+  ];
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -41,7 +42,6 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close dropdown on navigation
   useEffect(() => { setOpen(false); }, [pathname]);
 
   return (
@@ -55,7 +55,7 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
         }`}
       >
         <Blocks className="w-4 h-4" />
-        My Bricks
+        {t('myBricks')}
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
         {badgeCount > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-lego-red text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_2px_4px_rgba(220,38,38,0.4)]">
@@ -66,7 +66,7 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
 
       {open && (
         <div className="absolute top-full right-0 mt-1.5 w-48 rounded-xl border border-lego-border bg-lego-surface shadow-xl py-1.5 z-50">
-          {MY_BRICKS_ITEMS.map(({ href, label, icon: Icon }) => {
+          {items.map(({ href, label, icon: Icon }) => {
             const itemActive = pathname.startsWith(href);
             return (
               <Link
@@ -91,6 +91,7 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
 
 export function NavBar() {
   const pathname = usePathname();
+  const t = useTranslations('nav');
   const unseenScanCount = useJobsStore(selectUnseenScanCount);
   const unseenBuildCount = useJobsStore(selectUnseenBuildCount);
   const unseenDesignCount = useJobsStore(selectUnseenDesignCount);
@@ -113,11 +114,10 @@ export function NavBar() {
               <div className="stud-sm bg-lego-red" />
             </div>
             <span className="font-extrabold text-lg tracking-tight text-lego-yellow">
-              Brick Quest
+              {t('brandName')}
             </span>
           </Link>
           <div className="flex items-center gap-0.5">
-            {/* Home */}
             <Link
               href="/dashboard"
               className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -127,10 +127,9 @@ export function NavBar() {
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
-              Home
+              {t('home')}
             </Link>
 
-            {/* Create */}
             <Link
               href="/create"
               className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -140,7 +139,7 @@ export function NavBar() {
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              Create
+              {t('create')}
               {unseenDesignCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-lego-red text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_2px_4px_rgba(220,38,38,0.4)]">
                   {unseenDesignCount > 9 ? '9+' : unseenDesignCount}
@@ -148,10 +147,8 @@ export function NavBar() {
               )}
             </Link>
 
-            {/* My Bricks (dropdown) */}
             <MyBricksDropdown active={isMyBricksActive} badgeCount={myBricksBadge} />
 
-            {/* Workspace */}
             <Link
               href="/workspace"
               className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -161,7 +158,7 @@ export function NavBar() {
               }`}
             >
               <Box className="w-4 h-4" />
-              Workspace
+              {t('workspace')}
             </Link>
 
             <div className="w-px h-6 bg-lego-border mx-2" />
@@ -172,7 +169,7 @@ export function NavBar() {
                   ? 'bg-lego-yellow/10'
                   : 'hover:bg-white/5'
               }`}
-              title="Settings"
+              title={t('settings')}
             >
               <div className="w-7 h-7 rounded-full bg-lego-yellow/15 border border-lego-yellow/30 flex items-center justify-center text-xs font-extrabold text-lego-yellow">
                 {initial}
@@ -185,10 +182,9 @@ export function NavBar() {
         </div>
       </nav>
 
-      {/* Mobile: bottom tab bar — 4 items */}
+      {/* Mobile: bottom tab bar */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-lego-border bg-lego-surface/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around px-1 py-1">
-          {/* Home */}
           <Link
             href="/dashboard"
             className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
@@ -196,10 +192,9 @@ export function NavBar() {
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
-            Home
+            {t('home')}
           </Link>
 
-          {/* Create */}
           <Link
             href="/create"
             className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
@@ -207,7 +202,7 @@ export function NavBar() {
             }`}
           >
             <Sparkles className="w-5 h-5" />
-            Create
+            {t('create')}
             {unseenDesignCount > 0 && (
               <span className="absolute top-0 right-0.5 w-4 h-4 bg-lego-red text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                 {unseenDesignCount > 9 ? '9+' : unseenDesignCount}
@@ -215,7 +210,6 @@ export function NavBar() {
             )}
           </Link>
 
-          {/* My Bricks → /scan (entry point) */}
           <Link
             href="/scan"
             className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
@@ -223,7 +217,7 @@ export function NavBar() {
             }`}
           >
             <Blocks className="w-5 h-5" />
-            My Bricks
+            {t('myBricks')}
             {myBricksBadge > 0 && (
               <span className="absolute top-0 right-0.5 w-4 h-4 bg-lego-red text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                 {myBricksBadge > 9 ? '9+' : myBricksBadge}
@@ -231,7 +225,6 @@ export function NavBar() {
             )}
           </Link>
 
-          {/* Workspace */}
           <Link
             href="/workspace"
             className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
@@ -239,10 +232,9 @@ export function NavBar() {
             }`}
           >
             <Box className="w-5 h-5" />
-            Workspace
+            {t('workspace')}
           </Link>
 
-          {/* Settings */}
           <Link
             href="/settings"
             className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
@@ -252,7 +244,7 @@ export function NavBar() {
             <div className="w-5 h-5 rounded-full bg-lego-yellow/15 flex items-center justify-center text-[9px] font-extrabold text-lego-yellow">
               {initial}
             </div>
-            Me
+            {t('me')}
           </Link>
         </div>
       </nav>

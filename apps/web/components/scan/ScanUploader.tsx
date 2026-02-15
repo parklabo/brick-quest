@@ -6,20 +6,16 @@ import {
   Loader2,
   Camera,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Card } from '../ui/Card';
 import { apiClient } from '../../lib/api/client';
 import { useJobsStore } from '../../lib/stores/jobs';
 import { useToastStore } from '../../lib/stores/toasts';
 
-const SAMPLES = [
-  { path: '/samples/level1.png', label: 'Level 1', description: 'Few bricks' },
-  { path: '/samples/level2.png', label: 'Level 2', description: 'Medium mix' },
-  { path: '/samples/level3.png', label: 'Level 3', description: 'Many bricks' },
-] as const;
-
 type ScanPhase = 'idle' | 'selected' | 'submitting' | 'error';
 
 export function ScanUploader() {
+  const t = useTranslations('scan');
   const [phase, setPhase] = useState<ScanPhase>('idle');
   const [image, setImage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -30,6 +26,12 @@ export function ScanUploader() {
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const samples = [
+    { path: '/samples/level1.png', label: t('level1'), description: t('level1Desc') },
+    { path: '/samples/level2.png', label: t('level2'), description: t('level2Desc') },
+    { path: '/samples/level3.png', label: t('level3'), description: t('level3Desc') },
+  ] as const;
 
   const processFile = useCallback((file: File) => {
     const reader = new FileReader();
@@ -69,11 +71,11 @@ export function ScanUploader() {
       };
       reader.readAsDataURL(blob);
     } catch {
-      setError('Failed to load sample image');
+      setError(t('sampleError'));
     } finally {
       setLoadingSample(false);
     }
-  }, []);
+  }, [t]);
 
   const handleScan = async () => {
     if (!image) return;
@@ -83,9 +85,9 @@ export function ScanUploader() {
       const { jobId } = await apiClient.submitScan(image);
       addJob(jobId, 'scan');
       useToastStore.getState().addToast({
-        message: 'Scan queued! We\'ll notify you when it\'s ready.',
+        message: t('queued'),
         variant: 'info',
-        action: { label: 'View scans', href: '/scan' },
+        action: { label: t('viewScans'), href: '/scan' },
       });
       // Reset to idle
       setPhase('idle');
@@ -109,7 +111,7 @@ export function ScanUploader() {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="bg-slate-900 border border-red-900/30 p-8 rounded-3xl max-w-sm w-full">
-          <h2 className="text-2xl font-bold text-red-500 mb-3">Scan Failed</h2>
+          <h2 className="text-2xl font-bold text-red-500 mb-3">{t('failed')}</h2>
           <p className="text-slate-300 mb-8">{error}</p>
           <button
             onClick={handleDiscard}
@@ -128,20 +130,20 @@ export function ScanUploader() {
       <Card>
         {preview ? (
           <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
-            <img src={preview} alt="Selected" className="max-h-64 rounded-lg" />
+            <img src={preview} alt={t('selected')} className="max-h-64 rounded-lg" />
             <button
               type="button"
               onClick={handleDiscard}
               className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
             >
-              Choose different image
+              {t('chooseDifferent')}
             </button>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
             <Camera className="w-12 h-12 text-slate-500" />
             <span className="text-slate-400 text-center">
-              Take or upload a photo of your bricks
+              {t('instruction')}
             </span>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -151,7 +153,7 @@ export function ScanUploader() {
                 className="sm:hidden flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-slate-700 text-slate-300 hover:border-blue-500 hover:text-blue-400 transition-colors"
               >
                 <Camera className="w-5 h-5" />
-                Take Photo
+                {t('takePhoto')}
               </button>
               <button
                 type="button"
@@ -159,7 +161,7 @@ export function ScanUploader() {
                 className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-slate-700 text-slate-300 hover:border-blue-500 hover:text-blue-400 transition-colors"
               >
                 <Upload className="w-5 h-5" />
-                Upload Photo
+                {t('uploadPhoto')}
               </button>
             </div>
 
@@ -170,9 +172,9 @@ export function ScanUploader() {
             </div>
 
             <div className="flex flex-col items-center gap-2 w-full">
-              <span className="text-xs text-slate-500">Try a sample photo</span>
+              <span className="text-xs text-slate-500">{t('trySample')}</span>
               <div className="flex gap-2">
-                {SAMPLES.map((sample) => (
+                {samples.map((sample) => (
                   <button
                     key={sample.path}
                     type="button"
@@ -225,12 +227,12 @@ export function ScanUploader() {
             {phase === 'submitting' ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Submitting...
+                {t('submitting')}
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Scan Bricks
+                {t('scanButton')}
               </>
             )}
           </span>
