@@ -1,4 +1,4 @@
-import type { BuildStepBlock } from '../types/brick.js';
+import type { BuildStepBlock, PhysicsCorrectionEntry, PhysicsResult } from '../types/brick.js';
 import { getBrickHeight } from '../registry/shape-registry.js';
 
 const EPSILON = 0.01;
@@ -144,15 +144,27 @@ function tryNudgeBrick(step: BuildStepBlock, placed: { box: BoundingBox }[]): bo
 }
 
 /**
- * Fix physics issues in a build plan:
+ * Fix physics issues in a build plan with detailed correction reporting.
  * Phase 0: Snap dimensions and positions to the LEGO stud grid
  * Phase 1: Sort by Y ascending (bottom-up processing)
  * Phase 2: Gravity snap-down to nearest support surface
  * Phase 3: Overlap check with nudge fallback (try to preserve bricks)
  * Phase 4: Re-number stepIds sequentially
  */
-export function fixBuildPhysics(steps: BuildStepBlock[]): BuildStepBlock[] {
-  if (steps.length === 0) return steps;
+export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResult {
+  const corrections: PhysicsCorrectionEntry[] = [];
+  const inputCount = steps.length;
+
+  if (steps.length === 0) {
+    return {
+      steps,
+      report: {
+        inputCount: 0, outputCount: 0, droppedCount: 0,
+        gravitySnappedCount: 0, nudgedCount: 0, droppedPercentage: 0,
+        corrections: [],
+      },
+    };
+  }
 
   // Phase 0: Snap dimensions and grid positions
   for (const step of steps) {
@@ -166,6 +178,7 @@ export function fixBuildPhysics(steps: BuildStepBlock[]): BuildStepBlock[] {
   const placed: { step: BuildStepBlock; box: BoundingBox }[] = [];
 
   for (const step of sorted) {
+    const originalPos = { ...step.position };
     const box = getFootprint(step);
 
     // Phase 2: Gravity snap-down — find the highest support surface below
@@ -178,6 +191,14 @@ export function fixBuildPhysics(steps: BuildStepBlock[]): BuildStepBlock[] {
 
     // Correct Y if it doesn't match support surface
     if (Math.abs(step.position.y - supportY) > EPSILON) {
+      corrections.push({
+        stepId: step.stepId,
+        partName: step.partName,
+        originalPosition: originalPos,
+        size: { ...step.size },
+        action: 'gravity_snapped',
+        reason: `y ${originalPos.y.toFixed(1)} → ${supportY.toFixed(1)}`,
+      });
       step.position.y = supportY;
     }
 
@@ -197,9 +218,26 @@ export function fixBuildPhysics(steps: BuildStepBlock[]): BuildStepBlock[] {
           }
         }
         step.position.y = nudgeSupportY;
+        corrections.push({
+          stepId: step.stepId,
+          partName: step.partName,
+          originalPosition: originalPos,
+          size: { ...step.size },
+          action: 'nudged',
+          reason: `overlap resolved by nudge to (${step.position.x}, ${step.position.z})`,
+        });
         placed.push({ step, box: getFootprint(step) });
+      } else {
+        // Nudge failed — brick is dropped
+        corrections.push({
+          stepId: step.stepId,
+          partName: step.partName,
+          originalPosition: originalPos,
+          size: { ...step.size },
+          action: 'dropped',
+          reason: 'overlap could not be resolved',
+        });
       }
-      // If nudge also failed, brick is dropped (removed)
     } else {
       placed.push({ step, box: correctedBox });
     }
@@ -210,5 +248,28 @@ export function fixBuildPhysics(steps: BuildStepBlock[]): BuildStepBlock[] {
     step.stepId = i + 1;
   });
 
-  return placed.map(({ step }) => step);
+  const outputSteps = placed.map(({ step }) => step);
+  const droppedCount = inputCount - outputSteps.length;
+  const gravitySnappedCount = corrections.filter((c) => c.action === 'gravity_snapped').length;
+  const nudgedCount = corrections.filter((c) => c.action === 'nudged').length;
+
+  return {
+    steps: outputSteps,
+    report: {
+      inputCount,
+      outputCount: outputSteps.length,
+      droppedCount,
+      gravitySnappedCount,
+      nudgedCount,
+      droppedPercentage: inputCount > 0 ? (droppedCount / inputCount) * 100 : 0,
+      corrections,
+    },
+  };
+}
+
+/**
+ * Fix physics issues in a build plan (backward-compatible wrapper).
+ */
+export function fixBuildPhysics(steps: BuildStepBlock[]): BuildStepBlock[] {
+  return fixBuildPhysicsWithReport(steps).steps;
 }

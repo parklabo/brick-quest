@@ -56,6 +56,31 @@ export interface BuildPlan {
   description: string;
   lore: string;
   steps: BuildStepBlock[];
+  agentIterations?: number;
+}
+
+export interface PhysicsCorrectionEntry {
+  stepId: number;
+  partName: string;
+  originalPosition: { x: number; y: number; z: number };
+  size: { width: number; height: number; length: number };
+  action: 'dropped' | 'gravity_snapped' | 'nudged';
+  reason: string;
+}
+
+export interface PhysicsValidationReport {
+  inputCount: number;
+  outputCount: number;
+  droppedCount: number;
+  gravitySnappedCount: number;
+  nudgedCount: number;
+  droppedPercentage: number;
+  corrections: PhysicsCorrectionEntry[];
+}
+
+export interface PhysicsResult {
+  steps: BuildStepBlock[];
+  report: PhysicsValidationReport;
 }
 
 export type Difficulty = 'beginner' | 'normal' | 'expert';

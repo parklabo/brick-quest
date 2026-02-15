@@ -2,12 +2,37 @@ import { GoogleGenAI, Type } from '@google/genai';
 import type { Schema } from '@google/genai';
 import { config } from '../config.js';
 import { logger } from 'firebase-functions';
-import type { DesignResult, DesignDetail } from '@brick-quest/shared';
-import { getBrickHeight, fromLegacyShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysics } from '@brick-quest/shared';
+import type { DesignResult, DesignDetail, BuildStepBlock, PhysicsValidationReport } from '@brick-quest/shared';
+import { getBrickHeight, fromLegacyShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport } from '@brick-quest/shared';
 
 const getAI = () => new GoogleGenAI({ apiKey: config.gemini.apiKey });
 
 const DESIGN_TIMEOUT = 8 * 60 * 1000;
+const AGENT_MAX_ITERATIONS = 3;
+const DROP_THRESHOLD_PCT = 15;
+const DROP_THRESHOLD_ABS = 5;
+
+function needsAgentRetry(report: PhysicsValidationReport): boolean {
+  return report.droppedPercentage > DROP_THRESHOLD_PCT || report.droppedCount > DROP_THRESHOLD_ABS;
+}
+
+function buildPhysicsFeedback(report: PhysicsValidationReport): string {
+  const dropped = report.corrections.filter((c) => c.action === 'dropped');
+  const lines = dropped.map(
+    (c) => `- Step ${c.stepId} "${c.partName}" at (${c.originalPosition.x},${c.originalPosition.y},${c.originalPosition.z}) size ${c.size.width}x${c.size.length}: ${c.reason}`,
+  );
+  return `PHYSICS FEEDBACK — ${report.droppedCount} bricks were REMOVED because they overlapped and could not be nudged.
+The surviving build has ${report.outputCount} bricks (${report.droppedPercentage.toFixed(1)}% dropped).
+
+Dropped bricks:
+${lines.join('\n')}
+
+INSTRUCTIONS FOR IMPROVEMENT:
+- Re-place these bricks at VALID positions that don't overlap existing bricks
+- Ensure every brick (except ground level) rests on a brick below with ≥1 stud XZ overlap
+- Calculate Y positions precisely: brick height=1.2, plate height=0.4
+- Keep the same creative design but fix the spatial conflicts`;
+}
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -382,133 +407,188 @@ You MUST generate at least ${cfg.minBricks} bricks.
 Keep step descriptions SHORT (3-8 words).
 Return ONLY valid JSON.`;
 
-  const MAX_RETRIES = 3;
-  let lastError: Error | null = null;
+  // Track best result across agent iterations
+  let bestResult: { result: DesignResult; survivingCount: number } | null = null;
+  let feedbackPrompt = '';
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      logger.info(`Design attempt ${attempt}/${MAX_RETRIES}`);
+  for (let iteration = 1; iteration <= AGENT_MAX_ITERATIONS; iteration++) {
+    logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS}`);
 
-      const contentParts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [
-        { inlineData: { mimeType, data: base64Image } },
-      ];
-      if (compositeView) {
-        contentParts.push(
-          { text: '[Composite Views: hero 3/4, front, right side, back — 2×2 grid]' },
-          { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } },
-        );
-      }
-      contentParts.push({ text: prompt });
+    const currentPrompt = feedbackPrompt
+      ? `${prompt}\n\n${feedbackPrompt}`
+      : prompt;
 
-      const response = await withTimeout(
-        ai.models.generateContent({
-          model: config.gemini.model,
-          contents: {
-            parts: contentParts,
-          },
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: designSchema,
-            maxOutputTokens: cfg.maxOutput,
-            thinkingConfig: { thinkingBudget: cfg.thinking },
-            systemInstruction: 'You are an award-winning LEGO Master Builder who specializes in recreating real-world objects as LEGO models. You have expert-level 3D spatial reasoning.',
-          },
-        }),
-        DESIGN_TIMEOUT,
-        'Design generation',
-      );
+    // Inner parse-retry loop
+    const PARSE_RETRIES = 3;
+    let lastError: Error | null = null;
+    let iterationSteps: BuildStepBlock[] | null = null;
+    let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
 
-      if (!response.text) {
-        lastError = new Error('Empty response');
-        continue;
-      }
+    for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
+      try {
+        logger.info(`  Parse attempt ${attempt}/${PARSE_RETRIES}`);
 
-      const raw = JSON.parse(response.text);
-
-      if (!Array.isArray(raw.steps) || raw.steps.length === 0) {
-        lastError = new Error('No valid steps');
-        continue;
-      }
-
-      // Enrich steps with computed fields
-      raw.steps = raw.steps.filter((step: any) => {
-        if (!step.type || !step.position) return false;
-
-        step.shape = fromLegacyShape(step.shape || 'rectangle', step.type);
-
-        const width = step.width || 2;
-        const length = step.length || 2;
-        const height = getBrickHeight(step.shape, step.type);
-
-        step.size = { width, height, length };
-
-        if (!step.rotation) step.rotation = { x: 0, y: 0, z: 0 };
-
-        return true;
-      });
-
-      if (raw.steps.length === 0) {
-        lastError = new Error('All steps invalid after filtering');
-        continue;
-      }
-
-      // Check minimum brick count before physics
-      if (raw.steps.length < cfg.minBricks) {
-        logger.warn(`Only ${raw.steps.length} bricks generated (minimum: ${cfg.minBricks}), retrying`);
-        lastError = new Error(`Too few bricks: ${raw.steps.length} < ${cfg.minBricks}`);
-        continue;
-      }
-
-      // Physics correction
-      const beforeCount = raw.steps.length;
-      raw.steps = fixBuildPhysics(raw.steps);
-      if (raw.steps.length < beforeCount) {
-        logger.info(`Physics fix removed ${beforeCount - raw.steps.length} overlapping steps (${raw.steps.length} remaining)`);
-      }
-
-      // Build requiredParts from the final steps
-      const partsMap = new Map<string, any>();
-      for (const step of raw.steps) {
-        const key = [step.type, step.shape, step.color, step.hexColor, `${step.size.width}x${step.size.length}`].join('|');
-        const existing = partsMap.get(key);
-        if (existing) {
-          existing.quantity += 1;
-        } else {
-          partsMap.set(key, {
-            name: step.partName || `${step.size.width}x${step.size.length} ${step.type}`,
-            shape: step.shape,
-            type: step.type,
-            color: step.color,
-            hexColor: step.hexColor,
-            dimensions: { width: step.size.width, length: step.size.length },
-            quantity: 1,
-          });
+        const contentParts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [
+          { inlineData: { mimeType, data: base64Image } },
+        ];
+        if (compositeView) {
+          contentParts.push(
+            { text: '[Composite Views: hero 3/4, front, right side, back — 2×2 grid]' },
+            { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } },
+          );
         }
-      }
+        contentParts.push({ text: currentPrompt });
 
-      const result: DesignResult = {
-        buildPlan: {
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model: config.gemini.model,
+            contents: {
+              parts: contentParts,
+            },
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: designSchema,
+              maxOutputTokens: cfg.maxOutput,
+              thinkingConfig: { thinkingBudget: cfg.thinking },
+              systemInstruction: 'You are an award-winning LEGO Master Builder who specializes in recreating real-world objects as LEGO models. You have expert-level 3D spatial reasoning.',
+            },
+          }),
+          DESIGN_TIMEOUT,
+          'Design generation',
+        );
+
+        if (!response.text) {
+          lastError = new Error('Empty response');
+          continue;
+        }
+
+        const raw = JSON.parse(response.text);
+
+        if (!Array.isArray(raw.steps) || raw.steps.length === 0) {
+          lastError = new Error('No valid steps');
+          continue;
+        }
+
+        // Enrich steps with computed fields
+        raw.steps = raw.steps.filter((step: any) => {
+          if (!step.type || !step.position) return false;
+
+          step.shape = fromLegacyShape(step.shape || 'rectangle', step.type);
+
+          const width = step.width || 2;
+          const length = step.length || 2;
+          const height = getBrickHeight(step.shape, step.type);
+
+          step.size = { width, height, length };
+
+          if (!step.rotation) step.rotation = { x: 0, y: 0, z: 0 };
+
+          return true;
+        });
+
+        if (raw.steps.length === 0) {
+          lastError = new Error('All steps invalid after filtering');
+          continue;
+        }
+
+        // Check minimum brick count before physics
+        if (raw.steps.length < cfg.minBricks) {
+          logger.warn(`Only ${raw.steps.length} bricks generated (minimum: ${cfg.minBricks}), retrying`);
+          lastError = new Error(`Too few bricks: ${raw.steps.length} < ${cfg.minBricks}`);
+          continue;
+        }
+
+        iterationSteps = raw.steps;
+        iterationMeta = {
           title: raw.title || 'LEGO Creation',
           description: raw.description || 'A LEGO recreation',
           lore: raw.lore || 'Inspired by real life.',
-          steps: raw.steps,
-        },
-        requiredParts: Array.from(partsMap.values()),
-        referenceDescription: raw.referenceDescription || 'An object from the photo.',
-      };
-
-      logger.info(`Design generated: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} unique parts`);
-      return result;
-    } catch (error: any) {
-      logger.error(`Attempt ${attempt} failed:`, error.message);
-      lastError = error;
-      if (attempt < MAX_RETRIES) {
-        await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
+          referenceDescription: raw.referenceDescription || 'An object from the photo.',
+        };
+        break;
+      } catch (error: any) {
+        logger.error(`  Parse attempt ${attempt} failed:`, error.message);
+        lastError = error;
+        if (attempt < PARSE_RETRIES) {
+          await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
+        }
       }
+    }
+
+    // If all parse attempts failed for this iteration, continue or use best
+    if (!iterationSteps || !iterationMeta) {
+      logger.warn(`Agent iteration ${iteration} failed to produce valid steps`);
+      if (bestResult) break;
+      if (iteration === AGENT_MAX_ITERATIONS) {
+        throw lastError || new Error('Failed to generate design after multiple attempts.');
+      }
+      continue;
+    }
+
+    // Physics correction with report
+    const { steps: fixedSteps, report } = fixBuildPhysicsWithReport(iterationSteps);
+
+    logger.info(
+      `Agent iteration ${iteration}: ${report.inputCount} input → ${report.outputCount} output ` +
+      `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
+      `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged)`,
+    );
+
+    // Build requiredParts from the final steps
+    const partsMap = new Map<string, any>();
+    for (const step of fixedSteps) {
+      const key = [step.type, step.shape, step.color, step.hexColor, `${step.size.width}x${step.size.length}`].join('|');
+      const existing = partsMap.get(key);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        partsMap.set(key, {
+          name: step.partName || `${step.size.width}x${step.size.length} ${step.type}`,
+          shape: step.shape,
+          type: step.type,
+          color: step.color,
+          hexColor: step.hexColor,
+          dimensions: { width: step.size.width, length: step.size.length },
+          quantity: 1,
+        });
+      }
+    }
+
+    const iterationResult: DesignResult = {
+      buildPlan: {
+        ...iterationMeta,
+        steps: fixedSteps,
+        agentIterations: iteration,
+      },
+      requiredParts: Array.from(partsMap.values()),
+      referenceDescription: iterationMeta.referenceDescription,
+    };
+
+    // Track best result (most surviving bricks)
+    if (!bestResult || fixedSteps.length > bestResult.survivingCount) {
+      bestResult = { result: iterationResult, survivingCount: fixedSteps.length };
+    }
+
+    // Check if physics results are acceptable
+    if (!needsAgentRetry(report)) {
+      logger.info(`Agent iteration ${iteration}: physics acceptable, done`);
+      break;
+    }
+
+    // Build feedback for next iteration
+    if (iteration < AGENT_MAX_ITERATIONS) {
+      feedbackPrompt = buildPhysicsFeedback(report);
+      logger.info(`Agent iteration ${iteration}: ${report.droppedCount} bricks dropped, requesting improvement`);
     }
   }
 
-  throw lastError || new Error('Failed to generate design after multiple attempts.');
+  if (!bestResult) {
+    throw new Error('Failed to generate design after multiple attempts.');
+  }
+
+  const { result } = bestResult;
+  logger.info(`Design generated: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} unique parts (${result.buildPlan.agentIterations} agent iteration(s))`);
+  return result;
 }
 
 /**
