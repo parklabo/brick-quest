@@ -1,8 +1,10 @@
 # Brick Quest
 
+> Built for the [**4th Agentic AI Hackathon with Google Cloud**](https://zenn.dev/topics/gch4)
+
 AI-powered LEGO brick scanner and 3D build instruction generator.
 
-Scan your LEGO bricks, build an inventory, and get AI-generated step-by-step 3D building instructions.
+Scan your LEGO bricks, build an inventory, and get AI-generated step-by-step 3D building instructions — with an **agentic AI loop** that autonomously validates and improves build quality.
 
 ## Getting Started
 
@@ -46,9 +48,40 @@ pnpm dev
 [Cloud Functions] → submitScan, submitBuild, submitDesign
      ↓ (Firestore triggers)
 [Gemini AI] → Image analysis / orthographic views / 3D build plans
+     ↓                              ↑
+[Physics Engine] → Validate      Feedback with dropped bricks
+     ↓            (overlap,       & spatial instructions
+     OK?──No──→   gravity)  ──→  Re-prompt Gemini (up to 3×)
+     ↓ Yes
      ↓ (onSnapshot)
 [Web App] → Real-time result updates
 ```
+
+## Agentic AI: Self-Improving Build Generation
+
+Gemini generates 3D LEGO build plans, but raw output often contains **physics errors** — overlapping bricks, floating pieces, invalid positions. Brick Quest solves this with an autonomous agent loop:
+
+1. **Generate** — Gemini creates a build plan from the user's parts and prompt
+2. **Validate** — A physics engine checks every brick for overlaps, gravity support, and grid alignment
+3. **Feedback** — If >15% of bricks are dropped during correction, the system generates detailed spatial feedback (which bricks failed, why, and how to fix them)
+4. **Re-generate** — Gemini receives the feedback and produces an improved build
+5. **Repeat** — Up to 3 iterations, tracking the best result across all attempts
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│  Gemini AI  │────→│ Physics      │────→│ Quality Check   │
+│  (generate) │     │ Engine       │     │ (>15% dropped?) │
+└─────────────┘     │ • snap grid  │     └────────┬────────┘
+       ↑            │ • gravity    │              │
+       │            │ • overlap    │         No   │  Yes
+       │            │ • nudge      │         ↓    │
+       │            └──────────────┘      ✅ Done  │
+       │                                          │
+       └──────── Feedback prompt ─────────────────┘
+                 (dropped bricks + reasons)
+```
+
+This pattern ensures every delivered build is physically valid, even when the LLM's spatial reasoning isn't perfect.
 
 ## Tech Stack
 

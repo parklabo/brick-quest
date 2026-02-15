@@ -26,8 +26,17 @@ Turborepo + pnpm monorepo with Firebase backend:
 1. Web App → `httpsCallable('submitScan')`, `httpsCallable('submitBuild')`, or `httpsCallable('submitDesign')`
 2. Callable function → Firestore `jobs/{jobId}` document created (status: pending)
 3. `processJob` (onDocumentCreated) trigger fires → calls Gemini API
-4. Trigger updates document (status: completed, result: ...)
-5. Web App `onSnapshot` receives real-time update → UI renders result
+4. **Agent loop** (build jobs): Gemini generates → physics validation → feedback → re-generate (up to 3 iterations)
+5. Trigger updates document (status: completed, result: ...)
+6. Web App `onSnapshot` receives real-time update → UI renders result
+
+### Agent Iteration Flow (Build Jobs)
+The `generateBuildPlan()` function implements a self-improving loop:
+1. Gemini generates a build plan (with inner parse-retry of up to 3 attempts)
+2. `fixBuildPhysicsWithReport()` validates physics (snap, gravity, overlap, nudge)
+3. If >15% bricks dropped OR >5 absolute bricks dropped → `buildPhysicsFeedback()` creates spatial feedback
+4. Gemini re-generates with feedback prompt appended (up to `AGENT_MAX_ITERATIONS=3`)
+5. Best result (most surviving bricks) is tracked across all iterations
 
 ### Design Flow (extended)
 1. `submitDesign` → job created (pending)
@@ -78,8 +87,8 @@ brick-quest/
 | `setAdminRole` | onCall | HTTP | Set admin custom claim |
 | `approveDesignViews` | onCall | HTTP | Approve views → trigger build generation |
 | `regenerateDesignViews` | onCall | HTTP | Re-generate orthographic views |
-| `processJob` | trigger | document.created (`jobs/{jobId}`) | Process new scan/build/design jobs |
-| `processDesignUpdate` | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions |
+| `processJob` | trigger | document.created (`jobs/{jobId}`) | Process new scan/build/design jobs (build jobs run agent iteration loop) |
+| `processDesignUpdate` | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions (build generation also uses agent loop) |
 
 ## Development Commands
 
@@ -155,6 +164,9 @@ GEMINI_API_KEY=your_api_key
 - `BrickType` — Union of 7 type IDs (brick, plate, tile, slope, technic, minifig, other)
 - `ShapeDefinition` — Full shape metadata (geometry, studs, heights, gemini aliases, icon2d)
 - `SHAPE_REGISTRY` — ReadonlyMap<BrickShape, ShapeDefinition> with 16 entries
+- `PhysicsResult` — Return type of `fixBuildPhysicsWithReport()`: `{ steps, report }`
+- `PhysicsValidationReport` — Physics validation summary: inputCount, outputCount, droppedCount, droppedPercentage, corrections[]
+- `PhysicsCorrectionEntry` — Per-brick correction record: stepId, partName, originalPosition, action (dropped|gravity_snapped|nudged), reason
 
 ## Build Physics (packages/shared/src/utils/build-physics.ts)
 
