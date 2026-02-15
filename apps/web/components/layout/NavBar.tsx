@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Sparkles, ScanLine, Package, Hammer, Box, LayoutDashboard, ChevronDown, Blocks } from 'lucide-react';
-import { useJobsStore, selectUnseenScanCount, selectUnseenBuildCount, selectUnseenDesignCount } from '../../lib/stores/jobs';
+import { useShallow } from 'zustand/shallow';
+import { useJobsStore, selectUnseenCounts } from '../../lib/stores/jobs';
 import { useProfileStore } from '../../lib/stores/profile';
 
 const MY_BRICKS_PATHS = ['/scan', '/builds', '/inventory'];
@@ -92,9 +93,9 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
 export function NavBar() {
   const pathname = usePathname();
   const t = useTranslations('nav');
-  const unseenScanCount = useJobsStore(selectUnseenScanCount);
-  const unseenBuildCount = useJobsStore(selectUnseenBuildCount);
-  const unseenDesignCount = useJobsStore(selectUnseenDesignCount);
+  const { scan: unseenScanCount, build: unseenBuildCount, design: unseenDesignCount } = useJobsStore(
+    useShallow(selectUnseenCounts),
+  );
   const profile = useProfileStore((s) => s.profile);
   const initial = profile?.displayName?.charAt(0).toUpperCase() ?? '?';
 

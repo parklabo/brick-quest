@@ -8,6 +8,20 @@ import type { PlacedBrick } from '../../lib/stores/workspace';
 import { SELECT_RING } from '../../lib/three/shared-geometries';
 import { BrickBody } from '../three/BrickBody';
 
+// Static materials — avoids re-creation on every hover/select toggle
+const SELECTED_MAT = new THREE.MeshBasicMaterial({
+  color: '#fbbf24',
+  transparent: true,
+  opacity: 0.7,
+  side: THREE.DoubleSide,
+});
+const HOVERED_MAT = new THREE.MeshBasicMaterial({
+  color: '#60a5fa',
+  transparent: true,
+  opacity: 0.4,
+  side: THREE.DoubleSide,
+});
+
 interface InteractiveBrickProps {
   brick: PlacedBrick;
 }
@@ -70,14 +84,8 @@ export function InteractiveBrick({ brick }: InteractiveBrickProps) {
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, -height / 2 + 0.03, 0]}
           geometry={SELECT_RING}
-        >
-          <meshBasicMaterial
-            color={isSelected ? '#fbbf24' : '#60a5fa'}
-            transparent
-            opacity={isSelected ? 0.7 : 0.4}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
+          material={isSelected ? SELECTED_MAT : HOVERED_MAT}
+        />
       )}
     </group>
   );

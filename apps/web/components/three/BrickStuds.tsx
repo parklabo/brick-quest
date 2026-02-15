@@ -1,6 +1,8 @@
 'use client';
 
+import * as THREE from 'three';
 import type { StudConfig, BrickShape } from '@brick-quest/shared';
+import { getPooledMaterial } from '../../lib/three/ldraw-color-override';
 
 interface BrickStudsProps {
   studConfig: StudConfig;
@@ -16,6 +18,10 @@ interface BrickStudsProps {
 const STUD_RADIUS = 0.3;
 const STUD_HEIGHT = 0.2;
 
+// Shared geometries — one per segment count, reused across all studs
+const STUD_GEO_32 = new THREE.CylinderGeometry(STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 32);
+const STUD_GEO_16 = new THREE.CylinderGeometry(STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16);
+
 export function BrickStuds({
   studConfig,
   shape,
@@ -29,13 +35,11 @@ export function BrickStuds({
   if (!studConfig.hasStuds) return null;
 
   const y = height / 2 + STUD_HEIGHT / 2;
+  const mat = getPooledMaterial(hexColor, transparent, '#000000', 0);
 
   if (studConfig.layout === 'single_center') {
     return (
-      <mesh position={[0, y, 0]}>
-        <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 32]} />
-        <meshStandardMaterial color={hexColor} roughness={0.2} transparent={transparent} opacity={opacity} />
-      </mesh>
+      <mesh position={[0, y, 0]} geometry={STUD_GEO_32} material={mat} />
     );
   }
 
@@ -61,10 +65,7 @@ export function BrickStuds({
       const zOffset = j - (lCount - 1) / 2;
 
       studs.push(
-        <mesh key={`${i}-${j}`} position={[xOffset, y, zOffset]}>
-          <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 16]} />
-          <meshStandardMaterial color={hexColor} roughness={0.2} transparent={transparent} opacity={opacity} />
-        </mesh>,
+        <mesh key={`${i}-${j}`} position={[xOffset, y, zOffset]} geometry={STUD_GEO_16} material={mat} />,
       );
     }
   }

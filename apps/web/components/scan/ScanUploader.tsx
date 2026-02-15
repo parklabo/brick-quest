@@ -16,6 +16,7 @@ type ScanPhase = 'idle' | 'selected' | 'submitting' | 'error';
 
 export function ScanUploader() {
   const t = useTranslations('scan');
+  const tc = useTranslations('common');
   const [phase, setPhase] = useState<ScanPhase>('idle');
   const [image, setImage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export function ScanUploader() {
       setPreview(null);
       setImage(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit scan');
+      setError(err instanceof Error ? err.message : tc('submitError'));
       setPhase('error');
     }
   };
@@ -117,7 +118,7 @@ export function ScanUploader() {
             onClick={handleDiscard}
             className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-xl transition-colors"
           >
-            Try Again
+            {tc('tryAgain')}
           </button>
         </div>
       </div>
@@ -167,7 +168,7 @@ export function ScanUploader() {
 
             <div className="flex items-center gap-3 w-full max-w-xs">
               <div className="flex-1 h-px bg-slate-700" />
-              <span className="text-xs text-slate-500">or</span>
+              <span className="text-xs text-slate-500">{tc('or')}</span>
               <div className="flex-1 h-px bg-slate-700" />
             </div>
 

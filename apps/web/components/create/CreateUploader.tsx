@@ -11,6 +11,7 @@ type Phase = 'idle' | 'selected' | 'submitting' | 'error';
 
 export function CreateUploader() {
   const t = useTranslations('create');
+  const tc = useTranslations('common');
   const [phase, setPhase] = useState<Phase>('idle');
   const [image, setImage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export function CreateUploader() {
       setImage(null);
       setUserPrompt('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit design');
+      setError(err instanceof Error ? err.message : tc('submitError'));
       setPhase('error');
     }
   };
@@ -82,7 +83,7 @@ export function CreateUploader() {
             onClick={handleDiscard}
             className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-xl transition-colors"
           >
-            Try Again
+            {tc('tryAgain')}
           </button>
         </div>
       </div>

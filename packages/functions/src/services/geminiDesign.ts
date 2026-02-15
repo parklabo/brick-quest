@@ -2,43 +2,27 @@ import { GoogleGenAI, Type } from '@google/genai';
 import type { Schema } from '@google/genai';
 import { config } from '../config.js';
 import { logger } from 'firebase-functions';
-import type { DesignResult, DesignDetail, BuildStepBlock, PhysicsValidationReport } from '@brick-quest/shared';
+import type { DesignResult, DesignDetail, BuildStepBlock } from '@brick-quest/shared';
 import { getBrickHeight, fromLegacyShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport } from '@brick-quest/shared';
+import { withTimeout } from '../utils/with-timeout.js';
+import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
 
-const getAI = () => new GoogleGenAI({ apiKey: config.gemini.apiKey });
+let _ai: GoogleGenAI | undefined;
+const getAI = () => (_ai ??= new GoogleGenAI({ apiKey: config.gemini.apiKey }));
 
 const DESIGN_TIMEOUT = 8 * 60 * 1000;
 const AGENT_MAX_ITERATIONS = 3;
-const DROP_THRESHOLD_PCT = 15;
-const DROP_THRESHOLD_ABS = 5;
 
-function needsAgentRetry(report: PhysicsValidationReport): boolean {
-  return report.droppedPercentage > DROP_THRESHOLD_PCT || report.droppedCount > DROP_THRESHOLD_ABS;
-}
+function buildCountFeedback(actualCount: number, targetMin: number, brickRange: string): string {
+  return `BRICK COUNT FEEDBACK — You only generated ${actualCount} bricks. The MINIMUM target is ${targetMin} and the ideal range is ${brickRange}.
 
-function buildPhysicsFeedback(report: PhysicsValidationReport): string {
-  const dropped = report.corrections.filter((c) => c.action === 'dropped');
-  const lines = dropped.map(
-    (c) => `- Step ${c.stepId} "${c.partName}" at (${c.originalPosition.x},${c.originalPosition.y},${c.originalPosition.z}) size ${c.size.width}x${c.size.length}: ${c.reason}`,
-  );
-  return `PHYSICS FEEDBACK — ${report.droppedCount} bricks were REMOVED because they overlapped and could not be nudged.
-The surviving build has ${report.outputCount} bricks (${report.droppedPercentage.toFixed(1)}% dropped).
-
-Dropped bricks:
-${lines.join('\n')}
-
-INSTRUCTIONS FOR IMPROVEMENT:
-- Re-place these bricks at VALID positions that don't overlap existing bricks
-- Ensure every brick (except ground level) rests on a brick below with ≥1 stud XZ overlap
-- Calculate Y positions precisely: brick height=1.2, plate height=0.4
-- Keep the same creative design but fix the spatial conflicts`;
-}
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error(`${operation} timed out after ${Math.round(timeoutMs / 1000 / 60)} minutes`)), timeoutMs);
-    promise.then((r) => { clearTimeout(id); resolve(r); }).catch((e) => { clearTimeout(id); reject(e); });
-  });
+INSTRUCTIONS TO GENERATE MORE BRICKS:
+- Build MORE LAYERS. A typical Brickheadz needs 10-14 layers of bricks stacked vertically.
+- Each layer must FULLY TILE its footprint — an 8×6 footprint needs 8-12 bricks per layer.
+- Add fine details: eyes, mouth, accessories, hair, ears, patterns using 1x1 and 1x2 bricks.
+- Add feet/base layers (2-3 layers), body layers (3-4 layers), head layers (4-6 layers), and top features (1-2 layers).
+- Do NOT leave gaps — every stud position in the model's silhouette must be covered by a brick.
+- You MUST generate at LEAST ${targetMin} bricks total. Count your bricks before finishing.`;
 }
 
 export interface ImageData {
@@ -243,24 +227,27 @@ export async function generateDesignFromPhoto(
     required: ['referenceDescription', 'title', 'description', 'lore', 'steps'],
   };
 
-  const complexityConfig: Record<DesignDetail, { instruction: string; minBricks: number; brickRange: string; maxOutput: number; thinking: number }> = {
+  const complexityConfig: Record<DesignDetail, { instruction: string; minBricks: number; targetMin: number; brickRange: string; maxOutput: number; thinking: number }> = {
     simple: {
       instruction: 'Simplified build — capture the basic silhouette and key colors. Use larger bricks (2x4, 2x6) predominantly.',
-      minBricks: 25,
+      minBricks: 10,
+      targetMin: 25,
       brickRange: '25-50 bricks, 2x4/2x6 predominantly',
       maxOutput: 32768,
       thinking: 8192,
     },
     standard: {
       instruction: 'Standard Brickheadz-style build — solid, complete model with all key features, colors, and proportions. No gaps or holes in the surface.',
-      minBricks: 80,
+      minBricks: 20,
+      targetMin: 60,
       brickRange: '80-150 bricks, mix of 2x4 structure + 1x2 detail',
       maxOutput: 65536,
       thinking: 16384,
     },
     detailed: {
       instruction: 'Maximum detail — capture fine details, textures, facial features, accessories, and patterns. Use small bricks (1x1, 1x2) for pixel-art precision.',
-      minBricks: 150,
+      minBricks: 40,
+      targetMin: 100,
       brickRange: '150-300 bricks, 1x1/1x2 for pixel precision',
       maxOutput: 131072,
       thinking: 32768,
@@ -569,16 +556,29 @@ Return ONLY valid JSON.`;
       bestResult = { result: iterationResult, survivingCount: fixedSteps.length };
     }
 
-    // Check if physics results are acceptable
-    if (!needsAgentRetry(report)) {
-      logger.info(`Agent iteration ${iteration}: physics acceptable, done`);
+    // Check if results are acceptable (both count and physics)
+    const needsMoreBricks = fixedSteps.length < cfg.targetMin;
+    const needsPhysicsFix = needsAgentRetry(report);
+
+    if (!needsMoreBricks && !needsPhysicsFix) {
+      logger.info(`Agent iteration ${iteration}: acceptable (${fixedSteps.length} bricks, physics OK), done`);
       break;
     }
 
     // Build feedback for next iteration
     if (iteration < AGENT_MAX_ITERATIONS) {
-      feedbackPrompt = buildPhysicsFeedback(report);
-      logger.info(`Agent iteration ${iteration}: ${report.droppedCount} bricks dropped, requesting improvement`);
+      const feedbackParts: string[] = [];
+      if (needsMoreBricks) {
+        feedbackParts.push(buildCountFeedback(fixedSteps.length, cfg.targetMin, cfg.brickRange));
+        logger.info(`Agent iteration ${iteration}: only ${fixedSteps.length} bricks (target: ${cfg.targetMin}), requesting more`);
+      }
+      if (needsPhysicsFix) {
+        feedbackParts.push(buildPhysicsFeedback(report));
+        logger.info(`Agent iteration ${iteration}: ${report.droppedCount} bricks dropped, requesting improvement`);
+      }
+      feedbackPrompt = feedbackParts.join('\n\n');
+    } else {
+      logger.info(`Agent iteration ${iteration}: final iteration, using best result (${fixedSteps.length} bricks)`);
     }
   }
 

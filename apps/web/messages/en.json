@@ -20,7 +20,8 @@
     "types": "types",
     "pcs": "pcs",
     "total": "total",
-    "bricks": "bricks"
+    "bricks": "bricks",
+    "submitError": "Failed to submit. Please try again."
   },
   "nav": {
     "home": "Home",

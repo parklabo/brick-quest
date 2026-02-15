@@ -23,6 +23,15 @@ export const submitDesign = onCall(
       throw new HttpsError('invalid-argument', 'Missing base64 image data');
     }
 
+    // ~10 MB base64 limit
+    if (image.length > 15_000_000) {
+      throw new HttpsError('invalid-argument', 'Image too large (max ~10 MB)');
+    }
+
+    if (typeof userPrompt === 'string' && userPrompt.length > 500) {
+      throw new HttpsError('invalid-argument', 'Prompt too long (max 500 characters)');
+    }
+
     const validDetails: DesignDetail[] = ['simple', 'standard', 'detailed'];
     if (!validDetails.includes(detail)) {
       throw new HttpsError('invalid-argument', 'Invalid detail level');

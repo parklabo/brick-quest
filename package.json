@@ -1,6 +1,7 @@
 {
   "name": "brick-quest",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@9.14.2",
   "scripts": {
     "dev": "concurrently -n emu,app -c blue,green \"docker compose up --build emulators\" \"turbo dev\"",

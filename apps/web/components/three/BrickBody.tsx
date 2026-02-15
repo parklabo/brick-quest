@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { getShapeDefinition, type BrickShape, type BrickType } from '@brick-quest/shared';
 import { getCachedGeometry } from '../../lib/three/geometry-factory';
 import { resolveLDrawPart } from '../../lib/three/ldraw-part-map';
+import { getPooledMaterial } from '../../lib/three/ldraw-color-override';
 import { BrickStuds } from './BrickStuds';
 import { LDrawBrickBody } from './LDrawBrickBody';
 
@@ -72,17 +73,12 @@ export function BrickBody({
       {/* Procedural fallback (visible while loading or if no mapping) */}
       {showProcedural && (
         <>
-          <mesh castShadow receiveShadow geometry={geometry}>
-            <meshStandardMaterial
-              color={hexColor}
-              roughness={0.1}
-              metalness={0.0}
-              transparent={isGhost}
-              opacity={isGhost ? 0.3 : 1}
-              emissive={emissive}
-              emissiveIntensity={emissiveIntensity}
-            />
-          </mesh>
+          <mesh
+            castShadow
+            receiveShadow
+            geometry={geometry}
+            material={getPooledMaterial(hexColor, isGhost, emissive, emissiveIntensity)}
+          />
           {hasStuds && (
             <BrickStuds
               studConfig={def.studs}

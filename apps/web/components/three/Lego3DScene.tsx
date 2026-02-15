@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, Environment, ContactShadows } from '@react-three/drei';
+import { OrbitControls, Grid, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import type { BuildPlan } from '@brick-quest/shared';
 import { clearLDrawCache } from '../../lib/three/ldraw-loader-instance';
@@ -50,7 +50,6 @@ export default function Lego3DScene({ plan, currentStepIndex }: Lego3DSceneProps
         <color attach="background" args={['#0f172a']} />
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow shadow-mapSize={[2048, 2048]} />
-        <Environment preset="city" />
         <group>
           {visibleSteps.map((step, idx) => (
             <LegoBrick key={step.stepId || idx} block={step} />

@@ -150,5 +150,18 @@ export const selectUnseenBuildCount = (s: { jobs: TrackedJob[] }) =>
 export const selectUnseenDesignCount = (s: { jobs: TrackedJob[] }) =>
   s.jobs.filter((j) => j.type === 'design' && !j.seen && (j.status === 'completed' || j.status === 'failed' || j.status === 'views_ready')).length;
 
+/** Combined selector — 3→1 subscription for NavBar */
+export const selectUnseenCounts = (s: { jobs: TrackedJob[] }) => {
+  let scan = 0, build = 0, design = 0;
+  for (const j of s.jobs) {
+    if (j.seen) continue;
+    const done = j.status === 'completed' || j.status === 'failed';
+    if (j.type === 'scan' && done) scan++;
+    else if (j.type === 'build' && done) build++;
+    else if (j.type === 'design' && (done || j.status === 'views_ready')) design++;
+  }
+  return { scan, build, design };
+};
+
 export const selectPendingJobs = (s: { jobs: TrackedJob[] }) =>
   s.jobs.filter((j) => j.status === 'pending' || j.status === 'processing' || j.status === 'generating_views' || j.status === 'generating_build');

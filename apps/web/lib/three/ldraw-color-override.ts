@@ -6,6 +6,41 @@ export interface ColorOverrideOptions {
   emissiveIntensity?: number;
 }
 
+// ---- Material pool: reuse materials by key to avoid 500+ allocations ----
+const materialPool = new Map<string, THREE.MeshStandardMaterial>();
+
+function getPooledMaterial(
+  hexColor: string,
+  isGhost: boolean,
+  emissive: string,
+  emissiveIntensity: number,
+): THREE.MeshStandardMaterial {
+  const key = `${hexColor}:${isGhost}:${emissive}:${emissiveIntensity}`;
+  let mat = materialPool.get(key);
+  if (!mat) {
+    mat = new THREE.MeshStandardMaterial({
+      color: hexColor,
+      roughness: 0.1,
+      metalness: 0.0,
+      transparent: isGhost,
+      opacity: isGhost ? 0.3 : 1,
+      emissive: new THREE.Color(emissive),
+      emissiveIntensity,
+    });
+    materialPool.set(key, mat);
+  }
+  return mat;
+}
+
+/** Dispose all pooled materials — call on scene teardown */
+export function clearMaterialPool(): void {
+  for (const mat of materialPool.values()) mat.dispose();
+  materialPool.clear();
+}
+
+/** Get a pooled MeshStandardMaterial (for use by BrickBody / BrickStuds) */
+export { getPooledMaterial };
+
 /**
  * Replace all materials on an LDraw Group with BrickQuest-styled
  * MeshStandardMaterial, and strip ALL line-based objects
@@ -28,23 +63,14 @@ export function applyBrickQuestColor(
     }
 
     if (child instanceof THREE.Mesh) {
-      // Dispose the original LDraw material(s)
+      // Dispose the original LDraw material(s) — they're not pooled
       if (Array.isArray(child.material)) {
         child.material.forEach((m: THREE.Material) => m.dispose());
       } else if (child.material) {
         child.material.dispose();
       }
 
-      child.material = new THREE.MeshStandardMaterial({
-        color: hexColor,
-        roughness: 0.1,
-        metalness: 0.0,
-        transparent: isGhost,
-        opacity: isGhost ? 0.3 : 1,
-        emissive: new THREE.Color(emissive),
-        emissiveIntensity,
-      });
-
+      child.material = getPooledMaterial(hexColor, isGhost, emissive, emissiveIntensity);
       child.castShadow = true;
       child.receiveShadow = true;
     }

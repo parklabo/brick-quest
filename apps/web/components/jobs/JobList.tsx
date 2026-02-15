@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useJobsStore } from '../../lib/stores/jobs';
@@ -20,18 +21,6 @@ import type { ScanResult, BuildPlan, DesignResult } from '@brick-quest/shared';
 
 // --- Helpers ---
 
-export function relativeTime(ms: number): string {
-  const diff = Date.now() - ms;
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
 function relativeTimeI18n(ms: number, tc: (key: string, values?: Record<string, number>) => string): string {
   const diff = Date.now() - ms;
   const seconds = Math.floor(diff / 1000);
@@ -44,15 +33,6 @@ function relativeTimeI18n(ms: number, tc: (key: string, values?: Record<string, 
   return tc('daysAgo', { days });
 }
 
-export function dateLabel(ms: number): string {
-  const now = new Date();
-  const date = new Date(ms);
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
 function dateLabelI18n(ms: number, tc: (key: string) => string): string {
   const now = new Date();
   const date = new Date(ms);
@@ -60,17 +40,6 @@ function dateLabelI18n(ms: number, tc: (key: string) => string): string {
   if (diffDays === 0) return tc('today');
   if (diffDays === 1) return tc('yesterday');
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-export function groupByDate(jobs: TrackedJob[]): { label: string; jobs: TrackedJob[] }[] {
-  const groups = new Map<string, TrackedJob[]>();
-  for (const job of jobs) {
-    const key = dateLabel(job.createdAt);
-    const existing = groups.get(key);
-    if (existing) existing.push(job);
-    else groups.set(key, [job]);
-  }
-  return Array.from(groups, ([label, jobs]) => ({ label, jobs }));
 }
 
 export function groupByDateI18n(jobs: TrackedJob[], tc: (key: string) => string): { label: string; jobs: TrackedJob[] }[] {
@@ -143,7 +112,7 @@ function getJobHref(job: TrackedJob): string | undefined {
   return `/builds/${job.id}/view`;
 }
 
-export function JobCard({ job }: { job: TrackedJob }) {
+export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
   const t = useTranslations('jobs');
   const tc = useTranslations('common');
   const markSeen = useJobsStore((s) => s.markSeen);
@@ -244,4 +213,4 @@ export function JobCard({ job }: { job: TrackedJob }) {
   }
 
   return content;
-}
+});

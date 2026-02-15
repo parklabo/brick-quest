@@ -20,6 +20,14 @@ export const submitBuild = onCall(
       throw new HttpsError('invalid-argument', 'Missing or empty parts array');
     }
 
+    if (parts.length > 500) {
+      throw new HttpsError('invalid-argument', 'Too many parts (max 500)');
+    }
+
+    if (typeof userPrompt === 'string' && userPrompt.length > 500) {
+      throw new HttpsError('invalid-argument', 'Prompt too long (max 500 characters)');
+    }
+
     const validDifficulties: Difficulty[] = ['beginner', 'normal', 'expert'];
     if (!validDifficulties.includes(difficulty)) {
       throw new HttpsError('invalid-argument', 'Invalid difficulty level');

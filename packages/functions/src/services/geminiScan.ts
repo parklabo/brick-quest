@@ -4,17 +4,12 @@ import { config } from '../config.js';
 import { logger } from 'firebase-functions';
 import type { ScanResult } from '@brick-quest/shared';
 import { getGeminiShapeEnum, getGeminiShapeDescriptions, fromLegacyShape } from '@brick-quest/shared';
+import { withTimeout } from '../utils/with-timeout.js';
 
-const getAI = () => new GoogleGenAI({ apiKey: config.gemini.apiKey });
+let _ai: GoogleGenAI | undefined;
+const getAI = () => (_ai ??= new GoogleGenAI({ apiKey: config.gemini.apiKey }));
 
 const SCAN_TIMEOUT = 5 * 60 * 1000;
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error(`${operation} timed out after ${Math.round(timeoutMs / 1000 / 60)} minutes`)), timeoutMs);
-    promise.then((r) => { clearTimeout(id); resolve(r); }).catch((e) => { clearTimeout(id); reject(e); });
-  });
-}
 
 export async function analyzeLegoParts(base64Image: string, mimeType = 'image/jpeg'): Promise<ScanResult> {
   const ai = getAI();

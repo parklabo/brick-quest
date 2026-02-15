@@ -17,6 +17,11 @@ export const submitScan = onCall(
       throw new HttpsError('invalid-argument', 'Missing base64 image data');
     }
 
+    // ~10 MB base64 limit
+    if (image.length > 15_000_000) {
+      throw new HttpsError('invalid-argument', 'Image too large (max ~10 MB)');
+    }
+
     const db = getFirestore();
     const storage = getStorage();
 

@@ -31,6 +31,9 @@ const PINCH_ZOOM_SPEED = 0.02;
 // Baseplate bounds
 const BOUND = 16;
 
+// Reusable Vector3 to avoid GC allocations in useFrame (60+ calls/sec)
+const _desiredPos = new THREE.Vector3();
+
 function getTouchDistance(t1: Touch, t2: Touch) {
   const dx = t1.clientX - t2.clientX;
   const dy = t1.clientY - t2.clientY;
@@ -213,7 +216,7 @@ export function WorkspaceCamera({ keysRef }: WorkspaceCameraProps) {
     const desiredY = target.y + dist * Math.sin(elev);
     const desiredZ = target.z + dist * Math.cos(elev) * Math.cos(azimuth);
 
-    camera.position.lerp(new THREE.Vector3(desiredX, desiredY, desiredZ), LERP_FACTOR * delta);
+    camera.position.lerp(_desiredPos.set(desiredX, desiredY, desiredZ), LERP_FACTOR * delta);
     camera.lookAt(target.x, target.y, target.z);
   });
 

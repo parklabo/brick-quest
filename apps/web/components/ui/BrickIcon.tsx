@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import type { BrickShape, BrickType } from '@brick-quest/shared';
 import { getShapeDefinition } from '@brick-quest/shared';
 
@@ -32,7 +33,7 @@ function darkenColor(hex: string, percent: number): string {
   return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
 }
 
-export function BrickIcon({
+export const BrickIcon = memo(function BrickIcon({
   width,
   length,
   hexColor,
@@ -53,8 +54,10 @@ export function BrickIcon({
   const maxDim = Math.max(width, length);
   const cellSize = availableSize / maxDim;
 
-  const sideColor = darkenColor(hexColor, 20);
-  const deepShadowColor = darkenColor(hexColor, 40);
+  const { sideColor, deepShadowColor } = useMemo(
+    () => ({ sideColor: darkenColor(hexColor, 20), deepShadowColor: darkenColor(hexColor, 40) }),
+    [hexColor],
+  );
 
   const stepSize = 0.5;
   const layers = isPlate ? 6 : 20;
@@ -132,4 +135,4 @@ export function BrickIcon({
       </div>
     </div>
   );
-}
+});

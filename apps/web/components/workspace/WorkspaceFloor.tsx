@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
@@ -38,14 +38,15 @@ function BorderLines({ size }: { size: number }) {
     }
   });
 
-  const points = [
-    new THREE.Vector3(-half, 0.02, -half),
-    new THREE.Vector3(half, 0.02, -half),
-    new THREE.Vector3(half, 0.02, half),
-    new THREE.Vector3(-half, 0.02, half),
-  ];
-
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
+  const geometry = useMemo(() => {
+    const points = [
+      new THREE.Vector3(-half, 0.02, -half),
+      new THREE.Vector3(half, 0.02, -half),
+      new THREE.Vector3(half, 0.02, half),
+      new THREE.Vector3(-half, 0.02, half),
+    ];
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, [half]);
 
   return (
     <lineLoop ref={lineRef} geometry={geometry}>

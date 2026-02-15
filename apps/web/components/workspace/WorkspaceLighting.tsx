@@ -1,6 +1,13 @@
 'use client';
 
+import { useMemo } from 'react';
+
+const useShadowSize = () =>
+  useMemo(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 1024 : 2048), []);
+
 export function WorkspaceLighting() {
+  const shadowSize = useShadowSize();
+
   return (
     <>
       <ambientLight intensity={0.5} color="#d4d4d8" />
@@ -11,8 +18,8 @@ export function WorkspaceLighting() {
         intensity={2.0}
         color="#fff8f0"
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={shadowSize}
+        shadow-mapSize-height={shadowSize}
         shadow-camera-left={-20}
         shadow-camera-right={20}
         shadow-camera-top={20}

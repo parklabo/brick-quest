@@ -12,10 +12,10 @@ import {
   Package,
   ScanLine,
   PackageCheck,
-  Tag,
   Undo2,
 } from 'lucide-react';
 import { BrickIcon } from '../ui/BrickIcon';
+import { TagInput } from '../ui/TagInput';
 import { PartDetailModal } from './PartDetailModal';
 import { useInventoryStore } from '../../lib/stores/inventory';
 import type { ScanResult, DetectedPart } from '@brick-quest/shared';
@@ -38,23 +38,10 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
   const [inspectedPart, setInspectedPart] = useState<DetectedPart | null>(null);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [scanTags, setScanTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
   const [removedPartIds, setRemovedPartIds] = useState<Set<string>>(new Set());
 
   const addParts = useInventoryStore((s) => s.addParts);
   const removeParts = useInventoryStore((s) => s.removeParts);
-
-  const handleAddTag = () => {
-    const trimmed = tagInput.trim().toLowerCase();
-    if (trimmed && !scanTags.includes(trimmed)) {
-      setScanTags((prev) => [...prev, trimmed]);
-    }
-    setTagInput('');
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    setScanTags((prev) => prev.filter((t) => t !== tag));
-  };
 
   const handleAddToInventory = () => {
     if (scannedParts.length > 0) {
@@ -258,42 +245,11 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
             </div>
             {/* Tag Input (before adding) */}
             {!isAdded && (
-              <div className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex-none">
-                <div className="flex items-center gap-2 mb-2">
-                  <Tag className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="text-xs text-slate-500 font-medium">{t('tagsOptional')}</span>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
-                    placeholder={t('tagsPlaceholder')}
-                    className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    disabled={!tagInput.trim()}
-                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {tc('add')}
-                  </button>
-                </div>
-                {scanTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {scanTags.map((tag) => (
-                      <span key={tag} className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full">
-                        {tag}
-                        <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-blue-200">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <TagInput
+                tags={scanTags}
+                onTagsChange={setScanTags}
+                className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex-none"
+              />
             )}
             {/* Removal info */}
             {isAdded && removedPartIds.size > 0 && (
@@ -383,7 +339,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
                 >
                   {isRemoved && (
                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 rounded-xl">
-                      <span className="text-[10px] font-bold text-red-400 uppercase">Removed</span>
+                      <span className="text-[10px] font-bold text-red-400 uppercase">{t('removed')}</span>
                     </div>
                   )}
                   <div className="mb-2">
@@ -408,42 +364,11 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
 
         {/* Tag Input (before adding) - Mobile */}
         {!isAdded && (
-          <div className="border-x border-slate-800 bg-slate-900 px-3 pb-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Tag className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-xs text-slate-500 font-medium">Tags (optional)</span>
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
-                placeholder="e.g. castle, red-set"
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="button"
-                onClick={handleAddTag}
-                disabled={!tagInput.trim()}
-                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                Add
-              </button>
-            </div>
-            {scanTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {scanTags.map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full">
-                    {tag}
-                    <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-blue-200">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          <TagInput
+            tags={scanTags}
+            onTagsChange={setScanTags}
+            className="border-x border-slate-800 bg-slate-900 px-3 pb-3"
+          />
         )}
 
         {/* Removal info - Mobile */}

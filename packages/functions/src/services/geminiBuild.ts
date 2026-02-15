@@ -2,44 +2,16 @@ import { GoogleGenAI, Type } from '@google/genai';
 import type { Schema } from '@google/genai';
 import { config } from '../config.js';
 import { logger } from 'firebase-functions';
-import type { DetectedPart, BuildPlan, BuildStepBlock, Difficulty, PhysicsValidationReport } from '@brick-quest/shared';
+import type { DetectedPart, BuildPlan, BuildStepBlock, Difficulty } from '@brick-quest/shared';
 import { getBrickHeight, fromLegacyShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport } from '@brick-quest/shared';
+import { withTimeout } from '../utils/with-timeout.js';
+import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
 
-const getAI = () => new GoogleGenAI({ apiKey: config.gemini.apiKey });
+let _ai: GoogleGenAI | undefined;
+const getAI = () => (_ai ??= new GoogleGenAI({ apiKey: config.gemini.apiKey }));
 
 const BUILD_TIMEOUT = 8 * 60 * 1000;
 const AGENT_MAX_ITERATIONS = 3;
-const DROP_THRESHOLD_PCT = 15;
-const DROP_THRESHOLD_ABS = 5;
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error(`${operation} timed out after ${Math.round(timeoutMs / 1000 / 60)} minutes`)), timeoutMs);
-    promise.then((r) => { clearTimeout(id); resolve(r); }).catch((e) => { clearTimeout(id); reject(e); });
-  });
-}
-
-function needsAgentRetry(report: PhysicsValidationReport): boolean {
-  return report.droppedPercentage > DROP_THRESHOLD_PCT || report.droppedCount > DROP_THRESHOLD_ABS;
-}
-
-function buildPhysicsFeedback(report: PhysicsValidationReport): string {
-  const dropped = report.corrections.filter((c) => c.action === 'dropped');
-  const lines = dropped.map(
-    (c) => `- Step ${c.stepId} "${c.partName}" at (${c.originalPosition.x},${c.originalPosition.y},${c.originalPosition.z}) size ${c.size.width}x${c.size.length}: ${c.reason}`,
-  );
-  return `PHYSICS FEEDBACK — ${report.droppedCount} bricks were REMOVED because they overlapped and could not be nudged.
-The surviving build has ${report.outputCount} bricks (${report.droppedPercentage.toFixed(1)}% dropped).
-
-Dropped bricks:
-${lines.join('\n')}
-
-INSTRUCTIONS FOR IMPROVEMENT:
-- Re-place these bricks at VALID positions that don't overlap existing bricks
-- Ensure every brick (except ground level) rests on a brick below with ≥1 stud XZ overlap
-- Calculate Y positions precisely: brick height=1.2, plate height=0.4
-- Keep the same creative design but fix the spatial conflicts`;
-}
 
 export async function generateBuildPlan(
   parts: DetectedPart[],
