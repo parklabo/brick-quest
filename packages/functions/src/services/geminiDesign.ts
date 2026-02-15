@@ -28,7 +28,18 @@ function compositeViewPrompt(detail: DesignDetail, userPrompt: string): string {
     detailed: 'Use small bricks (1x1, 1x2) for fine pixel detail. About 150-300 bricks total.',
   };
 
-  return `Generate a SINGLE image containing a 2×2 grid of 4 views of the same LEGO Brickheadz-style brick sculpture, based on the subject in the reference photo.
+  return `STEP 1 — ANALYZE THE REFERENCE PHOTO:
+Before generating anything, carefully study the reference photo and identify:
+- The character/subject's EXACT colors (hair, skin, clothing, accessories)
+- Distinctive features (glasses, hat, ears, tail, wings, logos, patterns, facial expression)
+- Body proportions (head-to-body ratio, limb positions)
+- Key accessories or held items
+- Color palette — list the top 5 colors and where they appear
+
+STEP 2 — DESIGN A SINGLE 3D LEGO MODEL:
+Design ONE definitive LEGO Brickheadz model that captures ALL the distinctive features identified above. This model must be fully resolved in 3D — every brick placement is decided BEFORE rendering any view. Think of it as a real physical LEGO model sitting on a table.
+
+STEP 3 — RENDER 4 VIEWS of that SINGLE model into a 2×2 grid image:
 
 LAYOUT — 2×2 grid, each quadrant clearly separated by a thin white gap:
 ┌──────────────────┬──────────────────┐
@@ -42,24 +53,47 @@ LAYOUT — 2×2 grid, each quadrant clearly separated by a thin white gap:
 └──────────────────┴──────────────────┘
 
 VIEW DESCRIPTIONS:
-• TOP-LEFT (Hero): Classic LEGO box art 3/4 angle — camera slightly above and to the left. Shows front + top + left side. This is the "money shot" that gives the best overall impression.
-• TOP-RIGHT (Front): Straight-on front view, camera slightly above eye level. Face, chest, front details visible.
-• BOTTOM-LEFT (Side): 90° to the right of front. Shows profile/silhouette — depth, height, arm side.
-• BOTTOM-RIGHT (Back): 180° from front. Shows rear — back of head, back of body, tail if any.
+• TOP-LEFT (Hero): Classic LEGO box art 3/4 angle — camera slightly above and to the left. Shows front + top + left side. This is the "money shot."
+• TOP-RIGHT (Front): Straight-on front view, camera at eye level. ALL facial features, chest details, and front colors must be sharp and detailed — this view is just as important as the hero shot.
+• BOTTOM-LEFT (Side): 90° to the right of front. Profile/silhouette must show correct depth, arm positions, and side details with EQUAL quality to the hero shot.
+• BOTTOM-RIGHT (Back): 180° from front. Must show rear details (back of head, clothing back, tail if any) with EQUAL quality and detail.
 
-CRITICAL — CONSISTENCY:
-All 4 quadrants MUST show the EXACT SAME LEGO model. Same colors, same brick pattern, same proportions, same details. The only difference is the camera angle. Imagine one physical LEGO model on a turntable, photographed from 4 angles.
+ABSOLUTE REQUIREMENTS — CONSISTENCY:
+All 4 quadrants show the EXACT SAME physical LEGO model. Imagine one real LEGO model on a turntable, photographed from 4 angles under identical studio lighting.
+- SAME brick colors in EVERY view (a red brick on the front must be red from the side too)
+- SAME proportions and silhouette from all angles
+- SAME level of brick detail and stud visibility in ALL 4 views
+- SAME lighting, shadows, and background across all quadrants
+- If the character has asymmetric features (e.g., a logo on one side), they must appear in the correct views
+
+QUALITY RULE: Views 2, 3, and 4 must have IDENTICAL rendering quality to the hero view. Do NOT reduce detail, blur, or simplify any view. Every view is a hero shot from a different angle.
+
+CHARACTER FIDELITY:
+- The LEGO model must be INSTANTLY RECOGNIZABLE as the character in the reference photo
+- Capture the character's most iconic features FIRST (e.g., if they wear glasses → glasses must be prominent)
+- Match the reference photo's color palette as closely as possible using LEGO brick colors
+- Preserve the character's personality and expression in the blocky LEGO style
+
+REAL LEGO BUILDABILITY (CRITICAL):
+This model must look like it could ACTUALLY BE BUILT with real LEGO parts you can buy.
+- Use ONLY real LEGO brick types: standard bricks (1x1, 1x2, 1x3, 1x4, 2x2, 2x3, 2x4, 2x6), plates, tiles, slopes (25°, 33°, 45°, 65°), curved slopes, arches, round bricks/plates, cones, domes
+- Every brick must be a standard LEGO size — NO custom-cut or impossible shapes
+- Bricks must connect via standard LEGO stud-and-tube connections — NO floating parts, NO glue
+- Colors must be real LEGO production colors (bright red, blue, white, black, tan, dark bluish gray, light bluish gray, bright green, yellow, orange, dark red, dark blue, dark green, medium nougat, reddish brown, etc.)
+- Visible connection points: cylindrical studs on top of bricks, anti-studs (tubes) underneath
+- Brick seams and stud patterns must follow a consistent grid — all bricks aligned to the same stud grid
 
 BUILD STYLE:
-- Brickheadz / nanoblock style — a chunky, blocky 3D sculpture made by stacking LEGO bricks
-- Individual bricks (1x1, 1x2, 2x2, 2x4, plates, slopes) must be clearly visible
-- Stud grid pattern, visible seams between bricks, cylindrical studs on top
-- Stepped/pixelated surfaces like 3D pixel art — NOT smooth
+- Brickheadz / nanoblock style — a chunky, blocky 3D sculpture made by stacking real LEGO bricks
+- Individual bricks must be clearly distinguishable — you can count the studs
+- Sharp, crisp brick edges with visible seams between every brick
+- Stepped/pixelated surfaces like 3D pixel art — NOT smooth, NOT rounded
+- Studs must be uniform cylindrical bumps on a regular grid
 - ${detailInstructions[detail]}
 
-DO NOT: smooth surfaces, organic curves, minifigure style, stickers, printed tiles, non-LEGO parts, flat 2D look
+DO NOT: smooth or rounded surfaces, organic curves, minifigure style, stickers, printed tiles, non-LEGO parts, flat 2D look, lower quality on any view, invented/impossible brick shapes, bricks floating without connection, custom colors not in LEGO palette
 
-STYLE: Official LEGO Brickheadz product photo aesthetic. White/light gray background per quadrant. Soft studio lighting showing depth and shadows.${userPrompt ? `\n\nUser note: "${userPrompt}"` : ''}`;
+STYLE: Official LEGO Brickheadz product photo — as if photographed for the LEGO.com product page. White/light gray background per quadrant. Soft studio lighting showing depth and shadows. High resolution, sharp brick edges and visible studs in ALL views.${userPrompt ? `\n\nUser note: "${userPrompt}"` : ''}`;
 }
 
 /**
