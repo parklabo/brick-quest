@@ -38,11 +38,12 @@ The `generateBuildPlan()` function implements a self-improving loop:
 4. Gemini re-generates with feedback prompt appended (up to `AGENT_MAX_ITERATIONS=3`)
 5. Best result (most surviving bricks) is tracked across all iterations
 
-### Design Flow (extended)
-1. `submitDesign` → job created (pending)
-2. `processJob` → generates orthographic views → status: `views_ready`
+### Design Flow (2-stage pipeline)
+1. `submitDesign` → job created (status: `pending`)
+2. `processJob` → generates composite orthographic views → status: `views_ready`
 3. User approves → `approveDesignViews` → status: `generating_build`
-4. `processDesignUpdate` (onDocumentUpdated) → generates build plan → status: `completed`
+4. `processDesignUpdate` (onDocumentUpdated) → generates build plan from views → status: `completed`
+5. **Regeneration**: User can request re-generation → `regenerateDesignViews` → status: `generating_views` → `processDesignUpdate` regenerates views → status: `views_ready`
 
 ## Monorepo Structure
 
@@ -51,25 +52,30 @@ brick-quest/
 ├── apps/
 │   ├── landing/          # Next.js 16 + next-intl (port 7030)
 │   │   └── firebase.json     # Firebase Hosting config (static export)
-│   ├── web/              # Next.js 16 + Three.js (port 7031)
+│   ├── web/              # Next.js 16 + Three.js + Zustand (port 7031)
 │   │   └── apphosting.yaml   # Firebase App Hosting config
 │   └── console/          # Next.js 16 + Three.js admin console (port 7032)
 │       └── apphosting.yaml   # Firebase App Hosting config
 ├── packages/
-│   ├── shared/           # @brick-quest/shared - types, constants, utils, shape registry
+│   ├── shared/           # @brick-quest/shared - types, constants, utils, shape registry, prompts, catalog
+│   │   └── src/
+│   │       ├── types/        # BrickShape, BuildPlan, JobState, DetectedPart, etc.
+│   │       ├── registry/     # SHAPE_REGISTRY (16 shapes)
+│   │       ├── catalog/      # BrickLink parts, colors, URL generator
+│   │       ├── utils/        # build-physics.ts (physics validation pipeline)
+│   │       └── prompts/      # Gemini prompt templates
 │   └── functions/        # Firebase Cloud Functions (2nd gen)
-│       ├── src/
-│       │   ├── index.ts
-│       │   ├── config.ts
-│       │   ├── callable/     # submitScan, submitBuild, submitDesign, setAdminRole, approveDesignViews, regenerateDesignViews
-│       │   ├── services/     # geminiScan, geminiBuild, geminiDesign
-│       │   └── triggers/     # processJob, processDesignUpdate
-│       └── package.json
+│       └── src/
+│           ├── config.ts       # Environment config + LIMITS constants
+│           ├── callable/       # submitScan, submitBuild, submitDesign, cancelJob, setAdminRole, approveDesignViews, regenerateDesignViews
+│           ├── services/       # geminiScan, geminiBuild, geminiDesign, gemini-client
+│           ├── triggers/       # processJob (onCreate), processDesignUpdate (onUpdate)
+│           └── utils/          # physics-feedback, with-timeout
 ├── scripts/
 │   ├── prepare-functions-deploy.js   # Predeploy: bundle shared into functions
 │   └── cleanup-functions-deploy.js   # Postdeploy: restore workspace:* dep
 └── .github/workflows/
-    ├── ci.yml                # Build check on PR/push to main
+    ├── ci.yml                # Build + typecheck on PR/push to main
     ├── sync-branches.yml     # Auto-detect changes → trigger deploys
     ├── deploy-landing.yml    # Firebase Hosting deploy (static)
     ├── deploy-web.yml        # Push to deploy/web → App Hosting
@@ -84,25 +90,32 @@ brick-quest/
 | `submitScan` | onCall | HTTP | Upload image → create scan job |
 | `submitBuild` | onCall | HTTP | Parts + difficulty → create build job |
 | `submitDesign` | onCall | HTTP | Reference image → create design job |
+| `cancelJob` | onCall | HTTP | Cancel a pending/processing job |
 | `setAdminRole` | onCall | HTTP | Set admin custom claim |
 | `approveDesignViews` | onCall | HTTP | Approve views → trigger build generation |
 | `regenerateDesignViews` | onCall | HTTP | Re-generate orthographic views |
 | `processJob` | trigger | document.created (`jobs/{jobId}`) | Process new scan/build/design jobs (build jobs run agent iteration loop) |
-| `processDesignUpdate` | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions (build generation also uses agent loop) |
+| `processDesignUpdate` | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions: view regeneration + build generation |
+
+**Region**: All functions deployed to `asia-northeast1`
+**Trigger config**: `memory: 1GiB`, `timeoutSeconds: 540`, secrets: `GEMINI_API_KEY` via `defineSecret`
 
 ## Development Commands
 
 ```bash
 pnpm install              # Install all dependencies
-pnpm dev                  # Start all apps + emulators concurrently
+pnpm dev                  # Start all apps + emulators (Docker) concurrently
 pnpm build                # Build all packages and apps
 pnpm typecheck            # TypeScript check across all packages
+pnpm lint                 # ESLint across all packages
+pnpm lint:fix             # ESLint auto-fix
+pnpm format               # Prettier format all files
 
 pnpm dev:web              # Start web app only
 pnpm dev:landing          # Start landing page only
 pnpm dev:console          # Start admin console only
 
-pnpm firebase:emulators   # Start Firebase emulators (Functions + Firestore + Storage + Auth)
+pnpm firebase:emulators   # Start Firebase emulators via Docker (Functions + Firestore + Storage + Auth)
 pnpm firebase:deploy      # Deploy Cloud Functions to production
 ```
 
@@ -143,6 +156,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 **packages/functions/.env** (deployed to cloud):
 ```
 GEMINI_MODEL=gemini-3-pro-preview
+GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview
 GCLOUD_STORAGE_BUCKET=brick-quest.firebasestorage.app
 ```
 
@@ -153,20 +167,52 @@ GEMINI_API_KEY=your_api_key
 
 **Production**: `GEMINI_API_KEY` is stored in Google Secret Manager and injected via `defineSecret` in trigger functions.
 
+## Key Constants (packages/functions/src/config.ts)
+
+```ts
+LIMITS = {
+  IMAGE_SIZE_BYTES: 15_000_000,   // ~10 MB base64 image size
+  PROMPT_MAX_CHARS: 500,          // Max user prompt length
+  PARTS_MAX_COUNT: 500,           // Max parts in a build request
+  AGENT_MAX_ITERATIONS: 3,        // Max agent loop attempts
+  DROP_THRESHOLD_PCT: 15,         // Physics drop %: retry if exceeded
+  DROP_THRESHOLD_ABS: 5,          // Physics drop count: retry if exceeded
+}
+```
+
 ## Key Shared Types (@brick-quest/shared)
 
-- `DetectedPart` — Scanned LEGO brick with type, shape, color, dimensions
-- `BuildStepBlock` — Single step in 3D assembly (position, rotation, size)
-- `BuildPlan` — Full construction plan with title, lore, and steps
-- `JobState<T>` — Async job tracking (pending → processing → completed/failed)
-- `ApiResponse<T>` — Standard API response wrapper
-- `BrickShape` — Union of 16 shape IDs (rectangle, corner, round, slope_25..75, slope_inverted, curved_slope, arch, cone, dome, half_cylinder, wedge_plate, technic_beam)
-- `BrickType` — Union of 7 type IDs (brick, plate, tile, slope, technic, minifig, other)
-- `ShapeDefinition` — Full shape metadata (geometry, studs, heights, gemini aliases, icon2d)
-- `SHAPE_REGISTRY` — ReadonlyMap<BrickShape, ShapeDefinition> with 16 entries
+### Core Brick Types
+- `BrickShape` — Union of 16 shape IDs: `rectangle`, `corner`, `round`, `slope_25`, `slope_33`, `slope_45`, `slope_65`, `slope_75`, `slope_inverted`, `curved_slope`, `arch`, `cone`, `dome`, `half_cylinder`, `wedge_plate`, `technic_beam`
+- `BrickType` — Union of 7 type IDs: `brick`, `plate`, `tile`, `slope`, `technic`, `minifig`, `other`
+- `Difficulty` — `'beginner' | 'normal' | 'expert'`
+- `DesignDetail` — `'simple' | 'standard' | 'detailed'`
+
+### Part & Build Types
+- `DetectedPart` — Scanned brick: id, name, color, hexColor, count, type, shape, dimensions, tags?
+- `BuildStepBlock` — Single 3D assembly step: stepId, partName, color, hexColor, type, shape, position, rotation, size, description
+- `BuildPlan` — Full build: title, description, lore, steps[], agentIterations?
+- `ScanResult` — Scan output: parts[], aiInsight
+
+### Design Types
+- `RequiredPart` — Shopping list item: name, shape, type, color, hexColor, dimensions, quantity
+- `DesignViews` — Storage paths: composite (single composite image path)
+- `DesignResult` — Full design output: buildPlan, requiredParts[], referenceDescription, previewImageStoragePath?
+
+### Job Types
+- `JobType` — `'scan' | 'build' | 'design'`
+- `JobStatus` — `'pending' | 'processing' | 'generating_views' | 'views_ready' | 'generating_build' | 'completed' | 'failed'`
+- `JobState<T>` — Async job tracking: id, type, userId, status, progress (0-100), result?, error?, createdAt, updatedAt
+
+### Physics Types
 - `PhysicsResult` — Return type of `fixBuildPhysicsWithReport()`: `{ steps, report }`
-- `PhysicsValidationReport` — Physics validation summary: inputCount, outputCount, droppedCount, droppedPercentage, corrections[]
-- `PhysicsCorrectionEntry` — Per-brick correction record: stepId, partName, originalPosition, action (dropped|gravity_snapped|nudged), reason
+- `PhysicsValidationReport` — Validation summary: inputCount, outputCount, droppedCount, gravitySnappedCount, nudgedCount, droppedPercentage, corrections[]
+- `PhysicsCorrectionEntry` — Per-brick record: stepId, partName, originalPosition, size, action (`dropped` | `gravity_snapped` | `nudged`), reason
+
+### Registry & Catalog
+- `ShapeDefinition` — Full shape metadata: geometry, studs, heights, gemini aliases, icon2d
+- `SHAPE_REGISTRY` — `ReadonlyMap<BrickShape, ShapeDefinition>` with 16 entries
+- BrickLink catalog: parts data, colors data, URL generator
 
 ## Build Physics (packages/shared/src/utils/build-physics.ts)
 
@@ -216,7 +262,11 @@ Parts have:
 - **Package Manager**: pnpm 9.14.2
 - **Build System**: Turborepo
 - **Frontend**: Next.js 16.1.6 (pinned), React 19, Tailwind CSS v4, Three.js, Zustand
-- **Backend**: Firebase Functions (2nd gen), Firestore, Cloud Storage, Secret Manager
-- **AI**: Google Gemini (@google/genai)
+- **3D**: Three.js 0.182, @react-three/fiber 9, @react-three/drei 10
+- **Backend**: Firebase Functions (2nd gen, v7), Firebase Admin 13, Firestore, Cloud Storage, Secret Manager
+- **AI**: Google Gemini via @google/genai (gemini-3-pro-preview + gemini-3-pro-image-preview)
 - **i18n**: next-intl (en, ko, ja)
+- **UI**: Lucide React (icons), Framer Motion (landing animations)
 - **Hosting**: Firebase App Hosting (web, console), Firebase Hosting (landing)
+- **CI/CD**: GitHub Actions (6 workflows)
+- **Linting**: ESLint + Prettier
