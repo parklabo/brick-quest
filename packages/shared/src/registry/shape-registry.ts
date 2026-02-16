@@ -284,11 +284,9 @@ export const ALL_BRICK_TYPES: readonly BrickType[] = [
 
 // ── Helper Functions ─────────────────────────────────────
 
-/** Look up a shape definition. Throws if shape is unknown. */
+/** Look up a shape definition. Falls back to 'rectangle' for unknown shapes. */
 export function getShapeDefinition(shape: BrickShape): ShapeDefinition {
-  const def = SHAPE_REGISTRY.get(shape);
-  if (!def) throw new Error(`Unknown shape: ${shape}`);
-  return def;
+  return SHAPE_REGISTRY.get(shape) ?? SHAPE_REGISTRY.get('rectangle')!;
 }
 
 /** Get the 3D height for a shape + type combination. */
@@ -305,16 +303,25 @@ export function resolveShape(
   shape: string,
   type?: string,
 ): BrickShape {
-  switch (shape) {
-    case 'rectangle': return 'rectangle';
-    case 'corner': return 'corner';
-    case 'round': return 'round';
-    case 'slope': return 'slope_45'; // legacy "slope" becomes standard 45°
-    default:
-      // If type gives us a hint, use it
-      if (type === 'technic') return 'technic_beam';
-      return 'rectangle';
+  // If it's already a valid shape ID in the registry, pass through as-is
+  if (SHAPE_REGISTRY.has(shape as BrickShape)) {
+    return shape as BrickShape;
   }
+
+  // Check all geminiAliases for a match
+  for (const def of definitions) {
+    if (def.geminiAliases.includes(shape)) {
+      return def.id;
+    }
+  }
+
+  // Legacy alias: bare "slope" → standard 45°
+  if (shape === 'slope') return 'slope_45';
+
+  // Type-based fallback
+  if (type === 'technic') return 'technic_beam';
+
+  return 'rectangle';
 }
 
 /** @deprecated Use `resolveShape` instead. */
