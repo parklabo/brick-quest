@@ -105,9 +105,11 @@ export function CreateUploader() {
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
-            <Camera className="w-12 h-12 text-slate-500" />
-            <span className="text-slate-400 text-center">
+          <div className="flex flex-col items-center gap-5 p-6 sm:p-10">
+            <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+              <Camera className="w-7 h-7 text-slate-500" />
+            </div>
+            <span className="text-slate-500 text-sm text-center max-w-xs">
               {t('instruction')}
             </span>
 
@@ -115,17 +117,17 @@ export function CreateUploader() {
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
-                className="sm:hidden flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-slate-700 text-slate-300 hover:border-lego-yellow hover:text-lego-yellow transition-colors"
+                className="sm:hidden flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-white/10 text-slate-300 hover:border-lego-yellow/50 hover:text-lego-yellow transition-colors text-sm font-medium"
               >
-                <Camera className="w-5 h-5" />
+                <Camera className="w-4 h-4" />
                 {t('takePhoto')}
               </button>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-slate-700 text-slate-300 hover:border-lego-yellow hover:text-lego-yellow transition-colors"
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-white/10 text-slate-300 hover:border-lego-yellow/50 hover:text-lego-yellow transition-colors text-sm font-medium"
               >
-                <Upload className="w-5 h-5" />
+                <Upload className="w-4 h-4" />
                 {t('uploadPhoto')}
               </button>
             </div>

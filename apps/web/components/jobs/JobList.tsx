@@ -169,30 +169,26 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
 
   const content = (
     <div
-      className={`group relative rounded-xl p-px transition-all duration-200 ${
+      className={`group relative rounded-xl transition-all duration-200 ${
         isUnseen
-          ? 'bg-linear-to-r from-lego-yellow/40 via-lego-red/30 to-lego-yellow/40'
-          : 'bg-lego-border hover:bg-slate-600/60'
+          ? 'bg-white/[0.04] ring-1 ring-lego-yellow/20'
+          : 'bg-white/[0.02] ring-1 ring-white/[0.06] hover:bg-white/[0.04] hover:ring-white/[0.1]'
       }`}
     >
-      <div
-        className={`relative rounded-xl px-5 py-4 flex items-center gap-4 transition-colors ${
-          isUnseen ? 'bg-lego-surface/95' : 'bg-lego-surface'
-        }`}
-      >
+      <div className="relative px-4 py-3.5 flex items-center gap-3.5">
         {isUnseen && (
-          <div className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-lego-yellow shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
+          <div className="absolute top-3.5 right-3.5 w-2 h-2 rounded-full bg-lego-yellow shadow-[0_0_6px_rgba(250,204,21,0.5)]" />
         )}
 
         <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-[0_2px_0_0_rgba(0,0,0,0.2)] ${iconBg}`}
+          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}
         >
-          <Icon className={`w-5 h-5 ${iconText}`} />
+          <Icon className={`w-4 h-4 ${iconText}`} />
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <span className="font-semibold text-white text-sm">{label}</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-medium text-white text-sm">{label}</span>
             <StatusBadge status={job.status} />
             {job.addedToInventory && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
@@ -201,16 +197,16 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span>{subtitle}</span>
-            <span className="w-1 h-1 rounded-full bg-slate-700" />
-            <span className="flex items-center gap-1">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="truncate">{subtitle}</span>
+            <span className="shrink-0">&middot;</span>
+            <span className="flex items-center gap-1 shrink-0">
               <Clock className="w-3 h-3" />
               {relativeTimeI18n(job.createdAt, tc)}
             </span>
           </div>
           {job.status === 'failed' && job.error && (
-            <p className="text-xs text-red-400/80 mt-1.5 truncate">{job.error}</p>
+            <p className="text-xs text-red-400/70 mt-1 truncate">{job.error}</p>
           )}
         </div>
 
@@ -219,7 +215,7 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
             type="button"
             disabled={cancelling}
             onClick={handleCancel}
-            className="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/25 ring-1 ring-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
+            className="shrink-0 w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
             title={t('cancel')}
           >
             {cancelling ? (
@@ -231,9 +227,7 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
         )}
 
         {href && (
-          <div className="shrink-0 w-8 h-8 rounded-lg bg-lego-border group-hover:bg-slate-600 flex items-center justify-center transition-colors shadow-[0_2px_0_0_rgba(0,0,0,0.2)]">
-            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-lego-yellow transition-colors" />
-          </div>
+          <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
         )}
       </div>
     </div>

@@ -44,11 +44,11 @@ export function JobHistory({ type }: JobHistoryProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {unseenCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-lego-yellow/5 ring-1 ring-lego-yellow/20">
-          <Sparkles className="w-4 h-4 text-lego-yellow shrink-0" />
-          <p className="text-sm text-lego-yellow font-medium">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg bg-lego-yellow/[0.06] border border-lego-yellow/10">
+          <Sparkles className="w-3.5 h-3.5 text-lego-yellow/70 shrink-0" />
+          <p className="text-xs text-lego-yellow/80 font-medium">
             {t('newResults', { count: unseenCount })}
           </p>
         </div>
@@ -56,14 +56,14 @@ export function JobHistory({ type }: JobHistoryProps) {
 
       {groups.map((group) => (
         <div key={group.label}>
-          <div className="flex items-center gap-3 mb-3 px-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+          <div className="flex items-center gap-3 mb-3">
+            <h3 className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
               {group.label}
             </h3>
-            <div className="flex-1 h-px bg-slate-800/80" />
-            <span className="text-xs text-slate-600">{group.jobs.length}</span>
+            <div className="flex-1 h-px bg-white/[0.04]" />
+            <span className="text-[11px] text-slate-600">{group.jobs.length}</span>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {group.jobs.map((job) => (
               <JobCard key={job.id} job={job} />
             ))}

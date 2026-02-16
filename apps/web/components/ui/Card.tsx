@@ -15,7 +15,7 @@ const STUD_COLORS: Record<string, string> = {
 
 export function Card({ children, className = '', studs = false, color = 'default' }: CardProps) {
   return (
-    <div className={`brick-card p-6 ${className}`}>
+    <div className={`rounded-2xl bg-white/[0.03] border border-white/[0.06] p-6 ${className}`}>
       {studs && (
         <div className="flex items-center gap-2 mb-4 -mt-1">
           {Array.from({ length: 4 }, (_, i) => (
