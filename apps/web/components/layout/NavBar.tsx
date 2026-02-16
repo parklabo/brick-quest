@@ -12,16 +12,6 @@ import { useProfileStore } from '../../lib/stores/profile';
 
 const MY_BRICKS_PATHS = ['/scan', '/builds', '/inventory'];
 
-function StudRow({ count, className }: { count: number; className?: string }) {
-  return (
-    <div className={`flex items-center gap-1.5 ${className ?? ''}`}>
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="stud-sm bg-lego-yellow/20" />
-      ))}
-    </div>
-  );
-}
-
 function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount: number }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -51,9 +41,9 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
+        className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
           active
-            ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
+            ? 'bg-white/10 text-white'
             : 'text-slate-400 hover:text-white hover:bg-white/5'
         }`}
       >
@@ -109,26 +99,26 @@ export function NavBar() {
   return (
     <>
       {/* Desktop: top bar */}
-      <nav className="hidden sm:block border-b border-lego-border bg-lego-surface/95 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex items-center justify-between px-6 py-2.5">
-          <Link href="/dashboard" className="flex items-center gap-2 group">
+      <nav className="hidden sm:block bg-lego-surface/80 backdrop-blur-md sticky top-0 z-40 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-6 h-14">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
             <Image
               src="/logo.png"
               alt="Brick Quest"
-              width={32}
-              height={32}
-              className="rounded-md transition-transform group-hover:scale-105"
+              width={28}
+              height={28}
+              className="rounded-md transition-transform group-hover:scale-110"
             />
-            <span className="font-extrabold text-lg tracking-tight text-lego-yellow">
+            <span className="font-extrabold text-base tracking-tight text-white">
               {t('brandName')}
             </span>
           </Link>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             <Link
               href="/dashboard"
-              className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
+              className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                 pathname === '/dashboard'
-                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
+                  ? 'bg-white/10 text-white'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -138,16 +128,16 @@ export function NavBar() {
 
             <Link
               href="/create"
-              className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
+              className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                 pathname.startsWith('/create')
-                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
+                  ? 'bg-lego-yellow/15 text-lego-yellow'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
               <Sparkles className="w-4 h-4" />
               {t('create')}
               {unseenDesignCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-lego-red text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_2px_4px_rgba(220,38,38,0.4)]">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-lego-red text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_2px_4px_rgba(220,38,38,0.4)]">
                   {unseenDesignCount > 9 ? '9+' : unseenDesignCount}
                 </span>
               )}
@@ -157,9 +147,9 @@ export function NavBar() {
 
             <Link
               href="/workspace"
-              className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
+              className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                 pathname.startsWith('/workspace')
-                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
+                  ? 'bg-white/10 text-white'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -167,24 +157,21 @@ export function NavBar() {
               {t('workspace')}
             </Link>
 
-            <div className="w-px h-6 bg-lego-border mx-2" />
+            <div className="w-px h-5 bg-white/10 mx-2" />
             <Link
               href="/settings"
-              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${
+              className={`flex items-center gap-2 p-1.5 rounded-full transition-colors ${
                 pathname === '/settings'
-                  ? 'bg-lego-yellow/10'
+                  ? 'ring-2 ring-lego-yellow/40'
                   : 'hover:bg-white/5'
               }`}
               title={t('settings')}
             >
-              <div className="w-7 h-7 rounded-full bg-lego-yellow/15 border border-lego-yellow/30 flex items-center justify-center text-xs font-extrabold text-lego-yellow">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-lego-yellow/25 to-lego-orange/20 border border-white/10 flex items-center justify-center text-xs font-extrabold text-lego-yellow">
                 {initial}
               </div>
             </Link>
           </div>
-        </div>
-        <div className="flex justify-center pb-1">
-          <StudRow count={12} />
         </div>
       </nav>
 
