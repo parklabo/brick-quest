@@ -241,5 +241,13 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
     );
   }
 
+  if (isUnseen) {
+    return (
+      <button type="button" onClick={() => markSeen(job.id)} className="block w-full text-left cursor-pointer">
+        {content}
+      </button>
+    );
+  }
+
   return content;
 });
