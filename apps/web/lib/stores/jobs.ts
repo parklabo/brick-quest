@@ -10,21 +10,22 @@ import {
 import { firestore } from '../firebase';
 import type { JobType, JobStatus, DesignViews } from '@brick-quest/shared';
 
+const SEEN_IDS_KEY = 'brick-quest-seen-job-ids';
 const ADDED_IDS_KEY = 'brick-quest-added-job-ids';
 
-function loadAddedIds(): Set<string> {
+function loadIdSet(key: string): Set<string> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = localStorage.getItem(ADDED_IDS_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
   }
 }
 
-function saveAddedIds(ids: Set<string>) {
+function saveIdSet(key: string, ids: Set<string>) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(ADDED_IDS_KEY, JSON.stringify([...ids]));
+  localStorage.setItem(key, JSON.stringify([...ids]));
 }
 
 export interface TrackedJob {
@@ -48,7 +49,8 @@ interface JobsStore {
   _initJobsListener: (uid: string) => () => void;
 }
 
-const addedIds = loadAddedIds();
+const seenIds = loadIdSet(SEEN_IDS_KEY);
+const addedIds = loadIdSet(ADDED_IDS_KEY);
 
 export const useJobsStore = create<JobsStore>()((set, get) => ({
   jobs: [],
@@ -66,6 +68,8 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
   },
 
   markSeen: (id) => {
+    seenIds.add(id);
+    saveIdSet(SEEN_IDS_KEY, seenIds);
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, seen: true } : j)),
     }));
@@ -73,7 +77,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   markAddedToInventory: (id) => {
     addedIds.add(id);
-    saveAddedIds(addedIds);
+    saveIdSet(ADDED_IDS_KEY, addedIds);
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, addedToInventory: true } : j)),
     }));
@@ -81,7 +85,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   unmarkAddedToInventory: (id) => {
     addedIds.delete(id);
-    saveAddedIds(addedIds);
+    saveIdSet(ADDED_IDS_KEY, addedIds);
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, addedToInventory: false } : j)),
     }));
@@ -126,7 +130,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
             error: data.error,
             views: data.views,
             createdAt,
-            seen: needsAttention ? false : true,
+            seen: seenIds.has(id) || !needsAttention,
             addedToInventory: addedIds.has(id),
           });
         }
