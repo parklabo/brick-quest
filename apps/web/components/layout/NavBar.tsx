@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Sparkles, ScanLine, Package, Hammer, Box, LayoutDashboard, ChevronDown, Blocks } from 'lucide-react';
@@ -110,11 +111,14 @@ export function NavBar() {
       {/* Desktop: top bar */}
       <nav className="hidden sm:block border-b border-lego-border bg-lego-surface/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex items-center justify-between px-6 py-2.5">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="relative w-8 h-6 bg-lego-red rounded-[4px] shadow-[0_2px_0_0_rgba(0,0,0,0.3)] flex items-center justify-center gap-[3px] transition-transform group-hover:scale-105">
-              <div className="stud-sm bg-lego-red" />
-              <div className="stud-sm bg-lego-red" />
-            </div>
+          <Link href="/dashboard" className="flex items-center gap-2 group">
+            <Image
+              src="/logo.png"
+              alt="Brick Quest"
+              width={32}
+              height={32}
+              className="rounded-md transition-transform group-hover:scale-105"
+            />
             <span className="font-extrabold text-lg tracking-tight text-lego-yellow">
               {t('brandName')}
             </span>

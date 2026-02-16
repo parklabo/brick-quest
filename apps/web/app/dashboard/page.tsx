@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Sparkles, ScanLine, Package, Hammer, Box, ArrowRight } from 'lucide-react';
 import { useInventoryStore } from '../../lib/stores/inventory';
 import { useJobsStore } from '../../lib/stores/jobs';
@@ -33,10 +34,7 @@ export default function DashboardPage() {
   return (
     <main className="max-w-4xl mx-auto px-4 py-10 sm:py-16">
       <div className="flex items-center gap-3 mb-1">
-        <div className="relative w-10 h-7 bg-lego-red rounded-[4px] shadow-[0_2px_0_0_rgba(0,0,0,0.3)] flex items-center justify-center gap-1">
-          <div className="stud-sm bg-lego-red" />
-          <div className="stud-sm bg-lego-red" />
-        </div>
+        <Image src="/logo.png" alt="Brick Quest" width={40} height={40} className="rounded-lg" />
         <h1 className="text-3xl font-extrabold">{t('title')}</h1>
       </div>
       <p className="text-slate-400 text-sm mb-10 ml-[52px]">{t('subtitle')}</p>
