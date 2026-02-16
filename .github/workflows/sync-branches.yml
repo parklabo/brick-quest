@@ -4,9 +4,12 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: sync-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
-  actions: write
 
 jobs:
   detect-changes:
@@ -19,45 +22,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Detect changed paths
         id: changes
         run: |
-          BEFORE_SHA="${{ github.event.before }}"
-          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-          elif git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
-            CHANGED_FILES=$(git diff --name-only $BEFORE_SHA HEAD)
-          else
-            echo "Warning: BEFORE_SHA not found, falling back to HEAD~1"
-            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-          fi
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
-          # Check for landing changes (apps/landing or packages/shared)
           if echo "$CHANGED_FILES" | grep -qE '^(apps/landing/|packages/shared/)'; then
             echo "landing=true" >> $GITHUB_OUTPUT
           else
             echo "landing=false" >> $GITHUB_OUTPUT
           fi
 
-          # Check for web changes (apps/web or packages/shared)
           if echo "$CHANGED_FILES" | grep -qE '^(apps/web/|packages/shared/)'; then
             echo "web=true" >> $GITHUB_OUTPUT
           else
             echo "web=false" >> $GITHUB_OUTPUT
           fi
 
-          # Check for console changes (apps/console or packages/shared)
           if echo "$CHANGED_FILES" | grep -qE '^(apps/console/|packages/shared/)'; then
             echo "console=true" >> $GITHUB_OUTPUT
           else
             echo "console=false" >> $GITHUB_OUTPUT
           fi
 
-          # Check for functions changes (packages/functions or packages/shared)
           if echo "$CHANGED_FILES" | grep -qE '^(packages/functions/|packages/shared/)'; then
             echo "functions=true" >> $GITHUB_OUTPUT
           else
@@ -67,53 +58,35 @@ jobs:
   deploy-landing:
     needs: detect-changes
     if: needs.detect-changes.outputs.landing == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Trigger Deploy Landing workflow
-        run: |
-          gh workflow run deploy-landing.yml --ref main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/deploy-landing.yml
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
   deploy-web:
     needs: detect-changes
     if: needs.detect-changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Push to deploy/web branch
-        run: |
-          git push origin HEAD:deploy/web --force
+        run: git push origin HEAD:deploy/web --force-with-lease
 
   deploy-console:
     needs: detect-changes
     if: needs.detect-changes.outputs.console == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Push to deploy/console branch
-        run: |
-          git push origin HEAD:deploy/console --force
+        run: git push origin HEAD:deploy/console --force-with-lease
 
   deploy-functions:
     needs: detect-changes
     if: needs.detect-changes.outputs.functions == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Trigger Deploy Functions workflow
-        run: |
-          gh workflow run deploy-functions.yml --ref main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/deploy-functions.yml
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

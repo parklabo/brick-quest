@@ -2,22 +2,24 @@ name: Deploy Landing Page
 
 on:
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT:
+        required: true
+
+concurrency:
+  group: deploy-landing
+  cancel-in-progress: false
+
+env:
+  FIREBASE_PROJECT_ID: brick-quest
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
+      - uses: ./.github/actions/setup
 
       - name: Build shared package
         run: pnpm --filter @brick-quest/shared build
@@ -30,6 +32,6 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: brick-quest
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
           channelId: live
           entryPoint: apps/landing
