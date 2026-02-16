@@ -1,9 +1,10 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useJobsStore } from '../../lib/stores/jobs';
+import { apiClient } from '../../lib/api/client';
 import {
   ScanLine,
   Hammer,
@@ -14,10 +15,13 @@ import {
   Clock,
   ChevronRight,
   Eye,
+  Ban,
 } from 'lucide-react';
 import { PackageCheck } from 'lucide-react';
 import type { TrackedJob } from '../../lib/stores/jobs';
 import type { ScanResult, BuildPlan, DesignResult } from '@brick-quest/shared';
+
+const CANCELLABLE = new Set(['pending', 'processing', 'generating_views', 'generating_build']);
 
 // --- Helpers ---
 
@@ -116,6 +120,21 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
   const t = useTranslations('jobs');
   const tc = useTranslations('common');
   const markSeen = useJobsStore((s) => s.markSeen);
+  const [cancelling, setCancelling] = useState(false);
+
+  const isCancellable = CANCELLABLE.has(job.status);
+
+  const handleCancel = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(t('cancelConfirm'))) return;
+    setCancelling(true);
+    try {
+      await apiClient.cancelJob(job.id);
+    } catch {
+      setCancelling(false);
+    }
+  }, [job.id, t]);
 
   const jobMeta = {
     scan: { Icon: ScanLine, label: t('scanType'), iconBg: 'bg-lego-blue/15 ring-1 ring-lego-blue/25', iconText: 'text-lego-blue' },
@@ -194,6 +213,22 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
             <p className="text-xs text-red-400/80 mt-1.5 truncate">{job.error}</p>
           )}
         </div>
+
+        {isCancellable && (
+          <button
+            type="button"
+            disabled={cancelling}
+            onClick={handleCancel}
+            className="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/25 ring-1 ring-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
+            title={t('cancel')}
+          >
+            {cancelling ? (
+              <Loader2 className="w-3.5 h-3.5 text-red-400 animate-spin" />
+            ) : (
+              <Ban className="w-3.5 h-3.5 text-red-400" />
+            )}
+          </button>
+        )}
 
         {href && (
           <div className="shrink-0 w-8 h-8 rounded-lg bg-lego-border group-hover:bg-slate-600 flex items-center justify-center transition-colors shadow-[0_2px_0_0_rgba(0,0,0,0.2)]">

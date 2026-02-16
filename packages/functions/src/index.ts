@@ -11,4 +11,5 @@ export { submitDesign } from './callable/submitDesign.js';
 export { setAdminRole } from './callable/setAdminRole.js';
 export { approveDesignViews } from './callable/approveDesignViews.js';
 export { regenerateDesignViews } from './callable/regenerateDesignViews.js';
+export { cancelJob } from './callable/cancelJob.js';
 export { processJob, processDesignUpdate } from './triggers/processJob.js';

@@ -262,7 +262,10 @@
     "designSubtitle": "AI 레고 디자인",
     "buildSubtitle": "AI 조립 설명서",
     "scanResult": "{types}종류 · {pcs}개",
-    "added": "추가됨"
+    "added": "추가됨",
+    "cancel": "취소",
+    "cancelConfirm": "이 작업을 취소할까요?",
+    "cancelled": "사용자가 취소함"
   },
   "parts": {
     "inspectBrick": "브릭 상세",

@@ -55,4 +55,13 @@ export const apiClient = {
     const { data } = await callable({ jobId });
     return data;
   },
+
+  async cancelJob(jobId: string): Promise<{ success: boolean }> {
+    const callable = httpsCallable<{ jobId: string }, { success: boolean }>(
+      functions,
+      'cancelJob',
+    );
+    const { data } = await callable({ jobId });
+    return data;
+  },
 };

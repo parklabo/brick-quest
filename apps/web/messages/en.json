@@ -262,7 +262,10 @@
     "designSubtitle": "AI LEGO design",
     "buildSubtitle": "AI build instructions",
     "scanResult": "{types} types · {pcs} pcs",
-    "added": "Added"
+    "added": "Added",
+    "cancel": "Cancel",
+    "cancelConfirm": "Cancel this job?",
+    "cancelled": "Cancelled by user"
   },
   "parts": {
     "inspectBrick": "Inspect Brick",

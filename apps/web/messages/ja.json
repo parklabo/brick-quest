@@ -262,7 +262,10 @@
     "designSubtitle": "AIレゴデザイン",
     "buildSubtitle": "AI組み立て説明書",
     "scanResult": "{types}種類 · {pcs}個",
-    "added": "追加済み"
+    "added": "追加済み",
+    "cancel": "キャンセル",
+    "cancelConfirm": "このジョブをキャンセルしますか？",
+    "cancelled": "ユーザーによりキャンセル"
   },
   "parts": {
     "inspectBrick": "ブリック詳細",
