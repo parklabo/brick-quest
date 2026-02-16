@@ -17,4 +17,10 @@ export const LIMITS = {
   PROMPT_MAX_CHARS: 500,
   /** Max parts in a build request */
   PARTS_MAX_COUNT: 500,
+  /** Max agent iteration loop attempts for build/design jobs */
+  AGENT_MAX_ITERATIONS: 3,
+  /** Physics drop threshold: retry if dropped percentage exceeds this */
+  DROP_THRESHOLD_PCT: 15,
+  /** Physics drop threshold: retry if absolute dropped count exceeds this */
+  DROP_THRESHOLD_ABS: 5,
 } as const;

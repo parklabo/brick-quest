@@ -1,15 +1,15 @@
 import { Type } from '@google/genai';
 import type { Schema } from '@google/genai';
-import { config } from '../config.js';
+import { config, LIMITS } from '../config.js';
 import { logger } from 'firebase-functions';
 import type { DetectedPart, BuildPlan, BuildStepBlock, Difficulty } from '@brick-quest/shared';
-import { getBrickHeight, fromLegacyShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport } from '@brick-quest/shared';
+import { getBrickHeight, resolveShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport, COORDINATE_SYSTEM_PROMPT, CRITICAL_RULES_PROMPT } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
 import { getAI } from './gemini-client.js';
 
 const BUILD_TIMEOUT = 8 * 60 * 1000;
-const AGENT_MAX_ITERATIONS = 3;
+const { AGENT_MAX_ITERATIONS } = LIMITS;
 
 export async function generateBuildPlan(
   parts: DetectedPart[],
@@ -133,22 +133,7 @@ Example for a CAT:
 - Layers 5-7: head (wider than body, with ears poking up at layer 7)
 - Details: eyes (1x1 black on front of head), nose (1x1 pink), whiskers, tail extending from back
 
-═══════════════════════════════════════
-COORDINATE SYSTEM
-═══════════════════════════════════════
-- X axis = left-right, Z axis = front-back, Y axis = up
-- 1 stud = 1 unit on X and Z
-- Y value = BOTTOM of the brick
-- Brick height = 1.2 units, Plate/tile height = 0.4 units
-- Position = CENTER of the brick
-
-POSITION RULES (center-based):
-  Even dimension → x or z ends in .5 (examples: 0.5, 1.5, 2.5)
-  Odd dimension  → x or z is integer (examples: 0, 1, 2, 3)
-
-COVERAGE: a brick at position (px, pz) with size WxL covers:
-  X range: [px - W/2, px + W/2]
-  Z range: [pz - L/2, pz + L/2]
+${COORDINATE_SYSTEM_PROMPT}
 
 ═══════════════════════════════════════
 LAYER-BY-LAYER BUILD METHOD (MANDATORY)
@@ -211,13 +196,7 @@ LAYER 2 (y=2.4) — eyes on white face:
     step 18: inventoryIndex=1, 2x1 blue brick → x=2.5, y=2.4, z=3
   CHECK: 10 bricks, all 16 studs covered ✓ Eyes placed correctly ✓
 
-═══════════════════════════════════════
-CRITICAL RULES
-═══════════════════════════════════════
-1. ZERO GAPS: Every stud position within the layer footprint MUST be covered. Count the studs!
-2. ZERO OVERLAPS: No two bricks on the same layer can cover the same stud position.
-3. LAYER STACKING: Each layer sits on the previous. Y increments: +1.2 for bricks, +0.4 for plates.
-4. SOLID FROM ALL SIDES: Looking at the model from front, back, left, right — no holes visible.
+${CRITICAL_RULES_PROMPT}
 5. RECOGNIZABLE SHAPE: The model MUST look like the requested subject from multiple angles.
 6. COLOR GROUPING: Use colors intentionally — group same colors for body parts, use contrasting colors for details (eyes, nose, patterns).
 7. INVENTORY RESPECT: Only use parts from the inventory. Track counts — do NOT exceed available quantity per part.
@@ -285,7 +264,7 @@ Return ONLY valid JSON.`;
           step.color = part.color;
           step.hexColor = part.hexColor;
           step.type = part.type;
-          step.shape = fromLegacyShape(step.shape || part.shape || 'rectangle', part.type);
+          step.shape = resolveShape(step.shape || part.shape || 'rectangle', part.type);
 
           if (!step.size) step.size = {};
           step.size.width = part.dimensions.width;

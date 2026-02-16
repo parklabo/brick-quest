@@ -1,10 +1,8 @@
 import type { PhysicsValidationReport } from '@brick-quest/shared';
-
-const DROP_THRESHOLD_PCT = 15;
-const DROP_THRESHOLD_ABS = 5;
+import { LIMITS } from '../config.js';
 
 export function needsAgentRetry(report: PhysicsValidationReport): boolean {
-  return report.droppedPercentage > DROP_THRESHOLD_PCT || report.droppedCount > DROP_THRESHOLD_ABS;
+  return report.droppedPercentage > LIMITS.DROP_THRESHOLD_PCT || report.droppedCount > LIMITS.DROP_THRESHOLD_ABS;
 }
 
 export function buildPhysicsFeedback(report: PhysicsValidationReport): string {

@@ -1,15 +1,15 @@
 import { Type } from '@google/genai';
 import type { Schema } from '@google/genai';
-import { config } from '../config.js';
+import { config, LIMITS } from '../config.js';
 import { logger } from 'firebase-functions';
 import type { DesignResult, DesignDetail, BuildStepBlock } from '@brick-quest/shared';
-import { getBrickHeight, fromLegacyShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport } from '@brick-quest/shared';
+import { getBrickHeight, resolveShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport, COORDINATE_SYSTEM_PROMPT, CRITICAL_RULES_PROMPT } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
 import { getAI } from './gemini-client.js';
 
 const DESIGN_TIMEOUT = 8 * 60 * 1000;
-const AGENT_MAX_ITERATIONS = 3;
+const { AGENT_MAX_ITERATIONS } = LIMITS;
 
 function buildCountFeedback(actualCount: number, targetMin: number, brickRange: string): string {
   return `BRICK COUNT FEEDBACK — You only generated ${actualCount} bricks. The MINIMUM target is ${targetMin} and the ideal range is ${brickRange}.
@@ -458,7 +458,7 @@ Return ONLY valid JSON.`;
         raw.steps = raw.steps.filter((step: any) => {
           if (!step.type || !step.position) return false;
 
-          step.shape = fromLegacyShape(step.shape || 'rectangle', step.type);
+          step.shape = resolveShape(step.shape || 'rectangle', step.type);
 
           const width = step.width || 2;
           const length = step.length || 2;

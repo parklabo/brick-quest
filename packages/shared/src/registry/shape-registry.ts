@@ -300,12 +300,12 @@ export function getBrickHeight(shape: BrickShape, type: BrickType): number {
   return def.heights.brick;
 }
 
-/** Map legacy 4-shape values to the new 16-shape system. */
-export function fromLegacyShape(
-  oldShape: string,
+/** Resolve a shape string (including legacy aliases) to a valid BrickShape ID. */
+export function resolveShape(
+  shape: string,
   type?: string,
 ): BrickShape {
-  switch (oldShape) {
+  switch (shape) {
     case 'rectangle': return 'rectangle';
     case 'corner': return 'corner';
     case 'round': return 'round';
@@ -316,6 +316,9 @@ export function fromLegacyShape(
       return 'rectangle';
   }
 }
+
+/** @deprecated Use `resolveShape` instead. */
+export const fromLegacyShape = resolveShape;
 
 /** Generate the enum array for Gemini response schema. */
 export function getGeminiShapeEnum(): string[] {

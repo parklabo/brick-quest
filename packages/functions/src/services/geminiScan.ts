@@ -3,7 +3,7 @@ import type { Schema } from '@google/genai';
 import { config } from '../config.js';
 import { logger } from 'firebase-functions';
 import type { ScanResult } from '@brick-quest/shared';
-import { getGeminiShapeEnum, getGeminiShapeDescriptions, fromLegacyShape } from '@brick-quest/shared';
+import { getGeminiShapeEnum, getGeminiShapeDescriptions, resolveShape } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { getAI } from './gemini-client.js';
 
@@ -105,7 +105,7 @@ Return ONLY valid JSON matching the schema.`;
     hexColor: p.hexColor,
     count: p.count,
     type: p.type,
-    shape: fromLegacyShape(p.shape || 'rectangle', p.type),
+    shape: resolveShape(p.shape || 'rectangle', p.type),
     dimensions: { width: p.width, length: p.length },
   }));
 
