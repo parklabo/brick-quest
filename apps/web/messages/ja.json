@@ -56,7 +56,7 @@
   "dashboard": {
     "title": "Brick Quest",
     "subtitle": "何をしますか？",
-    "createTitle": "作成",
+    "createTitle": "デザイン",
     "createDesc": "何でも撮影して、レゴの組み立て説明書とパーツリストを入手。",
     "createBadge": "写真 → レゴ",
     "myBricksTitle": "マイブリック",
@@ -67,7 +67,7 @@
     "scans": "スキャン",
     "designs": "デザイン",
     "quickActions": "クイックアクション",
-    "createFromPhoto": "写真から作成",
+    "createFromPhoto": "写真からデザイン",
     "createFromPhotoDesc": "写真をレゴの説明書に変換",
     "scanBricks": "ブリックスキャン",
     "scanBricksDesc": "ブリックを撮影してAIで識別",

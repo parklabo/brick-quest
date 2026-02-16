@@ -56,7 +56,7 @@
   "dashboard": {
     "title": "Brick Quest",
     "subtitle": "무엇을 하고 싶으신가요?",
-    "createTitle": "만들기",
+    "createTitle": "디자인",
     "createDesc": "아무 사진이나 찍으면 레고 조립 설명서와 부품 목록을 받아보세요.",
     "createBadge": "사진 → 레고",
     "myBricksTitle": "내 브릭",
@@ -67,7 +67,7 @@
     "scans": "스캔",
     "designs": "디자인",
     "quickActions": "빠른 실행",
-    "createFromPhoto": "사진으로 만들기",
+    "createFromPhoto": "사진으로 디자인",
     "createFromPhotoDesc": "아무 사진이나 레고 설명서로 변환",
     "scanBricks": "브릭 스캔",
     "scanBricksDesc": "브릭 사진을 찍어 AI로 식별",

@@ -56,7 +56,7 @@
   "dashboard": {
     "title": "Brick Quest",
     "subtitle": "What would you like to do?",
-    "createTitle": "Create",
+    "createTitle": "Design",
     "createDesc": "Photograph anything and get LEGO building instructions with a parts list.",
     "createBadge": "Photo → LEGO",
     "myBricksTitle": "My Bricks",
@@ -67,7 +67,7 @@
     "scans": "Scans",
     "designs": "Designs",
     "quickActions": "Quick Actions",
-    "createFromPhoto": "Create from Photo",
+    "createFromPhoto": "Design from Photo",
     "createFromPhotoDesc": "Turn any photo into LEGO instructions",
     "scanBricks": "Scan Bricks",
     "scanBricksDesc": "Photograph your bricks to identify them",
