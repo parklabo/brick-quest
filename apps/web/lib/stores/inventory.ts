@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { firestore } from '../firebase';
 import type { DetectedPart } from '@brick-quest/shared';
-import { fromLegacyShape } from '@brick-quest/shared';
+import { resolveShape } from '@brick-quest/shared';
 
 const LOCALSTORAGE_KEY = 'brick-quest-inventory';
 const DEBOUNCE_MS = 500;
@@ -155,7 +155,7 @@ export const useInventoryStore = create<InventoryStore>()((set, get) => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firestore DocumentData is untyped
         const remoteParts: DetectedPart[] = (data.parts ?? []).map((p: any) => ({
           ...p,
-          shape: fromLegacyShape(p.shape ?? 'rectangle', p.type),
+          shape: resolveShape(p.shape ?? 'rectangle', p.type),
         }));
         // Only update if remote differs (avoid echo from our own writes)
         const localParts = get().parts;
