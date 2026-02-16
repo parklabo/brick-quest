@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
 import type { Schema } from '@google/genai';
 import { config } from '../config.js';
 import { logger } from 'firebase-functions';
@@ -6,9 +6,7 @@ import type { DetectedPart, BuildPlan, BuildStepBlock, Difficulty } from '@brick
 import { getBrickHeight, fromLegacyShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
-
-let _ai: GoogleGenAI | undefined;
-const getAI = () => (_ai ??= new GoogleGenAI({ apiKey: config.gemini.apiKey }));
+import { getAI } from './gemini-client.js';
 
 const BUILD_TIMEOUT = 8 * 60 * 1000;
 const AGENT_MAX_ITERATIONS = 3;

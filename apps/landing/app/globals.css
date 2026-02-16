@@ -29,7 +29,7 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500;
+    @apply bg-clip-text text-transparent bg-linear-to-r from-yellow-400 via-orange-500 to-red-500;
   }
 
   .glass-card {

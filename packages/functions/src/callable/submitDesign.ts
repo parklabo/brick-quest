@@ -3,6 +3,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import type { DesignDetail } from '@brick-quest/shared';
+import { LIMITS } from '../config.js';
 
 export const submitDesign = onCall(
   { maxInstances: 10, region: 'asia-northeast1' },
@@ -23,12 +24,11 @@ export const submitDesign = onCall(
       throw new HttpsError('invalid-argument', 'Missing base64 image data');
     }
 
-    // ~10 MB base64 limit
-    if (image.length > 15_000_000) {
+    if (image.length > LIMITS.IMAGE_SIZE_BYTES) {
       throw new HttpsError('invalid-argument', 'Image too large (max ~10 MB)');
     }
 
-    if (typeof userPrompt === 'string' && userPrompt.length > 500) {
+    if (typeof userPrompt === 'string' && userPrompt.length > LIMITS.PROMPT_MAX_CHARS) {
       throw new HttpsError('invalid-argument', 'Prompt too long (max 500 characters)');
     }
 

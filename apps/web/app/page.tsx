@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, loginWithEmail, signUpWithEmail } from '../lib/hooks/useAuth';
 import { FirebaseError } from 'firebase/app';
-import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 
 type Tab = 'signin' | 'signup';
@@ -57,7 +56,7 @@ export default function HomePage() {
     );
   }
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setSubmitting(true);
@@ -76,7 +75,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
-      <h1 className="text-5xl font-bold mb-2 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+      <h1 className="text-5xl font-bold mb-2 bg-linear-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
         Brick Quest
       </h1>
       <p className="text-slate-400 text-sm mb-8">

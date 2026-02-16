@@ -3,7 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { firestore } from '../../lib/firebase';
-import { Hammer, RefreshCw, AlertCircle } from 'lucide-react';
+import { Hammer } from 'lucide-react';
+import { RefreshButton } from '../../components/ui/RefreshButton';
+import { ErrorAlert } from '../../components/ui/ErrorAlert';
+import { STATUS_COLOR } from '../../lib/constants';
 
 interface BuildJob {
   id: string;
@@ -59,13 +62,6 @@ export default function StatsPage() {
     ? Math.round(completedBuilds.reduce((sum, b) => sum + (b.stepCount ?? 0), 0) / completedBuilds.length)
     : 0;
 
-  const statusColor: Record<string, string> = {
-    completed: 'text-green-400',
-    processing: 'text-yellow-400',
-    pending: 'text-blue-400',
-    failed: 'text-red-400',
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -76,22 +72,10 @@ export default function StatsPage() {
             {(loading || error) && 'Build plan generation history'}
           </p>
         </div>
-        <button
-          onClick={fetchBuilds}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <RefreshButton onClick={fetchBuilds} loading={loading} />
       </div>
 
-      {error && (
-        <div className="flex items-center gap-3 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
-          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
+      {error && <ErrorAlert error={error} />}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -132,7 +116,7 @@ export default function StatsPage() {
               {builds.map((build) => (
                 <tr key={build.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                   <td className="p-4 text-white font-medium text-xs">{build.title ?? build.id.slice(0, 12)}</td>
-                  <td className={`p-4 font-bold text-xs uppercase ${statusColor[build.status] ?? 'text-slate-400'}`}>
+                  <td className={`p-4 font-bold text-xs uppercase ${STATUS_COLOR[build.status] ?? 'text-slate-400'}`}>
                     {build.status}
                   </td>
                   <td className="p-4 text-slate-400 text-xs capitalize">{build.difficulty ?? '--'}</td>

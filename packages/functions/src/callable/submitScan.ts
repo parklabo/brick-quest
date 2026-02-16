@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { LIMITS } from '../config.js';
 
 export const submitScan = onCall(
   { maxInstances: 10, region: 'asia-northeast1' },
@@ -17,8 +18,7 @@ export const submitScan = onCall(
       throw new HttpsError('invalid-argument', 'Missing base64 image data');
     }
 
-    // ~10 MB base64 limit
-    if (image.length > 15_000_000) {
+    if (image.length > LIMITS.IMAGE_SIZE_BYTES) {
       throw new HttpsError('invalid-argument', 'Image too large (max ~10 MB)');
     }
 

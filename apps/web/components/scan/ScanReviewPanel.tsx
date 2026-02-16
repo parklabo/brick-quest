@@ -178,7 +178,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
               )}
             </div>
             <div className="p-6 border-t border-slate-800 bg-slate-900">
-              <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-xl p-4">
+              <div className="bg-linear-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/20 rounded-xl p-4">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
                     <Sparkles className="w-5 h-5 text-purple-400" />

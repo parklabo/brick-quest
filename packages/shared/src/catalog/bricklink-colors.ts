@@ -1,5 +1,5 @@
 /**
- * Maps color names (matching LEGO_COLORS keys) -> BrickLink color IDs.
+ * Maps color names -> BrickLink color IDs.
  * Source: https://www.bricklink.com/catalogColors.asp
  */
 const BRICKLINK_COLOR_TABLE: Record<string, number> = {

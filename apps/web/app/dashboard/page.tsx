@@ -46,7 +46,7 @@ export default function DashboardPage() {
         {/* Create: photo → LEGO design */}
         <Link
           href="/create"
-          className="group relative overflow-hidden rounded-2xl border border-lego-yellow/20 bg-gradient-to-br from-lego-yellow/5 to-lego-yellow/[0.02] p-6 sm:p-8 transition-all hover:border-lego-yellow/40 hover:shadow-[0_4px_24px_rgba(252,203,21,0.1)]"
+          className="group relative overflow-hidden rounded-2xl border border-lego-yellow/20 bg-linear-to-br from-lego-yellow/5 to-lego-yellow/[0.02] p-6 sm:p-8 transition-all hover:border-lego-yellow/40 hover:shadow-[0_4px_24px_rgba(252,203,21,0.1)]"
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-10 h-10 rounded-xl bg-lego-yellow/15 flex items-center justify-center">
@@ -70,7 +70,7 @@ export default function DashboardPage() {
         {/* My Bricks: scan → inventory → build */}
         <Link
           href="/scan"
-          className="group relative overflow-hidden rounded-2xl border border-lego-blue/20 bg-gradient-to-br from-lego-blue/5 to-lego-blue/[0.02] p-6 sm:p-8 transition-all hover:border-lego-blue/40 hover:shadow-[0_4px_24px_rgba(0,108,183,0.1)]"
+          className="group relative overflow-hidden rounded-2xl border border-lego-blue/20 bg-linear-to-br from-lego-blue/5 to-lego-blue/[0.02] p-6 sm:p-8 transition-all hover:border-lego-blue/40 hover:shadow-[0_4px_24px_rgba(0,108,183,0.1)]"
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-10 h-10 rounded-xl bg-lego-blue/15 flex items-center justify-center">

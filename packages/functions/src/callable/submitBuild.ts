@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import type { DetectedPart, Difficulty } from '@brick-quest/shared';
+import { LIMITS } from '../config.js';
 
 export const submitBuild = onCall(
   { maxInstances: 10, region: 'asia-northeast1' },
@@ -20,11 +21,11 @@ export const submitBuild = onCall(
       throw new HttpsError('invalid-argument', 'Missing or empty parts array');
     }
 
-    if (parts.length > 500) {
+    if (parts.length > LIMITS.PARTS_MAX_COUNT) {
       throw new HttpsError('invalid-argument', 'Too many parts (max 500)');
     }
 
-    if (typeof userPrompt === 'string' && userPrompt.length > 500) {
+    if (typeof userPrompt === 'string' && userPrompt.length > LIMITS.PROMPT_MAX_CHARS) {
       throw new HttpsError('invalid-argument', 'Prompt too long (max 500 characters)');
     }
 

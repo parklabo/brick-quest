@@ -3,7 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { firestore } from '../../lib/firebase';
-import { ScanLine, RefreshCw, AlertCircle } from 'lucide-react';
+import { ScanLine } from 'lucide-react';
+import { RefreshButton } from '../../components/ui/RefreshButton';
+import { ErrorAlert } from '../../components/ui/ErrorAlert';
+import { STATUS_COLOR } from '../../lib/constants';
 
 interface ScanJob {
   id: string;
@@ -50,13 +53,6 @@ export default function ScansPage() {
 
   useEffect(() => { fetchScans(); }, [fetchScans]);
 
-  const statusColor: Record<string, string> = {
-    completed: 'text-green-400',
-    processing: 'text-yellow-400',
-    pending: 'text-blue-400',
-    failed: 'text-red-400',
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -67,22 +63,10 @@ export default function ScansPage() {
             {(loading || error) && 'Recent image scan jobs'}
           </p>
         </div>
-        <button
-          onClick={fetchScans}
-          disabled={loading}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <RefreshButton onClick={fetchScans} loading={loading} />
       </div>
 
-      {error && (
-        <div className="flex items-center gap-3 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">
-          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
+      {error && <ErrorAlert error={error} />}
 
       {loading ? (
         <div className="text-center py-12 text-slate-500">Loading...</div>
@@ -106,7 +90,7 @@ export default function ScansPage() {
               {scans.map((scan) => (
                 <tr key={scan.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                   <td className="p-4 font-mono text-xs text-slate-300" title={scan.id}>{scan.id.slice(0, 12)}...</td>
-                  <td className={`p-4 font-bold text-xs uppercase ${statusColor[scan.status] ?? 'text-slate-400'}`}>
+                  <td className={`p-4 font-bold text-xs uppercase ${STATUS_COLOR[scan.status] ?? 'text-slate-400'}`}>
                     {scan.status}
                   </td>
                   <td className="p-4 text-white font-bold">{scan.partCount ?? '--'}</td>

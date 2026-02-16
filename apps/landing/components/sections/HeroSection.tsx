@@ -15,7 +15,7 @@ export function HeroSection() {
 
       <div className="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center">
         <div className="mb-8 relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-glow" />
+          <div className="absolute -inset-1 bg-linear-to-r from-brand-primary via-brand-secondary to-brand-accent rounded-3xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-glow" />
           <div className="relative bg-slate-900 rounded-3xl p-1">
             <Image src="/logo.png" width={120} height={120} alt="Brick Quest Logo" className="rounded-2xl" />
           </div>
@@ -65,7 +65,7 @@ export function HeroSection() {
             className="object-cover group-hover:scale-105 transition-transform duration-700"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent" />
         </div>
       </div>
     </section>

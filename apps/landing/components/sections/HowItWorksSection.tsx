@@ -78,8 +78,8 @@ export function HowItWorksSection() {
           <div className="flex-1 relative w-full aspect-square">
             <div className={`absolute inset-0 rounded-full blur-3xl ${
               activeTab === 'create'
-                ? 'bg-gradient-to-tr from-brand-primary/20 to-brand-secondary/20'
-                : 'bg-gradient-to-tr from-brand-accent/20 to-brand-secondary/20'
+                ? 'bg-linear-to-tr from-brand-primary/20 to-brand-secondary/20'
+                : 'bg-linear-to-tr from-brand-accent/20 to-brand-secondary/20'
             }`} />
             <div className="relative z-10 w-full h-full glass-card rounded-3xl p-4 rotate-3 hover:rotate-0 transition-transform duration-500">
               <div className="relative w-full h-full rounded-2xl overflow-hidden">

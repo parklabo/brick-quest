@@ -27,7 +27,7 @@ export function FeaturesSection() {
               className="group relative glass-card rounded-3xl overflow-hidden hover:translate-y-[-10px] transition-all duration-500"
               style={{ transitionDelay: `${index * 100}ms` }}
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-brand-primary via-brand-secondary to-brand-accent opacity-0 group-hover:opacity-100 transition-opacity" />
 
               <div className="p-6 relative z-10">
                 <div className="w-14 h-14 bg-slate-800/80 rounded-2xl flex items-center justify-center mb-6 text-brand-primary border border-slate-700 group-hover:border-brand-primary/50 transition-colors">
@@ -41,7 +41,7 @@ export function FeaturesSection() {
                 </div>
               </div>
 
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-950/80 pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-slate-950/80 pointer-events-none" />
             </div>
           ))}
         </div>

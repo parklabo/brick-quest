@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useProfileStore } from '../../lib/stores/profile';
 import { useAuth, logout } from '../../lib/hooks/useAuth';
@@ -28,7 +28,7 @@ export default function SettingsPage() {
     setInitialized(true);
   }
 
-  async function handleSave(e: FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!displayName.trim()) return;
     setSaving(true);

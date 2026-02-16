@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { collection, getCountFromServer, query, where } from 'firebase/firestore';
 import { firestore } from '../lib/firebase';
 import { SHAPE_REGISTRY, ALL_BRICK_SHAPES } from '@brick-quest/shared';
-import { Shapes, ScanLine, Hammer, Users, RefreshCw } from 'lucide-react';
+import { Shapes, ScanLine, Hammer, Users } from 'lucide-react';
+import { RefreshButton } from '../components/ui/RefreshButton';
 import Link from 'next/link';
 
 function StatCard({
@@ -80,14 +81,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-white">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">Brick Quest admin overview</p>
         </div>
-        <button
-          onClick={fetchCounts}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <RefreshButton onClick={fetchCounts} loading={refreshing} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

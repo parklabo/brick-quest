@@ -16,7 +16,7 @@ export function CTASection() {
             href={APP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-3 px-10 py-5 bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold text-xl rounded-2xl hover:shadow-[0_0_30px_rgba(255,215,0,0.4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all duration-300 transform hover:-translate-y-1"
+            className="inline-flex items-center justify-center gap-3 px-10 py-5 bg-linear-to-r from-brand-primary to-brand-secondary text-white font-bold text-xl rounded-2xl hover:shadow-[0_0_30px_rgba(255,215,0,0.4)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all duration-300 transform hover:-translate-y-1"
           >
             <Sparkles className="w-6 h-6" />
             {t('buttonCreate')}
