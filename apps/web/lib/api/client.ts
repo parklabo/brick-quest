@@ -64,4 +64,22 @@ export const apiClient = {
     const { data } = await callable({ jobId });
     return data;
   },
+
+  async retryJob(jobId: string): Promise<{ jobId: string }> {
+    const callable = httpsCallable<{ jobId: string }, { jobId: string }>(
+      functions,
+      'retryJob',
+    );
+    const { data } = await callable({ jobId });
+    return data;
+  },
+
+  async deleteJob(jobId: string): Promise<{ success: boolean }> {
+    const callable = httpsCallable<{ jobId: string }, { success: boolean }>(
+      functions,
+      'deleteJob',
+    );
+    const { data } = await callable({ jobId });
+    return data;
+  },
 };

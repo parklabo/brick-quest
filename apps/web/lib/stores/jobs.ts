@@ -43,6 +43,7 @@ export interface TrackedJob {
 interface JobsStore {
   jobs: TrackedJob[];
   addJob: (id: string, type: JobType) => void;
+  removeJob: (id: string) => void;
   markSeen: (id: string) => void;
   markAddedToInventory: (id: string) => void;
   unmarkAddedToInventory: (id: string) => void;
@@ -65,6 +66,16 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
         ],
       };
     });
+  },
+
+  removeJob: (id) => {
+    seenIds.delete(id);
+    saveIdSet(SEEN_IDS_KEY, seenIds);
+    addedIds.delete(id);
+    saveIdSet(ADDED_IDS_KEY, addedIds);
+    set((s) => ({
+      jobs: s.jobs.filter((j) => j.id !== id),
+    }));
   },
 
   markSeen: (id) => {
@@ -103,8 +114,15 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
       const updated = [...current];
 
       for (const change of snapshot.docChanges()) {
-        const data = change.doc.data();
         const id = change.doc.id;
+
+        if (change.type === 'removed') {
+          const removeIdx = updated.findIndex((j) => j.id === id);
+          if (removeIdx >= 0) updated.splice(removeIdx, 1);
+          continue;
+        }
+
+        const data = change.doc.data();
         const createdAt =
           data.createdAt instanceof Object && 'toMillis' in data.createdAt
             ? (data.createdAt as Timestamp).toMillis()

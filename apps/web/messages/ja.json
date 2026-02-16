@@ -128,7 +128,12 @@
     "removed": "削除済み",
     "aiInsight": "AI分析",
     "unmarkAdded": "追加を取消",
-    "partsRemoved": "{total}個中{removed}個のパーツがコレクションから削除されました"
+    "partsRemoved": "{total}個中{removed}個のパーツがコレクションから削除されました",
+    "retry": "スキャンを再試行",
+    "retrying": "再試行中...",
+    "delete": "削除",
+    "deleting": "削除中...",
+    "deleteConfirm": "このスキャンを削除しますか？元に戻せません。"
   },
   "build": {
     "title": "3D組み立てビューア",
@@ -154,12 +159,17 @@
     "mayTakeMinutes": "数分かかる場合があります。",
     "failed": "組み立て失敗",
     "unknownError": "不明なエラー",
-    "loadingWorkspace": "ワークスペース読み込み中..."
+    "loadingWorkspace": "ワークスペース読み込み中...",
+    "retry": "組み立てを再試行",
+    "retrying": "再試行中...",
+    "delete": "削除",
+    "deleting": "削除中...",
+    "deleteConfirm": "この組み立てを削除しますか？元に戻せません。"
   },
   "create": {
-    "title": "作成",
+    "title": "デザインスタジオ",
     "description": "何でも撮影すると、AIがレゴの組み立て説明書を生成します。",
-    "history": "デザイン履歴",
+    "history": "履歴",
     "failed": "デザイン失敗",
     "selected": "選択済み",
     "chooseDifferent": "別の写真を選択",
@@ -171,7 +181,15 @@
     "createButton": "レゴデザインを作成",
     "designing": "デザイン中...",
     "queued": "デザインを受け付けました！完了次第お知らせします。",
-    "viewDesigns": "デザインを見る"
+    "viewDesigns": "デザインを見る",
+    "pipelineUpload": "アップロード",
+    "pipelineViews": "ビュー生成",
+    "pipelineReview": "レビュー",
+    "pipelineBuild": "組み立て",
+    "pipelineComplete": "完了",
+    "activeDesign": "進行中",
+    "noActiveDesign": "参考写真をアップロードして開始",
+    "viewResult": "確認"
   },
   "createResult": {
     "stepViews": "ビュー生成",
@@ -202,7 +220,12 @@
     "onBrickLink": "BrickLinkで",
     "brickLinkXml": "BrickLinkウォントリスト（.xml）",
     "pickABrick": "Pick a Brick",
-    "open3D": "3D説明書を開く"
+    "open3D": "3D説明書を開く",
+    "retry": "デザインを再試行",
+    "retrying": "再試行中...",
+    "delete": "削除",
+    "deleting": "削除中...",
+    "deleteConfirm": "このデザインを削除しますか？元に戻せません。"
   },
   "inventory": {
     "title": "マイコレクション",

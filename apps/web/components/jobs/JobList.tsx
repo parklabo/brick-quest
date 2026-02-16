@@ -110,7 +110,7 @@ export function StatusBadge({ status }: { status: TrackedJob['status'] }) {
 
 function getJobHref(job: TrackedJob): string | undefined {
   if (job.type === 'design' && job.status === 'views_ready') return `/create/${job.id}/result`;
-  if (job.status !== 'completed') return undefined;
+  if (job.status !== 'completed' && job.status !== 'failed') return undefined;
   if (job.type === 'scan') return `/scan/${job.id}/review`;
   if (job.type === 'design') return `/create/${job.id}/result`;
   return `/builds/${job.id}/view`;
@@ -238,14 +238,6 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
       <Link href={href} onClick={() => markSeen(job.id)} className="block">
         {content}
       </Link>
-    );
-  }
-
-  if (isUnseen) {
-    return (
-      <button type="button" onClick={() => markSeen(job.id)} className="block w-full text-left cursor-pointer">
-        {content}
-      </button>
     );
   }
 

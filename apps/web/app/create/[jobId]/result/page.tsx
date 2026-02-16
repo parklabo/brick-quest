@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ref, getDownloadURL, getBlob } from 'firebase/storage';
-import { Loader2, ExternalLink, Box, Download, ArrowRight, CheckCircle, RefreshCw } from 'lucide-react';
+import { Loader2, ExternalLink, Box, Download, ArrowRight, CheckCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { storage } from '../../../../lib/firebase';
 import { useJobsStore } from '../../../../lib/stores/jobs';
 import { useWorkspaceStore } from '../../../../lib/stores/workspace';
@@ -250,13 +250,38 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
   const tc = useTranslations('common');
   const job = useJobsStore((s) => s.jobs.find((j) => j.id === jobId));
   const markSeen = useJobsStore((s) => s.markSeen);
+  const removeJob = useJobsStore((s) => s.removeJob);
   const router = useRouter();
+  const [retrying, setRetrying] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const referenceUrl = useStorageUrl(`designs/${jobId}/reference.jpeg`);
   const compositeUrl = useStorageUrl(job?.views?.composite);
 
+  const handleRetry = useCallback(async () => {
+    setRetrying(true);
+    try {
+      const { jobId: newJobId } = await apiClient.retryJob(jobId);
+      router.push(`/create/${newJobId}/result`);
+    } catch {
+      setRetrying(false);
+    }
+  }, [jobId, router]);
+
+  const handleDelete = useCallback(async () => {
+    if (!confirm(t('deleteConfirm'))) return;
+    setDeleting(true);
+    try {
+      await apiClient.deleteJob(jobId);
+      removeJob(jobId);
+      router.push('/create');
+    } catch {
+      setDeleting(false);
+    }
+  }, [jobId, t, removeJob, router]);
+
   useEffect(() => {
-    if (job && (job.status === 'completed' || job.status === 'views_ready') && !job.seen) {
+    if (job && (job.status === 'completed' || job.status === 'views_ready' || job.status === 'failed') && !job.seen) {
       markSeen(job.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to specific field changes
@@ -343,7 +368,25 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
           {isNewPipeline && <DesignStepIndicator {...getStepState()} />}
           <p className="text-red-400 font-medium mb-2">{t('failed')}</p>
           <p className="text-slate-400 text-sm">{job.error || t('unknownError')}</p>
-          <Link href="/create" className="text-blue-400 hover:text-blue-300 text-sm mt-4 inline-block">
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <button
+              onClick={handleRetry}
+              disabled={retrying || deleting}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {retrying ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              {retrying ? t('retrying') : t('retry')}
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={retrying || deleting}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              {deleting ? t('deleting') : t('delete')}
+            </button>
+          </div>
+          <Link href="/create" className="text-slate-500 hover:text-slate-300 text-sm mt-4 inline-block">
             {t('backToCreate')}
           </Link>
         </div>

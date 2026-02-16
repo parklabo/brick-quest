@@ -128,7 +128,12 @@
     "removed": "Removed",
     "aiInsight": "AI Insight",
     "unmarkAdded": "Unmark Added",
-    "partsRemoved": "{removed} of {total} part(s) removed from inventory"
+    "partsRemoved": "{removed} of {total} part(s) removed from inventory",
+    "retry": "Retry Scan",
+    "retrying": "Retrying...",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "deleteConfirm": "Delete this scan? This cannot be undone."
   },
   "build": {
     "title": "3D Build Viewer",
@@ -154,12 +159,17 @@
     "mayTakeMinutes": "This may take a few minutes.",
     "failed": "Build failed",
     "unknownError": "Unknown error",
-    "loadingWorkspace": "Loading workspace..."
+    "loadingWorkspace": "Loading workspace...",
+    "retry": "Retry Build",
+    "retrying": "Retrying...",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "deleteConfirm": "Delete this build? This cannot be undone."
   },
   "create": {
-    "title": "Create",
+    "title": "Design Studio",
     "description": "Photograph anything and get AI-generated LEGO building instructions.",
-    "history": "Design History",
+    "history": "History",
     "failed": "Design Failed",
     "selected": "Selected",
     "chooseDifferent": "Choose different photo",
@@ -171,7 +181,15 @@
     "createButton": "Create LEGO Design",
     "designing": "Designing...",
     "queued": "Design queued! We'll notify you when it's ready.",
-    "viewDesigns": "View designs"
+    "viewDesigns": "View designs",
+    "pipelineUpload": "Upload",
+    "pipelineViews": "Views",
+    "pipelineReview": "Review",
+    "pipelineBuild": "Build",
+    "pipelineComplete": "Done",
+    "activeDesign": "In Progress",
+    "noActiveDesign": "Upload a reference photo to start",
+    "viewResult": "View"
   },
   "createResult": {
     "stepViews": "Generate Views",
@@ -202,7 +220,12 @@
     "onBrickLink": "on BrickLink",
     "brickLinkXml": "BrickLink Wanted List (.xml)",
     "pickABrick": "Pick a Brick",
-    "open3D": "Open 3D Instructions"
+    "open3D": "Open 3D Instructions",
+    "retry": "Retry Design",
+    "retrying": "Retrying...",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "deleteConfirm": "Delete this design? This cannot be undone."
   },
   "inventory": {
     "title": "My Inventory",
