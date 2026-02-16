@@ -37,14 +37,14 @@ export default function DashboardPage() {
         <Image src="/logo.png" alt="Brick Quest" width={40} height={40} className="rounded-lg" />
         <h1 className="text-3xl font-extrabold">{t('title')}</h1>
       </div>
-      <p className="text-slate-400 text-sm mb-10 ml-[52px]">{t('subtitle')}</p>
+      <p className="text-slate-400 text-sm mb-10 ml-13">{t('subtitle')}</p>
 
       {/* Dual-mode hub */}
       <div className="grid gap-4 sm:grid-cols-2 mb-10">
         {/* Create: photo → LEGO design */}
         <Link
           href="/create"
-          className="group relative overflow-hidden rounded-2xl border border-lego-yellow/20 bg-linear-to-br from-lego-yellow/5 to-lego-yellow/[0.02] p-6 sm:p-8 transition-all hover:border-lego-yellow/40 hover:shadow-[0_4px_24px_rgba(252,203,21,0.1)]"
+          className="group relative overflow-hidden rounded-2xl border border-lego-yellow/20 bg-linear-to-br from-lego-yellow/5 to-lego-yellow/2 p-6 sm:p-8 transition-all hover:border-lego-yellow/40 hover:shadow-[0_4px_24px_rgba(252,203,21,0.1)]"
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-10 h-10 rounded-xl bg-lego-yellow/15 flex items-center justify-center">
@@ -68,7 +68,7 @@ export default function DashboardPage() {
         {/* My Bricks: scan → inventory → build */}
         <Link
           href="/scan"
-          className="group relative overflow-hidden rounded-2xl border border-lego-blue/20 bg-linear-to-br from-lego-blue/5 to-lego-blue/[0.02] p-6 sm:p-8 transition-all hover:border-lego-blue/40 hover:shadow-[0_4px_24px_rgba(0,108,183,0.1)]"
+          className="group relative overflow-hidden rounded-2xl border border-lego-blue/20 bg-linear-to-br from-lego-blue/5 to-lego-blue/2 p-6 sm:p-8 transition-all hover:border-lego-blue/40 hover:shadow-[0_4px_24px_rgba(0,108,183,0.1)]"
         >
           <div className="flex items-center gap-2 mb-3">
             <div className="w-10 h-10 rounded-xl bg-lego-blue/15 flex items-center justify-center">

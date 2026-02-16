@@ -202,7 +202,7 @@ function ViewsReview({
         <button
           onClick={handleApprove}
           disabled={approving || regenerating}
-          className="w-full px-4 py-4 rounded-xl font-bold text-base transition-all bg-lego-yellow hover:bg-yellow-400 text-slate-900 shadow-[0_3px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-4 rounded-xl font-bold text-base transition-all bg-lego-yellow hover:bg-yellow-400 text-slate-900 shadow-[0_3px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-0.75 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="flex items-center justify-center gap-2">
             {approving ? (
@@ -532,7 +532,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
         {/* Open in Workspace button */}
         <button
           onClick={handleOpenWorkspace}
-          className="w-full px-4 py-3 rounded-lg font-bold transition-all bg-lego-yellow hover:bg-yellow-400 text-slate-900 shadow-[0_2px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-[2px]"
+          className="w-full px-4 py-3 rounded-lg font-bold transition-all bg-lego-yellow hover:bg-yellow-400 text-slate-900 shadow-[0_2px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-0.5"
         >
           <span className="flex items-center justify-center gap-2">
             <Box className="w-4 h-4" />

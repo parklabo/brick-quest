@@ -169,7 +169,7 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
 
   const content = (
     <div
-      className={`group relative rounded-xl p-[1px] transition-all duration-200 ${
+      className={`group relative rounded-xl p-px transition-all duration-200 ${
         isUnseen
           ? 'bg-linear-to-r from-lego-yellow/40 via-lego-red/30 to-lego-yellow/40'
           : 'bg-lego-border hover:bg-slate-600/60'

@@ -53,7 +53,7 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
         onClick={() => setOpen((o) => !o)}
         className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
           active
-            ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_theme(colors.lego.yellow)]'
+            ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
             : 'text-slate-400 hover:text-white hover:bg-white/5'
         }`}
       >
@@ -128,7 +128,7 @@ export function NavBar() {
               href="/dashboard"
               className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
                 pathname === '/dashboard'
-                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_theme(colors.lego.yellow)]'
+                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -140,7 +140,7 @@ export function NavBar() {
               href="/create"
               className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
                 pathname.startsWith('/create')
-                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_theme(colors.lego.yellow)]'
+                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -159,7 +159,7 @@ export function NavBar() {
               href="/workspace"
               className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
                 pathname.startsWith('/workspace')
-                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_theme(colors.lego.yellow)]'
+                  ? 'bg-lego-yellow/10 text-lego-yellow shadow-[inset_0_-2px_0_0_var(--color-lego-yellow)]'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -193,7 +193,7 @@ export function NavBar() {
         <div className="flex items-center justify-around px-1 py-1">
           <Link
             href="/dashboard"
-            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-14 ${
               pathname === '/dashboard' ? 'text-lego-yellow' : 'text-slate-500'
             }`}
           >
@@ -203,7 +203,7 @@ export function NavBar() {
 
           <Link
             href="/create"
-            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-14 ${
               pathname.startsWith('/create') ? 'text-lego-yellow' : 'text-slate-500'
             }`}
           >
@@ -218,7 +218,7 @@ export function NavBar() {
 
           <Link
             href="/scan"
-            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-14 ${
               isMyBricksActive ? 'text-lego-yellow' : 'text-slate-500'
             }`}
           >
@@ -233,7 +233,7 @@ export function NavBar() {
 
           <Link
             href="/workspace"
-            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-14 ${
               pathname.startsWith('/workspace') ? 'text-lego-yellow' : 'text-slate-500'
             }`}
           >
@@ -243,7 +243,7 @@ export function NavBar() {
 
           <Link
             href="/settings"
-            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-[3.5rem] ${
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-14 ${
               pathname === '/settings' ? 'text-lego-yellow' : 'text-slate-500'
             }`}
           >
