@@ -152,6 +152,7 @@ export const useInventoryStore = create<InventoryStore>()((set, get) => ({
       (snapshot) => {
         if (!snapshot.exists()) return;
         const data = snapshot.data();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firestore DocumentData is untyped
         const remoteParts: DetectedPart[] = (data.parts ?? []).map((p: any) => ({
           ...p,
           shape: fromLegacyShape(p.shape ?? 'rectangle', p.type),
