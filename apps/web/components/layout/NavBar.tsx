@@ -43,6 +43,7 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- close menu on route change
   useEffect(() => { setOpen(false); }, [pathname]);
 
   return (

@@ -43,8 +43,6 @@ function createLShape(
   l: number,
 ): THREE.BufferGeometry {
   // Two boxes merged: full-width bottom row + 1-stud-wide column
-  const geo = new THREE.BufferGeometry();
-
   const part1 = new THREE.BoxGeometry(w - 0.05, h, 1 - 0.05);
   part1.translate(0, 0, -(l / 2) + 0.5);
 

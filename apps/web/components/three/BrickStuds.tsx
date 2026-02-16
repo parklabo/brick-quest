@@ -30,7 +30,7 @@ export function BrickStuds({
   length,
   hexColor,
   transparent = false,
-  opacity = 1,
+  opacity: _opacity = 1,
 }: BrickStudsProps) {
   if (!studConfig.hasStuds) return null;
 

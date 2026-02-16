@@ -44,7 +44,6 @@ export const BrickIcon = memo(function BrickIcon({
 }: BrickIconProps) {
   const def = getShapeDefinition(shape);
   const isCorner = shape === 'corner';
-  const isRound = def.geometry.kind === 'cylinder';
   const isSlope = def.category === 'slope' || def.category === 'curved';
   const isTile = type === 'tile' || isSlope;
   const isPlate = type === 'plate' || type === 'tile';

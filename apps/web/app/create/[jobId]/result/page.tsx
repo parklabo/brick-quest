@@ -113,6 +113,7 @@ function useStorageUrl(path: string | undefined) {
   const [url, setUrl] = useState<string | undefined>();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset state when path is cleared
     if (!path) { setUrl(undefined); return; }
     let blobUrl: string | undefined;
     const imageRef = ref(storage, path);
@@ -258,6 +259,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
     if (job && (job.status === 'completed' || job.status === 'views_ready') && !job.seen) {
       markSeen(job.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to specific field changes
   }, [job?.status, job?.seen, job?.id, markSeen]);
 
   const designResult = useMemo(() => {

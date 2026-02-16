@@ -47,6 +47,7 @@ export default function ScanReviewPage({ params }: { params: Promise<{ jobId: st
     if (job && job.status === 'completed' && !job.seen) {
       markSeen(job.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to specific field changes
   }, [job?.id, job?.status, job?.seen, markSeen]);
 
   if (!job) {

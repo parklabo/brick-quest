@@ -12,7 +12,7 @@ interface ProfileStore {
 
 let currentUid: string | null = null;
 
-export const useProfileStore = create<ProfileStore>()((set, get) => ({
+export const useProfileStore = create<ProfileStore>()((set, _get) => ({
   profile: null,
   loading: true,
 
