@@ -9,7 +9,7 @@ import { useTranslations } from 'next-intl';
 
 const STAT_STYLES = [
   { bg: 'bg-lego-red/[0.06]', border: 'border-lego-red/10', text: 'text-lego-red' },
-  { bg: 'bg-lego-blue/[0.06]', border: 'border-lego-blue/10', text: 'text-lego-blue' },
+  { bg: 'bg-lego-blue/6', border: 'border-lego-blue/10', text: 'text-lego-blue' },
   { bg: 'bg-lego-green/[0.06]', border: 'border-lego-green/10', text: 'text-lego-green' },
   { bg: 'bg-lego-orange/[0.06]', border: 'border-lego-orange/10', text: 'text-lego-orange' },
 ] as const;
@@ -44,7 +44,7 @@ export default function DashboardPage() {
         {/* Create: photo → LEGO design */}
         <Link
           href="/create"
-          className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 sm:p-6 transition-all hover:bg-white/[0.04] hover:border-lego-yellow/20"
+          className="group relative overflow-hidden rounded-xl border border-white/6 bg-white/2 p-5 sm:p-6 transition-all hover:bg-white/4 hover:border-lego-yellow/20"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-lg bg-lego-yellow/10 flex items-center justify-center">
@@ -59,7 +59,7 @@ export default function DashboardPage() {
             {t('createDesc')}
           </p>
           <div className="mt-3">
-            <span className="text-[11px] font-medium text-lego-yellow/50 bg-lego-yellow/[0.06] px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-medium text-lego-yellow/50 bg-lego-yellow/6 px-2 py-0.5 rounded-full">
               {t('createBadge')}
             </span>
           </div>
@@ -68,7 +68,7 @@ export default function DashboardPage() {
         {/* My Bricks: scan → inventory → build */}
         <Link
           href="/scan"
-          className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 sm:p-6 transition-all hover:bg-white/[0.04] hover:border-lego-blue/20"
+          className="group relative overflow-hidden rounded-xl border border-white/6 bg-white/2 p-5 sm:p-6 transition-all hover:bg-white/4 hover:border-lego-blue/20"
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-lg bg-lego-blue/10 flex items-center justify-center">
@@ -83,7 +83,7 @@ export default function DashboardPage() {
             {t('myBricksDesc')}
           </p>
           <div className="mt-3">
-            <span className="text-[11px] font-medium text-lego-blue/50 bg-lego-blue/[0.06] px-2 py-0.5 rounded-full">
+            <span className="text-[11px] font-medium text-lego-blue/50 bg-lego-blue/6 px-2 py-0.5 rounded-full">
               {t('myBricksBadge')}
             </span>
           </div>
@@ -118,7 +118,7 @@ export default function DashboardPage() {
           <Link
             key={action.href}
             href={action.href}
-            className="group rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 flex items-center gap-3.5 hover:bg-white/[0.04] hover:border-white/[0.1] transition-all"
+            className="group rounded-xl bg-white/2 border border-white/6 p-4 flex items-center gap-3.5 hover:bg-white/4 hover:border-white/10 transition-all"
           >
             <div className={`w-9 h-9 rounded-lg ${action.iconBg} flex items-center justify-center shrink-0`}>
               <div className={action.iconColor}>{action.icon}</div>
