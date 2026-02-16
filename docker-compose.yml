@@ -15,6 +15,7 @@ services:
     volumes:
       - ./packages/functions/dist:/app/packages/functions/dist
       - ./packages/shared/dist:/app/packages/shared/dist
+      - ./packages/functions/.secret.local:/app/packages/functions/.secret.local
     env_file:
       - path: ./packages/functions/.env
         required: false
