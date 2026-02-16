@@ -362,8 +362,8 @@ LAYER 2 (y=2.4) — eyes on white face:
   CHECK: 10 bricks, all 16 studs covered ✓ Eyes placed correctly ✓
 
 ${CRITICAL_RULES_PROMPT}
-5. MATCH THE REFERENCE: Colors and features must match the reference photo/views at each layer height.
-6. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
+8. MATCH THE REFERENCE: Colors and features must match the reference photo/views at each layer height.
+9. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
 
 BRICK COUNT: ${cfg.brickRange}
 You MUST generate at least ${cfg.minBricks} bricks.
@@ -452,13 +452,6 @@ Return ONLY valid JSON.`;
 
         if (raw.steps.length === 0) {
           lastError = new Error('All steps invalid after filtering');
-          continue;
-        }
-
-        // Check minimum brick count before physics
-        if (raw.steps.length < cfg.minBricks) {
-          logger.warn(`Only ${raw.steps.length} bricks generated (minimum: ${cfg.minBricks}), retrying`);
-          lastError = new Error(`Too few bricks: ${raw.steps.length} < ${cfg.minBricks}`);
           continue;
         }
 

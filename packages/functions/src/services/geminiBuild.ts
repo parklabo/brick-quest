@@ -197,10 +197,10 @@ LAYER 2 (y=2.4) — eyes on white face:
   CHECK: 10 bricks, all 16 studs covered ✓ Eyes placed correctly ✓
 
 ${CRITICAL_RULES_PROMPT}
-5. RECOGNIZABLE SHAPE: The model MUST look like the requested subject from multiple angles.
-6. COLOR GROUPING: Use colors intentionally — group same colors for body parts, use contrasting colors for details (eyes, nose, patterns).
-7. INVENTORY RESPECT: Only use parts from the inventory. Track counts — do NOT exceed available quantity per part.
-8. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
+8. RECOGNIZABLE SHAPE: The model MUST look like the requested subject from multiple angles.
+9. COLOR GROUPING: Use colors intentionally — group same colors for body parts, use contrasting colors for details (eyes, nose, patterns).
+10. INVENTORY RESPECT: Only use parts from the inventory. Track counts — do NOT exceed available quantity per part.
+11. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
 
 Keep step descriptions SHORT (3-8 words).
 Return ONLY valid JSON.`;

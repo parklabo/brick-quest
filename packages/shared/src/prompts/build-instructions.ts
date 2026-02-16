@@ -24,4 +24,7 @@ CRITICAL RULES
 1. ZERO GAPS: Every stud position within the layer footprint MUST be covered. Count the studs!
 2. ZERO OVERLAPS: No two bricks on the same layer can cover the same stud position.
 3. LAYER STACKING: Each layer must sit on the previous layer. Y increments: +1.2 for bricks, +0.4 for plates.
-4. SOLID FROM ALL SIDES: Looking at the model from front, back, left, right — no holes visible.`;
+4. SOLID FROM ALL SIDES: Looking at the model from front, back, left, right — no holes visible.
+5. SOLID INTERIOR: Each layer must be FULLY FILLED — not just the outer shell. Do NOT create hollow structures. Every stud position inside the footprint must have a brick, even if it is not visible from outside.
+6. STAGGERED BONDS: Offset brick joints between adjacent layers like real brickwork. If layer N has a 2x4 brick starting at x=0, layer N+1 should start its bricks at x=1 or x=2 to overlap the seam. This prevents the model from splitting apart.
+7. VIEW CROSS-REFERENCE: For each layer at height Y, check ALL views to determine the exact outline — front/back views define the X extent, side view defines the Z extent. The intersection of all views gives the true footprint for that layer.`;
