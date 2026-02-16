@@ -23,29 +23,32 @@ export const cancelJob = onCall(
 
     const db = getFirestore();
     const jobRef = db.collection('jobs').doc(jobId);
-    const snapshot = await jobRef.get();
 
-    if (!snapshot.exists) {
-      throw new HttpsError('not-found', 'Job not found');
-    }
+    await db.runTransaction(async (tx) => {
+      const snapshot = await tx.get(jobRef);
 
-    const data = snapshot.data()!;
+      if (!snapshot.exists) {
+        throw new HttpsError('not-found', 'Job not found');
+      }
 
-    if (data.userId !== uid) {
-      throw new HttpsError('permission-denied', 'Not your job');
-    }
+      const data = snapshot.data()!;
 
-    if (!CANCELLABLE.has(data.status)) {
-      throw new HttpsError(
-        'failed-precondition',
-        `Job cannot be cancelled (current: ${data.status})`,
-      );
-    }
+      if (data.userId !== uid) {
+        throw new HttpsError('permission-denied', 'Not your job');
+      }
 
-    await jobRef.update({
-      status: 'failed',
-      error: 'Cancelled by user',
-      updatedAt: FieldValue.serverTimestamp(),
+      if (!CANCELLABLE.has(data.status)) {
+        throw new HttpsError(
+          'failed-precondition',
+          `Job cannot be cancelled (current: ${data.status})`,
+        );
+      }
+
+      tx.update(jobRef, {
+        status: 'failed',
+        error: 'Cancelled by user',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
     });
 
     return { success: true };
