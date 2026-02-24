@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, memo } from 'react';
 import { getShapeDefinition, type BrickShape, type BrickType } from '@brick-quest/shared';
 import { getCachedGeometry } from '../../lib/three/geometry-factory';
 import { resolveLDrawPart } from '../../lib/three/ldraw-part-map';
@@ -21,7 +21,7 @@ interface BrickBodyProps {
   showStuds?: boolean;
 }
 
-export function BrickBody({
+export const BrickBody = memo(function BrickBody({
   shape,
   type,
   width,
@@ -95,4 +95,4 @@ export function BrickBody({
       )}
     </group>
   );
-}
+});
