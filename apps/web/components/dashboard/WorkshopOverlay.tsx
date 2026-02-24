@@ -428,7 +428,7 @@ export function WorkshopOverlay() {
       <div className="fixed inset-0 top-14 z-50 pointer-events-none flex flex-col items-center">
 
         {/* Control hints (bottom-center, always visible) */}
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+        <div className="fixed bottom-20 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
           <div className="bg-black/50 backdrop-blur-md border border-white/15 rounded-xl px-5 py-2.5">
             {isMobile ? (
               <div className="flex items-center gap-4 text-xs text-white/70">
@@ -482,7 +482,7 @@ export function WorkshopOverlay() {
 
         {/* Station proximity prompt */}
         {showStationPrompt && nearStation && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+          <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
             {isMobile ? (
               <button
                 onClick={() => openZone(nearStation as 'design' | 'mybrick')}
