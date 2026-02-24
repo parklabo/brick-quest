@@ -14,14 +14,11 @@ import {
 } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
-import { getAI } from './gemini-client.js';
+import { getAI, getThinkingConfig } from './gemini-client.js';
 
-const BUILD_TIMEOUT = 8 * 60 * 1000;
 /** Total time budget for the agent loop — leaves margin for Firestore writes */
 const AGENT_BUDGET_MS = 8 * 60 * 1000;
 const { AGENT_MAX_ITERATIONS } = LIMITS;
-/** Max thinking budget for fallback model (gemini-3-flash-preview) */
-const FALLBACK_MAX_THINKING = 24576;
 
 function isRetryableModelError(error: any): boolean {
   const msg = String(error?.message || '');
@@ -90,26 +87,26 @@ export async function generateBuildPlan(parts: DetectedPart[], difficulty: Diffi
       `[${idx}] ${p.count}x ${p.color} ${p.name} (${p.dimensions.width}x${p.dimensions.length} studs, type: ${p.type}, shape: ${p.shape})`
   );
 
-  const difficultyConfig: Record<Difficulty, { instruction: string; maxSteps: number; maxOutput: number; thinking: number }> = {
+  const difficultyConfig: Record<Difficulty, { instruction: string; maxSteps: number; maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high' }> = {
     beginner: {
       instruction: 'Create a simple, sturdy model. Use 20-40 parts. Use larger bricks (2x4, 2x6) predominantly.',
       maxSteps: 40,
       maxOutput: 32768,
-      thinking: 8192,
+      thinkingLevel: 'low',
     },
     normal: {
       instruction:
         'Create a recognizable, detailed model. Use 50-80 parts (70%+ of inventory). Mix large structural bricks with smaller detail bricks.',
       maxSteps: 80,
       maxOutput: 65536,
-      thinking: 16384,
+      thinkingLevel: 'medium',
     },
     expert: {
       instruction:
         'Create a MASTERPIECE. Use 100-150+ parts. MAXIMIZE inventory usage (90%+). Use small bricks (1x1, 1x2) for fine detail and larger bricks for structure.',
       maxSteps: 150,
       maxOutput: 131072,
-      thinking: 32768,
+      thinkingLevel: 'high',
     },
   };
 
@@ -243,19 +240,25 @@ Return ONLY valid JSON.`;
 
     // Inner parse-retry loop
     const PARSE_RETRIES = 3;
+    /** Max time per individual API call — prevents one hung call from eating the entire budget */
+    const PER_CALL_TIMEOUT = 150_000; // 2.5 min
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string } | null = null;
-    let retryableFailures = 0;
+    let hitRetryableError = false;
 
     for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
+      // Skip if not enough time for a meaningful API call
+      const budgetRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
+      if (budgetRemaining < 30_000) {
+        logger.warn(`  Skipping attempt ${attempt} — only ${Math.round(budgetRemaining / 1000)}s remaining`);
+        break;
+      }
+
       try {
         logger.info(`  Parse attempt ${attempt}/${PARSE_RETRIES}`);
 
-        const isFallback = useModel !== config.gemini.model;
-        const thinkingBudget = isFallback ? Math.min(cfg.thinking, FALLBACK_MAX_THINKING) : cfg.thinking;
-
-        const callTimeout = Math.min(BUILD_TIMEOUT, AGENT_BUDGET_MS - (Date.now() - agentStart) - 5_000);
+        const callTimeout = Math.min(PER_CALL_TIMEOUT, budgetRemaining - 5_000);
 
         const response = await withTimeout(
           ai.models.generateContent({
@@ -265,7 +268,7 @@ Return ONLY valid JSON.`;
               responseMimeType: 'application/json',
               responseSchema: buildSchema,
               maxOutputTokens: cfg.maxOutput,
-              thinkingConfig: { thinkingBudget },
+              thinkingConfig: getThinkingConfig(useModel, cfg.thinkingLevel),
               systemInstruction:
                 'You are an award-winning LEGO Master Builder with expertise in 3D spatial reasoning. Complete the entire JSON response.',
             },
@@ -324,7 +327,11 @@ Return ONLY valid JSON.`;
       } catch (error: any) {
         logger.error(`  Parse attempt ${attempt} failed:`, error.message);
         lastError = error;
-        if (isRetryableModelError(error)) retryableFailures++;
+        if (isRetryableModelError(error)) {
+          hitRetryableError = true;
+          // On 503/429: skip remaining retries, switch model immediately
+          break;
+        }
         if (attempt < PARSE_RETRIES) {
           await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
         }
@@ -335,8 +342,8 @@ Return ONLY valid JSON.`;
     if (!iterationSteps || !iterationMeta) {
       logger.warn(`Agent iteration ${iteration} failed to produce valid steps`);
 
-      // Switch to fallback model if all failures were retryable (503/429)
-      if (retryableFailures === PARSE_RETRIES && useModel !== config.gemini.fallbackModel) {
+      // Switch to fallback model on ANY retryable error (503/429)
+      if (hitRetryableError && useModel !== config.gemini.fallbackModel) {
         logger.info(`Switching to fallback model: ${config.gemini.fallbackModel}`);
         useModel = config.gemini.fallbackModel;
       }

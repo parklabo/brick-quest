@@ -31,6 +31,15 @@ export const processJob = onDocumentCreated(
       return;
     }
 
+    // Helper to append a log entry + update progress
+    const log = async (msg: string, progress: number) => {
+      await jobRef.update({
+        logs: FieldValue.arrayUnion(msg),
+        progress,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    };
+
     // Mark as processing
     await jobRef.update({
       status: 'processing',
@@ -41,6 +50,8 @@ export const processJob = onDocumentCreated(
       if (data.type === 'scan') {
         const { imageStoragePath, mimeType } = data.input;
 
+        await log('Analyzing image...', 10);
+
         // Download image from Storage
         const storage = getStorage();
         const bucket = storage.bucket();
@@ -48,12 +59,17 @@ export const processJob = onDocumentCreated(
         const [buffer] = await file.download();
         const base64Image = buffer.toString('base64');
 
+        await log('Identifying bricks...', 30);
+
         logger.info(`Processing scan job ${jobId}`);
         const result = await analyzeLegoParts(base64Image, mimeType);
+
+        await log('Complete', 100);
 
         await jobRef.update({
           status: 'completed',
           result,
+          progress: 100,
           updatedAt: FieldValue.serverTimestamp(),
         });
 
@@ -61,12 +77,17 @@ export const processJob = onDocumentCreated(
       } else if (data.type === 'build') {
         const { parts, difficulty, userPrompt } = data.input;
 
+        await log('Generating build plan...', 10);
+
         logger.info(`Processing build job ${jobId}`);
         const result = await generateBuildPlan(parts, difficulty, userPrompt);
+
+        await log('Complete', 100);
 
         await jobRef.update({
           status: 'completed',
           result,
+          progress: 100,
           updatedAt: FieldValue.serverTimestamp(),
         });
 
@@ -80,18 +101,26 @@ export const processJob = onDocumentCreated(
           updatedAt: FieldValue.serverTimestamp(),
         });
 
+        await log('Preparing reference image...', 5);
+
         const storage = getStorage();
         const bucket = storage.bucket();
         const file = bucket.file(imageStoragePath);
         const [buffer] = await file.download();
         const base64Image = buffer.toString('base64');
 
+        await log('Generating orthographic views...', 15);
+
         logger.info(`Design job ${jobId}: generating composite views`);
         const compositeImage = await generateOrthographicViews(base64Image, mimeType, detail, userPrompt);
+
+        await log('Uploading composite image...', 40);
 
         // Upload single composite view image to Storage
         const compositePath = `designs/${jobId}/views_composite.png`;
         await bucket.file(compositePath).save(Buffer.from(compositeImage.data, 'base64'), { contentType: compositeImage.mimeType });
+
+        await log('Views ready', 45);
 
         logger.info(`Design job ${jobId}: composite views uploaded, transitioning to views_ready`);
 
@@ -99,6 +128,7 @@ export const processJob = onDocumentCreated(
           status: 'views_ready',
           views: { composite: compositePath },
           ...(compositeImage.usedFallback && { usedFallbackModel: true }),
+          progress: 45,
           updatedAt: FieldValue.serverTimestamp(),
         });
       } else {
@@ -143,10 +173,21 @@ export const processDesignUpdate = onDocumentUpdated(
     const db = getFirestore();
     const jobRef = db.collection('jobs').doc(jobId);
 
+    // Helper to append a log entry + update progress
+    const log = async (msg: string, progress: number) => {
+      await jobRef.update({
+        logs: FieldValue.arrayUnion(msg),
+        progress,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    };
+
     // --- Case 1: Regenerate views (views_ready → generating_views) ---
     if (before.status === 'views_ready' && after.status === 'generating_views') {
       try {
         const { imageStoragePath, mimeType, detail, userPrompt } = after.input;
+
+        await log('Regenerating orthographic views...', 10);
 
         const storage = getStorage();
         const bucket = storage.bucket();
@@ -156,13 +197,18 @@ export const processDesignUpdate = onDocumentUpdated(
         logger.info(`Regenerating composite views for job ${jobId}`);
         const compositeImage = await generateOrthographicViews(base64Image, mimeType, detail, userPrompt);
 
+        await log('Uploading new views...', 40);
+
         const compositePath = `designs/${jobId}/views_composite.png`;
         await bucket.file(compositePath).save(Buffer.from(compositeImage.data, 'base64'), { contentType: compositeImage.mimeType });
+
+        await log('Views ready', 45);
 
         await jobRef.update({
           status: 'views_ready',
           views: { composite: compositePath },
           usedFallbackModel: compositeImage.usedFallback || false,
+          progress: 45,
           updatedAt: FieldValue.serverTimestamp(),
         });
 
@@ -199,6 +245,8 @@ export const processDesignUpdate = onDocumentUpdated(
         const { imageStoragePath, mimeType, detail, userPrompt } = after.input;
         const viewPaths = after.views as { composite: string };
 
+        await log('Generating build instructions...', 50);
+
         const storage = getStorage();
         const bucket = storage.bucket();
 
@@ -217,10 +265,15 @@ export const processDesignUpdate = onDocumentUpdated(
         const base64Image = refBuffer.toString('base64');
         const compositeView = { data: compositeBuffer.toString('base64'), mimeType: 'image/png' };
 
+        await log('Analyzing views and generating plan...', 60);
+
         logger.info(`Design job ${jobId}: generating build plan from composite views`);
         const result = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView);
 
+        await log('Validating physics...', 80);
+
         // Generate LEGO-style preview image (non-blocking — failure is OK)
+        await log('Generating preview image...', 90);
         const preview = await generateLegoPreview(base64Image, mimeType, result.referenceDescription);
         if (preview) {
           const previewPath = `designs/${jobId}/preview.png`;
@@ -231,11 +284,14 @@ export const processDesignUpdate = onDocumentUpdated(
           logger.info(`Preview image saved to ${previewPath}`);
         }
 
+        await log('Complete', 100);
+
         clearTimeout(safetyTimer);
 
         await jobRef.update({
           status: 'completed',
           result,
+          progress: 100,
           updatedAt: FieldValue.serverTimestamp(),
         });
 

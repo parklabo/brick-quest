@@ -14,14 +14,14 @@ import {
 } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
-import { getAI } from './gemini-client.js';
+import { getAI, getThinkingConfig } from './gemini-client.js';
 
 const DESIGN_TIMEOUT = 8 * 60 * 1000;
+/** Short timeout for image gen — Pro model either responds in ~30s or is overloaded */
+const IMAGE_GEN_TIMEOUT = 90_000;
 /** Total time budget for the agent loop — leaves margin for preview gen + Firestore writes */
 const AGENT_BUDGET_MS = 7 * 60 * 1000;
 const { AGENT_MAX_ITERATIONS } = LIMITS;
-/** Max thinking budget for fallback model (gemini-3-flash-preview) */
-const FALLBACK_MAX_THINKING = 24576;
 
 /** Evaluation timeout — Flash model is fast, 30s is plenty */
 const EVAL_TIMEOUT = 30_000;
@@ -153,6 +153,7 @@ async function evaluateBuildQuality(compositeView: ImageData, steps: BuildStepBl
         responseMimeType: 'application/json',
         responseSchema: evaluationSchema,
         maxOutputTokens: 4096,
+        thinkingConfig: getThinkingConfig(config.gemini.fastModel, 'low'),
       },
     }),
     EVAL_TIMEOUT,
@@ -251,7 +252,9 @@ function isRetryableModelError(error: any): boolean {
 /**
  * Generate a single composite image with 4 views (hero, front, side, back) of a LEGO model.
  * Uses a single Gemini image generation call for consistency across views.
- * Falls back to a faster model (flash) if the primary model returns 503/429 after 2 attempts.
+ *
+ * Strategy: Try Pro model twice with SHORT timeout (90s) → immediate fallback to Flash.
+ * Pro model either responds in ~30s or is overloaded — no point waiting 5+ minutes.
  */
 export async function generateOrthographicViews(
   base64Image: string,
@@ -261,12 +264,12 @@ export async function generateOrthographicViews(
 ): Promise<ImageData> {
   const ai = getAI();
   const prompt = compositeViewPrompt(detail, userPrompt);
+  const contentParts = [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }];
 
-  const PRO_RETRIES = 4;
+  // Phase 1: Try primary (pro) image model — 2 attempts, 90s timeout each
+  const PRO_RETRIES = 2;
   let lastError: Error | null = null;
-  let shouldFallback = false;
 
-  // Phase 1: Try primary (pro) model with exponential backoff
   for (let attempt = 1; attempt <= PRO_RETRIES; attempt++) {
     try {
       logger.info(`Generating composite views (pro), attempt ${attempt}/${PRO_RETRIES}`);
@@ -274,13 +277,13 @@ export async function generateOrthographicViews(
       const response = await withTimeout(
         ai.models.generateContent({
           model: config.gemini.imageModel,
-          contents: [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }],
+          contents: contentParts,
           config: {
             responseModalities: ['TEXT', 'IMAGE'],
-            imageConfig: { imageSize: '2K' },
+            imageConfig: { aspectRatio: '1:1', imageSize: '2K' },
           },
         }),
-        DESIGN_TIMEOUT,
+        IMAGE_GEN_TIMEOUT,
         'composite views generation'
       );
 
@@ -304,46 +307,44 @@ export async function generateOrthographicViews(
     } catch (error: any) {
       logger.error(`Composite views pro attempt ${attempt} failed:`, error.message);
       lastError = error;
-      if (isRetryableModelError(error)) {
-        shouldFallback = true;
-      }
+      // On retryable error (503/429), skip remaining Pro retries → go straight to fallback
+      if (isRetryableModelError(error)) break;
       if (attempt < PRO_RETRIES) {
-        const delay = Math.min(3000 * 2 ** (attempt - 1), 15000);
-        logger.info(`Waiting ${delay / 1000}s before retry...`);
-        await new Promise((r) => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, 3000));
       }
     }
   }
 
-  // Phase 2: Fallback to flash model on 503/429
-  if (shouldFallback) {
-    logger.info(`Pro model unavailable, falling back to ${config.gemini.fallbackImageModel}`);
-    try {
-      const response = await withTimeout(
-        ai.models.generateContent({
-          model: config.gemini.fallbackImageModel,
-          contents: [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }],
-        }),
-        DESIGN_TIMEOUT,
-        'composite views generation (fallback)'
-      );
+  // Phase 2: Fallback to flash image model — always try if Pro failed
+  logger.info(`Pro image model failed, falling back to ${config.gemini.fallbackImageModel}`);
+  try {
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: config.gemini.fallbackImageModel,
+        contents: contentParts,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      }),
+      DESIGN_TIMEOUT,
+      'composite views generation (fallback)'
+    );
 
-      const candidates = response.candidates;
-      if (candidates?.[0]?.content?.parts) {
-        for (const part of candidates[0].content.parts) {
-          if (part.inlineData?.data) {
-            logger.info('Composite views generated successfully (fallback model)');
-            return {
-              data: part.inlineData.data,
-              mimeType: part.inlineData.mimeType || 'image/png',
-              usedFallback: true,
-            };
-          }
+    const candidates = response.candidates;
+    if (candidates?.[0]?.content?.parts) {
+      for (const part of candidates[0].content.parts) {
+        if (part.inlineData?.data) {
+          logger.info('Composite views generated successfully (fallback model)');
+          return {
+            data: part.inlineData.data,
+            mimeType: part.inlineData.mimeType || 'image/png',
+            usedFallback: true,
+          };
         }
       }
-    } catch (fallbackError: any) {
-      logger.error('Fallback model also failed:', fallbackError.message);
     }
+  } catch (fallbackError: any) {
+    logger.error('Fallback model also failed:', fallbackError.message);
   }
 
   throw lastError || new Error('Failed to generate composite views');
@@ -407,7 +408,7 @@ export async function generateDesignFromPhoto(
 
   const complexityConfig: Record<
     DesignDetail,
-    { instruction: string; minBricks: number; targetMin: number; brickRange: string; maxOutput: number; thinking: number }
+    { instruction: string; minBricks: number; targetMin: number; brickRange: string; maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high' }
   > = {
     simple: {
       instruction: 'Simplified build — capture the basic silhouette and key colors. Use larger bricks (2x4, 2x6) predominantly.',
@@ -415,7 +416,7 @@ export async function generateDesignFromPhoto(
       targetMin: 35,
       brickRange: '25-50 bricks, 2x4/2x6 predominantly',
       maxOutput: 32768,
-      thinking: 8192,
+      thinkingLevel: 'low',
     },
     standard: {
       instruction:
@@ -424,7 +425,7 @@ export async function generateDesignFromPhoto(
       targetMin: 100,
       brickRange: '80-150 bricks, mix of 2x4 structure + 1x2 detail',
       maxOutput: 65536,
-      thinking: 16384,
+      thinkingLevel: 'medium',
     },
     detailed: {
       instruction:
@@ -433,7 +434,7 @@ export async function generateDesignFromPhoto(
       targetMin: 200,
       brickRange: '150-300 bricks, 1x1/1x2 for pixel precision',
       maxOutput: 131072,
-      thinking: 32768,
+      thinkingLevel: 'high',
     },
   };
 
@@ -577,12 +578,21 @@ Return ONLY valid JSON.`;
 
     // Inner parse-retry loop
     const PARSE_RETRIES = 3;
+    /** Max time per individual API call — prevents one hung call from eating the entire budget */
+    const PER_CALL_TIMEOUT = 150_000; // 2.5 min
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
-    let retryableFailures = 0;
+    let hitRetryableError = false;
 
     for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
+      // Skip if not enough time for a meaningful API call
+      const budgetRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
+      if (budgetRemaining < 30_000) {
+        logger.warn(`  Skipping attempt ${attempt} — only ${Math.round(budgetRemaining / 1000)}s remaining`);
+        break;
+      }
+
       try {
         logger.info(`  Parse attempt ${attempt}/${PARSE_RETRIES}`);
 
@@ -597,10 +607,7 @@ Return ONLY valid JSON.`;
         }
         contentParts.push({ text: currentPrompt });
 
-        const isFallback = useModel !== config.gemini.model;
-        const thinkingBudget = isFallback ? Math.min(cfg.thinking, FALLBACK_MAX_THINKING) : cfg.thinking;
-
-        const callTimeout = Math.min(DESIGN_TIMEOUT, AGENT_BUDGET_MS - (Date.now() - agentStart) - 5_000);
+        const callTimeout = Math.min(PER_CALL_TIMEOUT, budgetRemaining - 5_000);
 
         const response = await withTimeout(
           ai.models.generateContent({
@@ -610,7 +617,7 @@ Return ONLY valid JSON.`;
               responseMimeType: 'application/json',
               responseSchema: designSchema,
               maxOutputTokens: cfg.maxOutput,
-              thinkingConfig: { thinkingBudget },
+              thinkingConfig: getThinkingConfig(useModel, cfg.thinkingLevel),
               systemInstruction:
                 'You are an award-winning LEGO Master Builder who specializes in recreating real-world objects as LEGO models. You have expert-level 3D spatial reasoning.',
             },
@@ -664,7 +671,11 @@ Return ONLY valid JSON.`;
       } catch (error: any) {
         logger.error(`  Parse attempt ${attempt} failed:`, error.message);
         lastError = error;
-        if (isRetryableModelError(error)) retryableFailures++;
+        if (isRetryableModelError(error)) {
+          hitRetryableError = true;
+          // On 503/429: skip remaining retries, switch model immediately
+          break;
+        }
         if (attempt < PARSE_RETRIES) {
           await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
         }
@@ -675,8 +686,8 @@ Return ONLY valid JSON.`;
     if (!iterationSteps || !iterationMeta) {
       logger.warn(`Agent iteration ${iteration} failed to produce valid steps`);
 
-      // Switch to fallback model if all failures were retryable (503/429)
-      if (retryableFailures === PARSE_RETRIES && useModel !== config.gemini.fallbackModel) {
+      // Switch to fallback model on ANY retryable error (503/429/timeout)
+      if (hitRetryableError && useModel !== config.gemini.fallbackModel) {
         logger.info(`Switching to fallback model: ${config.gemini.fallbackModel}`);
         useModel = config.gemini.fallbackModel;
       }
@@ -843,6 +854,8 @@ Rules:
   const modelsToTry = [config.gemini.imageModel, config.gemini.fallbackImageModel];
 
   for (const model of modelsToTry) {
+    const isFallback = model !== config.gemini.imageModel;
+    const timeout = isFallback ? DESIGN_TIMEOUT : IMAGE_GEN_TIMEOUT;
     try {
       const response = await withTimeout(
         ai.models.generateContent({
@@ -850,10 +863,10 @@ Rules:
           contents: [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }],
           config: {
             responseModalities: ['TEXT', 'IMAGE'],
-            imageConfig: { imageSize: '2K' },
+            ...(isFallback ? {} : { imageConfig: { imageSize: '2K' } }),
           },
         }),
-        DESIGN_TIMEOUT,
+        timeout,
         'LEGO preview generation'
       );
 

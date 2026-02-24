@@ -5,7 +5,7 @@ import { logger } from 'firebase-functions';
 import type { ScanResult } from '@brick-quest/shared';
 import { getGeminiShapeEnum, getGeminiShapeDescriptions, resolveShape } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
-import { getAI } from './gemini-client.js';
+import { getAI, getThinkingConfig } from './gemini-client.js';
 
 const SCAN_TIMEOUT = 5 * 60 * 1000;
 const SCAN_RETRIES = 2;
@@ -85,7 +85,7 @@ Return ONLY valid JSON matching the schema.`;
             config: {
               responseMimeType: 'application/json',
               responseSchema: partSchema,
-              thinkingConfig: { thinkingBudget: 2048 },
+              thinkingConfig: getThinkingConfig(model, 'low'),
               systemInstruction: 'You are an expert brick sorter. Be precise and conservative. Return only valid JSON.',
             },
           }),
