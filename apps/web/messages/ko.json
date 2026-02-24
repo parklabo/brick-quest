@@ -234,7 +234,16 @@
     "jobInProgress": "디자인 진행 중...",
     "jobInProgressHint": "레고 디자인을 생성하고 있습니다. 몇 분 정도 걸릴 수 있습니다.",
     "viewFullResult": "전체 결과 보기",
-    "viewsPreview": "생성된 레고 뷰"
+    "viewsPreview": "생성된 레고 뷰",
+    "reviewViewsTitle": "레고 뷰 검토",
+    "reviewViewsHint": "아래 뷰를 확인하세요. 승인하면 조립 설명서가 생성됩니다.",
+    "approveAndBuild": "좋아요 — 조립 설명서 생성",
+    "approvingBuild": "생성 중...",
+    "regenerateViews": "뷰 재생성",
+    "regeneratingViews": "재생성 중...",
+    "deleteDesignTitle": "디자인 삭제",
+    "deleteDesignConfirm": "이 디자인과 이미지가 영구적으로 삭제됩니다.",
+    "deletingDesign": "삭제 중..."
   },
   "createResult": {
     "stepViews": "뷰 생성",

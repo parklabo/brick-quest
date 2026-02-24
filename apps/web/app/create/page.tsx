@@ -1,16 +1,21 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { Sparkles, Loader2, ExternalLink, ArrowRight, RefreshCw, Trash2 } from 'lucide-react';
 import { CreateUploader } from '../../components/create/CreateUploader';
 import { DesignPipeline } from '../../components/create/DesignPipeline';
 import { JobHistory } from '../../components/jobs/JobHistory';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { useJobsStore, type TrackedJob } from '../../lib/stores/jobs';
 import { useStorageUrl } from '../../lib/hooks/useStorageUrl';
+import { apiClient } from '../../lib/api/client';
 
-const ACTIVE_STATUSES = ['pending', 'processing', 'generating_views', 'generating_build'];
+/** Statuses where upload form should be hidden */
+const OCCUPIED_STATUSES = ['pending', 'processing', 'generating_views', 'views_ready', 'generating_build'];
+/** Statuses where the processing spinner + logs should show */
+const PROCESSING_STATUSES = ['pending', 'processing', 'generating_views', 'generating_build'];
 
 function ProcessingLog({ job }: { job: TrackedJob }) {
   const t = useTranslations('create');
@@ -62,23 +67,153 @@ function ProcessingLog({ job }: { job: TrackedJob }) {
   );
 }
 
-function CompositePreview({ job }: { job: TrackedJob }) {
+function CompositePreview({ job, linkToResult }: { job: TrackedJob; linkToResult?: boolean }) {
   const t = useTranslations('create');
   const compositeUrl = useStorageUrl(job.views?.composite);
 
   if (!compositeUrl) return null;
 
+  const image = (
+    <div className="rounded-xl overflow-hidden border border-lego-yellow/20 bg-slate-900 transition-all group-hover:border-lego-yellow/40">
+      <img src={compositeUrl} alt={t('viewsPreview')} className="w-full object-contain" />
+    </div>
+  );
+
+  if (linkToResult) {
+    return (
+      <div className="mt-4">
+        <Link href={`/create/${job.id}/result`} className="block group">
+          {image}
+          <div className="flex items-center justify-center gap-1.5 mt-2 text-xs font-medium text-lego-yellow/70 group-hover:text-lego-yellow transition-colors">
+            <ExternalLink className="w-3 h-3" />
+            {t('viewFullResult')}
+          </div>
+        </Link>
+      </div>
+    );
+  }
+
+  return <div className="mb-5">{image}</div>;
+}
+
+function ViewsReviewInline({ job }: { job: TrackedJob }) {
+  const t = useTranslations('create');
+  const tc = useTranslations('common');
+  const removeJob = useJobsStore((s) => s.removeJob);
+  const [approving, setApproving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleApprove = useCallback(async () => {
+    setApproving(true);
+    try {
+      await apiClient.approveDesignViews(job.id);
+    } catch {
+      setApproving(false);
+    }
+  }, [job.id]);
+
+  const handleRegenerate = useCallback(async () => {
+    setRegenerating(true);
+    try {
+      await apiClient.regenerateDesignViews(job.id);
+    } finally {
+      setRegenerating(false);
+    }
+  }, [job.id]);
+
+  const handleDelete = useCallback(async () => {
+    setDeleting(true);
+    try {
+      await apiClient.deleteJob(job.id);
+      removeJob(job.id);
+    } catch {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }, [job.id, removeJob]);
+
+  const busy = approving || regenerating || deleting;
+
   return (
-    <div className="mt-4">
-      <Link href={`/create/${job.id}/result`} className="block group">
-        <div className="rounded-xl overflow-hidden border border-lego-yellow/20 bg-slate-900 transition-all group-hover:border-lego-yellow/40">
-          <img src={compositeUrl} alt={t('viewsPreview')} className="w-full object-contain" />
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold text-white mb-1">{t('reviewViewsTitle')}</h3>
+        <p className="text-xs text-slate-500">{t('reviewViewsHint')}</p>
+      </div>
+
+      {job.views && <CompositePreview job={job} />}
+
+      {/* Action buttons */}
+      <div className="space-y-2.5">
+        <button
+          onClick={handleApprove}
+          disabled={busy}
+          className="w-full px-4 py-3.5 rounded-xl font-bold text-sm transition-all bg-lego-yellow hover:bg-yellow-400 text-slate-900 shadow-[0_3px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-0.75 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className="flex items-center justify-center gap-2">
+            {approving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {t('approvingBuild')}
+              </>
+            ) : (
+              <>
+                <ArrowRight className="w-4 h-4" />
+                {t('approveAndBuild')}
+              </>
+            )}
+          </span>
+        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={handleRegenerate}
+            disabled={busy}
+            className="flex-1 px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-slate-400 hover:text-slate-200 bg-white/[0.03] hover:bg-white/[0.06] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="flex items-center justify-center gap-1.5">
+              {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {regenerating ? t('regeneratingViews') : t('regenerateViews')}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={busy}
+            className="px-3 py-2.5 rounded-xl text-xs font-medium transition-all text-slate-500 hover:text-red-400 bg-white/[0.03] hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="flex items-center justify-center gap-1.5">
+              <Trash2 className="w-3.5 h-3.5" />
+              {tc('delete')}
+            </span>
+          </button>
         </div>
-        <div className="flex items-center justify-center gap-1.5 mt-2 text-xs font-medium text-lego-yellow/70 group-hover:text-lego-yellow transition-colors">
+
+        {/* Link to full result page */}
+        <Link
+          href={`/create/${job.id}/result`}
+          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500 hover:text-lego-yellow transition-colors py-1"
+        >
           <ExternalLink className="w-3 h-3" />
           {t('viewFullResult')}
-        </div>
-      </Link>
+        </Link>
+      </div>
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title={t('deleteDesignTitle')}
+          message={t('deleteDesignConfirm')}
+          confirmLabel={tc('delete')}
+          cancelLabel={tc('cancel')}
+          loading={deleting}
+          loadingLabel={t('deletingDesign')}
+          variant="danger"
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }
@@ -88,11 +223,12 @@ export default function CreatePage() {
   const selectDesignJob = useJobsStore((s) => s.selectDesignJob);
   const allJobs = useJobsStore((s) => s.jobs);
 
-  const activeJob = useMemo(() => {
-    return allJobs.find((j) => j.type === 'design' && ACTIVE_STATUSES.includes(j.status));
+  const occupiedJob = useMemo(() => {
+    return allJobs.find((j) => j.type === 'design' && OCCUPIED_STATUSES.includes(j.status));
   }, [allJobs]);
 
-  const hasActiveJob = !!activeJob;
+  const isProcessing = occupiedJob && PROCESSING_STATUSES.includes(occupiedJob.status);
+  const isViewsReady = occupiedJob?.status === 'views_ready';
 
   return (
     <main className="min-h-screen p-4 sm:p-8">
@@ -110,19 +246,26 @@ export default function CreatePage() {
 
         {/* Pipeline Stepper */}
         <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-          <DesignPipeline activeJob={activeJob} />
+          <DesignPipeline activeJob={occupiedJob} />
         </div>
 
-        {/* Active Job: Processing logs + Composite Preview */}
-        {hasActiveJob ? (
+        {/* Processing: live logs + composite preview */}
+        {isProcessing && occupiedJob && (
           <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-            <ProcessingLog job={activeJob} />
-            {activeJob.views && <CompositePreview job={activeJob} />}
+            <ProcessingLog job={occupiedJob} />
+            {occupiedJob.views && <CompositePreview job={occupiedJob} linkToResult />}
           </div>
-        ) : (
-          /* Upload Area — only when no active job */
-          <CreateUploader />
         )}
+
+        {/* Views Ready: review UI with approve/regenerate/delete */}
+        {isViewsReady && occupiedJob && (
+          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <ViewsReviewInline job={occupiedJob} />
+          </div>
+        )}
+
+        {/* Upload Area — only when no occupied job */}
+        {!occupiedJob && <CreateUploader />}
 
         {/* History */}
         <div className="mt-10 pt-6 border-t border-white/[0.06]">

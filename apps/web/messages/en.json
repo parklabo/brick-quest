@@ -234,7 +234,16 @@
     "jobInProgress": "Design in progress...",
     "jobInProgressHint": "Your LEGO design is being generated. This may take a few minutes.",
     "viewFullResult": "View full result",
-    "viewsPreview": "Generated LEGO views"
+    "viewsPreview": "Generated LEGO views",
+    "reviewViewsTitle": "Review your LEGO views",
+    "reviewViewsHint": "Check the views below. Approve to generate build instructions, or regenerate.",
+    "approveAndBuild": "Looks good — Generate Build",
+    "approvingBuild": "Generating build...",
+    "regenerateViews": "Regenerate views",
+    "regeneratingViews": "Regenerating...",
+    "deleteDesignTitle": "Delete Design",
+    "deleteDesignConfirm": "This design and its images will be permanently deleted.",
+    "deletingDesign": "Deleting..."
   },
   "createResult": {
     "stepViews": "Generate Views",

@@ -234,7 +234,16 @@
     "jobInProgress": "デザイン進行中...",
     "jobInProgressHint": "レゴデザインを生成しています。数分かかる場合があります。",
     "viewFullResult": "全結果を見る",
-    "viewsPreview": "生成されたレゴビュー"
+    "viewsPreview": "生成されたレゴビュー",
+    "reviewViewsTitle": "レゴビューの確認",
+    "reviewViewsHint": "以下のビューを確認してください。承認すると組み立て説明書が生成されます。",
+    "approveAndBuild": "OK — 組み立て説明書を生成",
+    "approvingBuild": "生成中...",
+    "regenerateViews": "ビューを再生成",
+    "regeneratingViews": "再生成中...",
+    "deleteDesignTitle": "デザインを削除",
+    "deleteDesignConfirm": "このデザインと画像は完全に削除されます。",
+    "deletingDesign": "削除中..."
   },
   "createResult": {
     "stepViews": "ビュー生成",
