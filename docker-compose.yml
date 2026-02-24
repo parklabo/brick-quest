@@ -22,3 +22,5 @@ services:
     env_file:
       - path: ./packages/functions/.env
         required: false
+      - path: ./packages/functions/.env.local
+        required: false

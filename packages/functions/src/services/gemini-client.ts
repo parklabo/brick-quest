@@ -10,4 +10,4 @@ let _ai: GoogleGenAI | undefined;
 export const getAI = () =>
   (_ai ??= process.env.GEMINI_API_KEY
     ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-    : new GoogleGenAI({ vertexai: true, project: 'brick-quest', location: 'asia-northeast1' }));
+    : new GoogleGenAI({ vertexai: true, project: 'brick-quest', location: 'global' }));
