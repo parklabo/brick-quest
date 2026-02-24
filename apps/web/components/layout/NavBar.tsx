@@ -33,17 +33,17 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- close menu on route change
-  useEffect(() => { setOpen(false); }, [pathname]);
+   
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
         className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-          active
-            ? 'bg-white/10 text-white'
-            : 'text-slate-400 hover:text-white hover:bg-white/5'
+          active ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
         }`}
       >
         <Blocks className="w-4 h-4" />
@@ -65,9 +65,7 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
                 key={href}
                 href={href}
                 className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                  itemActive
-                    ? 'text-lego-yellow bg-lego-yellow/5'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  itemActive ? 'text-lego-yellow bg-lego-yellow/5' : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -84,9 +82,7 @@ function MyBricksDropdown({ active, badgeCount }: { active: boolean; badgeCount:
 export function NavBar() {
   const pathname = usePathname();
   const t = useTranslations('nav');
-  const { scan: unseenScanCount, build: unseenBuildCount, design: unseenDesignCount } = useJobsStore(
-    useShallow(selectUnseenCounts),
-  );
+  const { scan: unseenScanCount, build: unseenBuildCount, design: unseenDesignCount } = useJobsStore(useShallow(selectUnseenCounts));
   if (pathname === '/' || pathname === '/workspace') return null;
 
   const isMyBricksActive = MY_BRICKS_PATHS.some((p) => pathname.startsWith(p));
@@ -105,17 +101,13 @@ export function NavBar() {
               height={28}
               className="rounded-md transition-transform group-hover:scale-110"
             />
-            <span className="font-extrabold text-base tracking-tight text-white">
-              {t('brandName')}
-            </span>
+            <span className="font-extrabold text-base tracking-tight text-white">{t('brandName')}</span>
           </Link>
           <div className="flex items-center gap-1">
             <Link
               href="/home"
               className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                pathname === '/home'
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                pathname === '/home' ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
               <Home className="w-4 h-4" />
@@ -125,9 +117,7 @@ export function NavBar() {
             <Link
               href="/create"
               className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                pathname.startsWith('/create')
-                  ? 'bg-lego-yellow/15 text-lego-yellow'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                pathname.startsWith('/create') ? 'bg-lego-yellow/15 text-lego-yellow' : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -144,15 +134,12 @@ export function NavBar() {
             <Link
               href="/workspace"
               className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                pathname.startsWith('/workspace')
-                  ? 'bg-white/10 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                pathname.startsWith('/workspace') ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
               <Box className="w-4 h-4" />
               {t('workspace')}
             </Link>
-
           </div>
         </div>
       </nav>
@@ -236,7 +223,6 @@ export function NavBar() {
             <Box className="w-5 h-5" />
             {t('workspace')}
           </Link>
-
         </div>
       </nav>
     </>

@@ -48,11 +48,7 @@ export default function DashboardScene() {
   }, []);
 
   return (
-    <Canvas
-      shadows
-      dpr={[1, 2]}
-      camera={{ position: [12, 10, 12], fov: 50 }}
-    >
+    <Canvas shadows dpr={[1, 2]} camera={{ position: [12, 10, 12], fov: 50 }}>
       <color attach="background" args={['#0c0c14']} />
       <fog attach="fog" args={['#0c0c14', 20, 45]} />
 
@@ -70,7 +66,6 @@ export default function DashboardScene() {
           subtitle={t('designIslandDesc')}
           glowColor="#fbbf24"
           groupPosition={[-3.5, 0, -1]}
-          baseDelay={0.3}
         />
 
         <DashboardStructure
@@ -80,7 +75,6 @@ export default function DashboardScene() {
           subtitle={t('myBricksIslandDesc')}
           glowColor="#60a5fa"
           groupPosition={[3.5, 0, -1]}
-          baseDelay={0.5}
         />
       </Suspense>
     </Canvas>

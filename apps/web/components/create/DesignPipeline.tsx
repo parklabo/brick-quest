@@ -3,15 +3,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import {
-  Upload,
-  Images,
-  Eye,
-  Hammer,
-  CheckCircle,
-  Loader2,
-  ChevronRight,
-} from 'lucide-react';
+import { Upload, Images, Eye, Hammer, CheckCircle, Loader2, ChevronRight } from 'lucide-react';
 import { useJobsStore, type TrackedJob } from '../../lib/stores/jobs';
 import { StatusBadge } from '../jobs/JobList';
 
@@ -78,7 +70,8 @@ export function DesignPipeline() {
   const displayJob = activeJob || selectedJob || latestCompleted;
   const currentStep = displayJob ? getActiveStep(displayJob.status) : 'upload';
   const currentIdx = getStepIndex(currentStep);
-  const isProcessing = displayJob && displayJob.status !== 'completed' && displayJob.status !== 'failed' && displayJob.status !== 'views_ready';
+  const isProcessing =
+    displayJob && displayJob.status !== 'completed' && displayJob.status !== 'failed' && displayJob.status !== 'views_ready';
 
   return (
     <div className="space-y-4">
@@ -88,8 +81,6 @@ export function DesignPipeline() {
           const Icon = step.icon;
           const isActive = idx === currentIdx;
           const isDone = idx < currentIdx;
-          const isFuture = idx > currentIdx;
-
           return (
             <div key={step.key} className="flex items-center flex-1 last:flex-none">
               {/* Step circle + label */}
@@ -97,11 +88,12 @@ export function DesignPipeline() {
                 <div
                   className={`
                     relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-300
-                    ${isActive
-                      ? 'bg-lego-yellow/20 ring-2 ring-lego-yellow/50 shadow-[0_0_12px_rgba(250,204,21,0.15)]'
-                      : isDone
-                        ? 'bg-emerald-500/15 ring-1 ring-emerald-500/30'
-                        : 'bg-white/[0.04] ring-1 ring-white/[0.06]'
+                    ${
+                      isActive
+                        ? 'bg-lego-yellow/20 ring-2 ring-lego-yellow/50 shadow-[0_0_12px_rgba(250,204,21,0.15)]'
+                        : isDone
+                          ? 'bg-emerald-500/15 ring-1 ring-emerald-500/30'
+                          : 'bg-white/[0.04] ring-1 ring-white/[0.06]'
                     }
                   `}
                 >
@@ -110,22 +102,14 @@ export function DesignPipeline() {
                   ) : (
                     <Icon
                       className={`w-4 h-4 transition-colors ${
-                        isActive
-                          ? 'text-lego-yellow'
-                          : isDone
-                            ? 'text-emerald-400'
-                            : 'text-slate-600'
+                        isActive ? 'text-lego-yellow' : isDone ? 'text-emerald-400' : 'text-slate-600'
                       }`}
                     />
                   )}
                 </div>
                 <span
                   className={`text-[10px] sm:text-[11px] font-medium transition-colors truncate max-w-[60px] text-center ${
-                    isActive
-                      ? 'text-lego-yellow'
-                      : isDone
-                        ? 'text-emerald-400/70'
-                        : 'text-slate-600'
+                    isActive ? 'text-lego-yellow' : isDone ? 'text-emerald-400/70' : 'text-slate-600'
                   }`}
                 >
                   {t(STEP_LABEL_KEYS[step.key])}
@@ -137,11 +121,7 @@ export function DesignPipeline() {
                 <div className="flex-1 h-px mx-1.5 sm:mx-2.5 -mt-5">
                   <div
                     className={`h-full rounded-full transition-colors duration-300 ${
-                      idx < currentIdx
-                        ? 'bg-emerald-500/30'
-                        : idx === currentIdx
-                          ? 'bg-lego-yellow/20'
-                          : 'bg-white/[0.06]'
+                      idx < currentIdx ? 'bg-emerald-500/30' : idx === currentIdx ? 'bg-lego-yellow/20' : 'bg-white/[0.06]'
                     }`}
                   />
                 </div>
@@ -152,9 +132,7 @@ export function DesignPipeline() {
       </div>
 
       {/* Active Job Card — only show when actionable (views_ready, completed), not during processing */}
-      {displayJob && !isProcessing && (
-        <ActiveJobCard job={displayJob} />
-      )}
+      {displayJob && !isProcessing && <ActiveJobCard job={displayJob} />}
     </div>
   );
 }
@@ -164,17 +142,13 @@ function ActiveJobCard({ job }: { job: TrackedJob }) {
   const markSeen = useJobsStore((s) => s.markSeen);
 
   const isViewable = job.status === 'views_ready' || job.status === 'completed';
-  const href = job.status === 'views_ready' || job.status === 'completed'
-    ? `/create/${job.id}/result`
-    : undefined;
+  const href = job.status === 'views_ready' || job.status === 'completed' ? `/create/${job.id}/result` : undefined;
 
   const content = (
     <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] ring-1 ring-white/[0.08] hover:ring-lego-yellow/20 transition-all">
       <div className="flex-1 min-w-0 flex items-center gap-3">
         <StatusBadge status={job.status} />
-        {job.status === 'failed' && job.error && (
-          <span className="text-xs text-red-400/70 truncate">{job.error}</span>
-        )}
+        {job.status === 'failed' && job.error && <span className="text-xs text-red-400/70 truncate">{job.error}</span>}
       </div>
       {isViewable && (
         <span className="flex items-center gap-1 text-xs font-medium text-lego-yellow shrink-0">

@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { DashboardBrick } from './DashboardBrick';
 import type { DashboardBrickDef } from './dashboard-layouts';
 
-const STAGGER_MS = 0.08; // 80ms between bricks
 const HOVER_SCALE = 1.03;
 const LERP_SPEED = 8;
 
@@ -19,18 +18,9 @@ interface DashboardStructureProps {
   subtitle: string;
   glowColor: string;
   groupPosition: [number, number, number];
-  baseDelay: number; // seconds
 }
 
-export function DashboardStructure({
-  layout,
-  href,
-  label,
-  subtitle,
-  glowColor,
-  groupPosition,
-  baseDelay,
-}: DashboardStructureProps) {
+export function DashboardStructure({ layout, href, label, subtitle, glowColor, groupPosition }: DashboardStructureProps) {
   const router = useRouter();
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
@@ -39,11 +29,7 @@ export function DashboardStructure({
   useFrame((_, delta) => {
     if (!groupRef.current) return;
     const target = hovered ? HOVER_SCALE : 1;
-    currentScale.current = THREE.MathUtils.lerp(
-      currentScale.current,
-      target,
-      LERP_SPEED * delta,
-    );
+    currentScale.current = THREE.MathUtils.lerp(currentScale.current, target, LERP_SPEED * delta);
     const s = currentScale.current;
     groupRef.current.scale.set(s, s, s);
   });
@@ -67,36 +53,16 @@ export function DashboardStructure({
   const emissiveIntensity = hovered ? 0.3 : 0;
 
   return (
-    <group
-      ref={groupRef}
-      position={groupPosition}
-      onClick={handleClick}
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
-    >
+    <group ref={groupRef} position={groupPosition} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
       {layout.map((def, i) => (
-        <DashboardBrick
-          key={i}
-          def={def}
-          emissive={emissive}
-          emissiveIntensity={emissiveIntensity}
-        />
+        <DashboardBrick key={i} def={def} emissive={emissive} emissiveIntensity={emissiveIntensity} />
       ))}
 
       {/* Floating label */}
-      <Html
-        position={[0, 5.5, 0]}
-        center
-        distanceFactor={15}
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
-      >
+      <Html position={[0, 5.5, 0]} center distanceFactor={15} style={{ pointerEvents: 'none', userSelect: 'none' }}>
         <div className="flex flex-col items-center gap-0.5 whitespace-nowrap">
-          <span className="text-white font-bold text-sm drop-shadow-lg">
-            {label}
-          </span>
-          <span className="text-slate-400 text-[10px] drop-shadow-md">
-            {subtitle}
-          </span>
+          <span className="text-white font-bold text-sm drop-shadow-lg">{label}</span>
+          <span className="text-slate-400 text-[10px] drop-shadow-md">{subtitle}</span>
         </div>
       </Html>
     </group>

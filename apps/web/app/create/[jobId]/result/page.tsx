@@ -16,13 +16,7 @@ import { resolveBrickLinkInfo, generateWantedListXml } from '@brick-quest/shared
 import { BrickIcon } from '../../../../components/ui/BrickIcon';
 
 function PartCard({ part }: { part: RequiredPart }) {
-  const info = resolveBrickLinkInfo(
-    part.shape,
-    part.type,
-    part.dimensions.width,
-    part.dimensions.length,
-    part.color,
-  );
+  const info = resolveBrickLinkInfo(part.shape, part.type, part.dimensions.width, part.dimensions.length, part.color);
 
   return (
     <div className="brick-card p-3 flex items-center gap-3">
@@ -114,8 +108,11 @@ function useStorageUrl(path: string | undefined) {
   const [url, setUrl] = useState<string | undefined>();
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset state when path is cleared
-    if (!path) { setUrl(undefined); return; }
+     
+    if (!path) {
+      setUrl(undefined);
+      return;
+    }
     let blobUrl: string | undefined;
     const imageRef = ref(storage, path);
     getDownloadURL(imageRef)
@@ -126,9 +123,13 @@ function useStorageUrl(path: string | undefined) {
             blobUrl = URL.createObjectURL(blob);
             setUrl(blobUrl);
           })
-          .catch(() => {/* non-critical */});
+          .catch(() => {
+            /* non-critical */
+          });
       });
-    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl); };
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
   }, [path]);
 
   return url;
@@ -313,7 +314,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
   const mappedCount = useMemo(() => {
     if (!designResult) return 0;
     return designResult.requiredParts.filter(
-      (p) => !resolveBrickLinkInfo(p.shape, p.type, p.dimensions.width, p.dimensions.length, p.color).isFallback,
+      (p) => !resolveBrickLinkInfo(p.shape, p.type, p.dimensions.width, p.dimensions.length, p.color).isFallback
     ).length;
   }, [designResult]);
 
@@ -429,9 +430,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
           {isNewPipeline && <DesignStepIndicator {...getStepState()} />}
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-10 h-10 text-lego-yellow animate-spin mb-4" />
-            <p className="text-white font-medium">
-              {job.status === 'generating_views' ? t('generatingViews') : t('designing')}
-            </p>
+            <p className="text-white font-medium">{job.status === 'generating_views' ? t('generatingViews') : t('designing')}</p>
             <p className="text-slate-400 text-sm mt-1">{t('mayTakeMinutes')}</p>
           </div>
         </div>
@@ -450,9 +449,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
           <DesignStepIndicator {...getStepState()} />
           <div className="mb-6">
             <h1 className="text-2xl font-extrabold text-white">{t('reviewTitle')}</h1>
-            <p className="text-slate-400 text-sm mt-1">
-              {t('reviewDescription')}
-            </p>
+            <p className="text-slate-400 text-sm mt-1">{t('reviewDescription')}</p>
           </div>
           <ViewsReview views={job.views} jobId={jobId} referenceUrl={referenceUrl} usedFallbackModel={job.usedFallbackModel} />
         </div>
@@ -562,9 +559,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
         {/* Required Parts */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              {t('requiredParts')}
-            </h2>
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('requiredParts')}</h2>
             <span className="text-xs text-slate-600">
               {mappedCount}/{designResult.requiredParts.length} {t('onBrickLink')} · {totalParts} {tc('total')}
             </span>
