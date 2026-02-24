@@ -108,7 +108,13 @@
     "noticeItem2Desc": "このプロジェクトは第4回 Agentic AI Hackathon with Google Cloudに出展されています。スポンサー：Zenn。",
     "noticeItem3Title": "新機能：デザインスタジオ",
     "noticeItem3Desc": "写真をアップロードすると、AIがレゴの組み立て説明書を生成します。今すぐお試しください！",
-    "noticeClose": "閉じる"
+    "noticeClose": "閉じる",
+    "profileTitle": "マイプロフィール",
+    "profileCharacter": "キャラクター",
+    "profileColor": "カラー",
+    "profileSettings": "設定",
+    "profileSignOut": "サインアウト",
+    "demoBricks": "デモブリック"
   },
   "scan": {
     "title": "ブリックスキャン",

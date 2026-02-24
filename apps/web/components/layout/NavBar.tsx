@@ -8,7 +8,6 @@ import { useTranslations } from 'next-intl';
 import { Sparkles, ScanLine, Package, Hammer, Box, Home, ChevronDown, Blocks } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useJobsStore, selectUnseenCounts } from '../../lib/stores/jobs';
-import { useProfileStore } from '../../lib/stores/profile';
 
 const MY_BRICKS_PATHS = ['/scan', '/builds', '/inventory'];
 
@@ -88,9 +87,6 @@ export function NavBar() {
   const { scan: unseenScanCount, build: unseenBuildCount, design: unseenDesignCount } = useJobsStore(
     useShallow(selectUnseenCounts),
   );
-  const profile = useProfileStore((s) => s.profile);
-  const initial = profile?.displayName?.charAt(0).toUpperCase() ?? '?';
-
   if (pathname === '/' || pathname === '/workspace') return null;
 
   const isMyBricksActive = MY_BRICKS_PATHS.some((p) => pathname.startsWith(p));
@@ -157,20 +153,6 @@ export function NavBar() {
               {t('workspace')}
             </Link>
 
-            <div className="w-px h-5 bg-white/10 mx-2" />
-            <Link
-              href="/settings"
-              className={`flex items-center gap-2 p-1.5 rounded-full transition-colors ${
-                pathname === '/settings'
-                  ? 'ring-2 ring-lego-yellow/40'
-                  : 'hover:bg-white/5'
-              }`}
-              title={t('settings')}
-            >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-lego-yellow/25 to-lego-orange/20 border border-white/10 flex items-center justify-center text-xs font-extrabold text-lego-yellow">
-                {initial}
-              </div>
-            </Link>
           </div>
         </div>
       </nav>
@@ -228,17 +210,6 @@ export function NavBar() {
             {t('workspace')}
           </Link>
 
-          <Link
-            href="/settings"
-            className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-14 ${
-              pathname === '/settings' ? 'text-lego-yellow' : 'text-slate-500'
-            }`}
-          >
-            <div className="w-5 h-5 rounded-full bg-lego-yellow/15 flex items-center justify-center text-[9px] font-extrabold text-lego-yellow">
-              {initial}
-            </div>
-            {t('me')}
-          </Link>
         </div>
       </nav>
     </>

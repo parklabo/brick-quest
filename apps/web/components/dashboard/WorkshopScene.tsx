@@ -2,11 +2,13 @@
 
 import { useRef, useMemo, useState, useEffect, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF, useAnimations, Text } from '@react-three/drei';
+import { OrbitControls, useGLTF, useAnimations, Text, Billboard } from '@react-three/drei';
 import { useTranslations } from 'next-intl';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { usePlayerStore } from '../../lib/stores/player';
+import { useProfileStore } from '../../lib/stores/profile';
+import { useInventoryStore } from '../../lib/stores/inventory';
 import { useTintedClone } from '../../lib/three/use-tinted-clone';
 import { useKeyboard } from '../../lib/hooks/use-keyboard';
 import { useWorkshopStore } from '../../lib/stores/workshop';
@@ -560,8 +562,42 @@ function MovableCharacter({
     groupRef.current.rotation.y += wrapped * 8 * delta;
   });
 
+  const openProfile = useWorkshopStore((s) => s.openProfile);
+  const displayName = useProfileStore((s) => s.profile?.displayName) || 'Builder';
+  const [hovered, setHovered] = useState(false);
+
   return (
-    <group ref={groupRef} position={[0, 0, 2]}>
+    <group
+      ref={groupRef}
+      position={[0, 0, 2]}
+      onClick={(e) => { e.stopPropagation(); openProfile(); }}
+      onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+    >
+      {/* Username tooltip on hover */}
+      {hovered && (
+        <Billboard position={[0, 1.15, 0]}>
+          {/* Tag background */}
+          <mesh position={[0, 0, -0.01]}>
+            <planeGeometry args={[displayName.length * 0.08 + 0.2, 0.18]} />
+            <meshBasicMaterial color="#000000" transparent opacity={0.65} />
+          </mesh>
+          <Text fontSize={0.1} color="#ffffff" anchorX="center" anchorY="middle" fontWeight="bold">
+            {displayName}
+          </Text>
+        </Billboard>
+      )}
+      {/* Hover glow ring */}
+      {hovered && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+          <ringGeometry args={[0.3, 0.5, 24]} />
+          <meshBasicMaterial color={bodyColor} transparent opacity={0.4} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+      {/* Hover point light */}
+      {hovered && (
+        <pointLight position={[0, 0.8, 0]} color={bodyColor} intensity={1.5} distance={3} decay={2} />
+      )}
       {/* Shadow */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <circleGeometry args={[0.3, 16]} />
@@ -570,6 +606,80 @@ function MovableCharacter({
       <Suspense fallback={<CharacterFallback />}>
         <CharacterModel modelUrl={modelUrl} bodyColor={bodyColor} isMoving={isMoving} />
       </Suspense>
+    </group>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Inventory display — 3D info board near mybrick portal
+   ═══════════════════════════════════════════ */
+
+function InventoryDisplay() {
+  const parts = useInventoryStore((s) => s.parts);
+  const t = useTranslations('dashboard');
+  const totalBricks = parts.reduce((sum, p) => sum + p.count, 0);
+  const uniqueTypes = parts.length;
+
+  if (totalBricks === 0) return null;
+
+  // Floor display in front of mybrick portal
+  return (
+    <group position={[3.5, 0.01, 2.8]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Background panel on floor */}
+      <mesh position={[0, 0, -0.005]}>
+        <planeGeometry args={[3.2, 1.2]} />
+        <meshBasicMaterial color="#1a1028" transparent opacity={0.7} />
+      </mesh>
+      {/* Border */}
+      <mesh position={[0, 0, -0.006]}>
+        <planeGeometry args={[3.4, 1.35]} />
+        <meshBasicMaterial color="#a78bfa" transparent opacity={0.2} />
+      </mesh>
+      {/* Brick count — left */}
+      <Text
+        position={[-0.8, 0.12, 0.001]}
+        fontSize={0.45}
+        color="#f87171"
+        anchorX="center"
+        anchorY="middle"
+        fontWeight="bold"
+      >
+        {String(totalBricks)}
+      </Text>
+      <Text
+        position={[-0.8, -0.28, 0.001]}
+        fontSize={0.16}
+        color="#c4b5d0"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {t('totalBricks')}
+      </Text>
+      {/* Divider */}
+      <mesh position={[0, 0, 0.001]}>
+        <planeGeometry args={[0.03, 0.8]} />
+        <meshBasicMaterial color="#a78bfa" transparent opacity={0.5} />
+      </mesh>
+      {/* Parts count — right */}
+      <Text
+        position={[0.8, 0.12, 0.001]}
+        fontSize={0.45}
+        color="#60a5fa"
+        anchorX="center"
+        anchorY="middle"
+        fontWeight="bold"
+      >
+        {String(uniqueTypes)}
+      </Text>
+      <Text
+        position={[0.8, -0.28, 0.001]}
+        fontSize={0.16}
+        color="#c4b5d0"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {t('uniqueParts')}
+      </Text>
     </group>
   );
 }
@@ -760,6 +870,9 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
       >
         {t('myBrickZone')}
       </Text>
+
+      {/* ── Inventory display near mybrick portal ── */}
+      <InventoryDisplay />
 
       {/* ── Center: Logo sculpture ── */}
       <LogoSculpture />

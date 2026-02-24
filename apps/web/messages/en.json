@@ -108,7 +108,13 @@
     "noticeItem2Desc": "This project is submitted to the 4th Agentic AI Hackathon with Google Cloud, sponsored by Zenn.",
     "noticeItem3Title": "New Feature: Design Studio",
     "noticeItem3Desc": "Upload any photo and our AI will generate LEGO building instructions for it. Try it now!",
-    "noticeClose": "Close"
+    "noticeClose": "Close",
+    "profileTitle": "My Profile",
+    "profileCharacter": "Character",
+    "profileColor": "Color",
+    "profileSettings": "Settings",
+    "profileSignOut": "Sign Out",
+    "demoBricks": "Demo Bricks"
   },
   "scan": {
     "title": "Scan Bricks",

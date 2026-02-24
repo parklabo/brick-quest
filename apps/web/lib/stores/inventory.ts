@@ -5,10 +5,42 @@ import type { DetectedPart } from '@brick-quest/shared';
 import { resolveShape } from '@brick-quest/shared';
 
 const LOCALSTORAGE_KEY = 'brick-quest-inventory';
+const DEMO_KEY = 'bq-demo-mode';
 const DEBOUNCE_MS = 500;
+
+/* ── Demo brick set for hackathon trial ── */
+const DEMO_PARTS: DetectedPart[] = [
+  { id: 'demo-01', name: '2x4 Brick', color: 'Red', hexColor: '#B40000', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-02', name: '2x2 Brick', color: 'Red', hexColor: '#B40000', count: 6, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 2 } },
+  { id: 'demo-03', name: '1x2 Brick', color: 'Red', hexColor: '#B40000', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 1, length: 2 } },
+  { id: 'demo-04', name: '2x4 Brick', color: 'Blue', hexColor: '#0055BF', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-05', name: '2x2 Brick', color: 'Blue', hexColor: '#0055BF', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 2 } },
+  { id: 'demo-06', name: '1x4 Brick', color: 'Blue', hexColor: '#0055BF', count: 2, type: 'brick', shape: 'rectangle', dimensions: { width: 1, length: 4 } },
+  { id: 'demo-07', name: '2x4 Brick', color: 'Yellow', hexColor: '#F2CD37', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-08', name: '2x2 Brick', color: 'Yellow', hexColor: '#F2CD37', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 2 } },
+  { id: 'demo-09', name: '2x4 Brick', color: 'Green', hexColor: '#237841', count: 2, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-10', name: '2x2 Brick', color: 'Green', hexColor: '#237841', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 2 } },
+  { id: 'demo-11', name: '2x4 Brick', color: 'White', hexColor: '#FFFFFF', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-12', name: '2x2 Brick', color: 'White', hexColor: '#FFFFFF', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 2 } },
+  { id: 'demo-13', name: '2x4 Brick', color: 'Black', hexColor: '#1B2A34', count: 2, type: 'brick', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-14', name: '1x1 Brick', color: 'Black', hexColor: '#1B2A34', count: 4, type: 'brick', shape: 'rectangle', dimensions: { width: 1, length: 1 } },
+  { id: 'demo-15', name: '2x4 Plate', color: 'Red', hexColor: '#B40000', count: 2, type: 'plate', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-16', name: '2x4 Plate', color: 'Green', hexColor: '#237841', count: 2, type: 'plate', shape: 'rectangle', dimensions: { width: 2, length: 4 } },
+  { id: 'demo-17', name: '2x2 Slope 45°', color: 'Red', hexColor: '#B40000', count: 2, type: 'slope', shape: 'slope_45', dimensions: { width: 2, length: 2 } },
+  { id: 'demo-18', name: '2x2 Round Brick', color: 'Yellow', hexColor: '#F2CD37', count: 2, type: 'brick', shape: 'round', dimensions: { width: 2, length: 2 } },
+  { id: 'demo-19', name: '1x2 Tile', color: 'White', hexColor: '#FFFFFF', count: 2, type: 'tile', shape: 'rectangle', dimensions: { width: 1, length: 2 } },
+];
+
+function getDemoEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  const stored = localStorage.getItem(DEMO_KEY);
+  return stored === null ? true : stored === '1';
+}
 
 interface InventoryStore {
   parts: DetectedPart[];
+  demoMode: boolean;
+  toggleDemo: () => void;
   addParts: (newParts: DetectedPart[]) => void;
   removeParts: (partsToRemove: DetectedPart[]) => void;
   removePart: (id: string) => void;
@@ -25,9 +57,11 @@ function scheduleWrite(parts: DetectedPart[]) {
   if (!currentUid) return;
   if (debounceTimer) clearTimeout(debounceTimer);
   const uid = currentUid;
+  // Never persist demo parts to Firestore
+  const realParts = parts.filter((p) => !p.id.startsWith('demo-'));
   debounceTimer = setTimeout(() => {
     setDoc(doc(firestore, 'inventories', uid), {
-      parts,
+      parts: realParts,
       updatedAt: serverTimestamp(),
     }).catch(console.error);
   }, DEBOUNCE_MS);
@@ -52,7 +86,23 @@ function migrateFromLocalStorage(): DetectedPart[] | null {
 }
 
 export const useInventoryStore = create<InventoryStore>()((set, get) => ({
-  parts: [],
+  parts: getDemoEnabled() ? DEMO_PARTS : [],
+  demoMode: getDemoEnabled(),
+
+  toggleDemo: () => {
+    const next = !get().demoMode;
+    if (typeof window !== 'undefined') localStorage.setItem(DEMO_KEY, next ? '1' : '0');
+    if (next) {
+      // Add demo parts (merge with existing real parts)
+      const real = get().parts.filter((p) => !p.id.startsWith('demo-'));
+      set({ demoMode: true, parts: [...real, ...DEMO_PARTS] });
+    } else {
+      // Remove demo parts
+      const real = get().parts.filter((p) => !p.id.startsWith('demo-'));
+      set({ demoMode: false, parts: real });
+      scheduleWrite(real);
+    }
+  },
 
   addParts: (newParts) => {
     const existing = get().parts;
@@ -157,10 +207,14 @@ export const useInventoryStore = create<InventoryStore>()((set, get) => ({
           ...p,
           shape: resolveShape(p.shape ?? 'rectangle', p.type),
         }));
+        // Append demo parts if demo mode is on
+        const withDemo = get().demoMode
+          ? [...remoteParts, ...DEMO_PARTS]
+          : remoteParts;
         // Only update if remote differs (avoid echo from our own writes)
         const localParts = get().parts;
-        if (JSON.stringify(localParts) !== JSON.stringify(remoteParts)) {
-          set({ parts: remoteParts });
+        if (JSON.stringify(localParts) !== JSON.stringify(withDemo)) {
+          set({ parts: withDemo });
         }
       },
       console.error

@@ -108,7 +108,13 @@
     "noticeItem2Desc": "이 프로젝트는 제4회 Agentic AI Hackathon with Google Cloud에 출품되었으며, Zenn이 스폰서합니다.",
     "noticeItem3Title": "신기능: 디자인 스튜디오",
     "noticeItem3Desc": "사진을 업로드하면 AI가 레고 조립 설명서를 생성해 드립니다. 지금 바로 사용해 보세요!",
-    "noticeClose": "닫기"
+    "noticeClose": "닫기",
+    "profileTitle": "내 프로필",
+    "profileCharacter": "캐릭터",
+    "profileColor": "색상",
+    "profileSettings": "설정",
+    "profileSignOut": "로그아웃",
+    "demoBricks": "체험용 브릭"
   },
   "scan": {
     "title": "브릭 스캔",
