@@ -22,7 +22,7 @@ const { AGENT_MAX_ITERATIONS } = LIMITS;
 
 function isRetryableModelError(error: any): boolean {
   const msg = String(error?.message || '');
-  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|timed out/i.test(msg);
 }
 
 export async function generateBuildPlan(parts: DetectedPart[], difficulty: Difficulty = 'normal', userPrompt = ''): Promise<BuildPlan> {

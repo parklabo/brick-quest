@@ -246,7 +246,7 @@ STYLE: Official LEGO Brickheadz product photo — as if photographed for the LEG
 
 function isRetryableModelError(error: any): boolean {
   const msg = String(error?.message || '');
-  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|timed out/i.test(msg);
 }
 
 /**

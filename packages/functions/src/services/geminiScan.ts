@@ -12,7 +12,7 @@ const SCAN_RETRIES = 2;
 
 function isRetryableModelError(error: any): boolean {
   const msg = String(error?.message || '');
-  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|timed out/i.test(msg);
 }
 
 export async function analyzeLegoParts(base64Image: string, mimeType = 'image/jpeg'): Promise<ScanResult> {
