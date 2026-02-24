@@ -44,7 +44,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (uid) {
-      router.replace('/dashboard');
+      router.replace('/home');
     }
   }, [uid, router]);
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Sparkles, ScanLine, Package, Hammer, Box, LayoutDashboard, ChevronDown, Blocks } from 'lucide-react';
+import { Sparkles, ScanLine, Package, Hammer, Box, Home, ChevronDown, Blocks } from 'lucide-react';
 import { useShallow } from 'zustand/shallow';
 import { useJobsStore, selectUnseenCounts } from '../../lib/stores/jobs';
 import { useProfileStore } from '../../lib/stores/profile';
@@ -101,7 +101,7 @@ export function NavBar() {
       {/* Desktop: top bar */}
       <nav className="hidden sm:block bg-lego-surface/80 backdrop-blur-md sticky top-0 z-40 border-b border-white/[0.06]">
         <div className="flex items-center justify-between px-6 h-14">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <Link href="/home" className="flex items-center gap-2.5 group">
             <Image
               src="/logo.png"
               alt="Brick Quest"
@@ -115,14 +115,14 @@ export function NavBar() {
           </Link>
           <div className="flex items-center gap-1">
             <Link
-              href="/dashboard"
+              href="/home"
               className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                pathname === '/dashboard'
+                pathname === '/home'
                   ? 'bg-white/10 text-white'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <Home className="w-4 h-4" />
               {t('home')}
             </Link>
 
@@ -179,12 +179,12 @@ export function NavBar() {
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-lego-border bg-lego-surface/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around px-1 py-1">
           <Link
-            href="/dashboard"
+            href="/home"
             className={`relative flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-bold transition-colors min-w-14 ${
-              pathname === '/dashboard' ? 'text-lego-yellow' : 'text-slate-500'
+              pathname === '/home' ? 'text-lego-yellow' : 'text-slate-500'
             }`}
           >
-            <LayoutDashboard className="w-5 h-5" />
+            <Home className="w-5 h-5" />
             {t('home')}
           </Link>
 
