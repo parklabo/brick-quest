@@ -483,14 +483,25 @@ export function WorkshopOverlay() {
         {/* Station proximity prompt */}
         {showStationPrompt && nearStation && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-            <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-5 py-2.5 flex items-center gap-2">
-              <kbd className="bg-white/10 border border-white/20 rounded px-2 py-0.5 text-xs font-mono text-white/80">
-                Enter
-              </kbd>
-              <span className="text-sm text-white/90">
-                {t('pressEnter')} &mdash; {stationLabels[nearStation] ?? nearStation}
-              </span>
-            </div>
+            {isMobile ? (
+              <button
+                onClick={() => openZone(nearStation as 'design' | 'mybrick')}
+                className="bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-5 py-2.5 flex items-center gap-2 active:scale-95 transition-transform"
+              >
+                <span className="text-sm text-white/90">
+                  {t('tapToEnter')} &mdash; {stationLabels[nearStation] ?? nearStation}
+                </span>
+              </button>
+            ) : (
+              <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-5 py-2.5 flex items-center gap-2">
+                <kbd className="bg-white/10 border border-white/20 rounded px-2 py-0.5 text-xs font-mono text-white/80">
+                  Enter
+                </kbd>
+                <span className="text-sm text-white/90">
+                  {t('pressEnter')} &mdash; {stationLabels[nearStation] ?? nearStation}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
