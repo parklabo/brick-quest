@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useJobsStore } from '../../../../lib/stores/jobs';
 import { useWorkspaceStore } from '../../../../lib/stores/workspace';
 import { apiClient } from '../../../../lib/api/client';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { BuildPlan } from '@brick-quest/shared';
@@ -13,34 +14,38 @@ import type { BuildPlan } from '@brick-quest/shared';
 export default function BuildViewPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
   const t = useTranslations('build');
+  const tc = useTranslations('common');
   const job = useJobsStore((s) => s.jobs.find((j) => j.id === jobId));
   const markSeen = useJobsStore((s) => s.markSeen);
   const removeJob = useJobsStore((s) => s.removeJob);
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleRetry = useCallback(async () => {
     setRetrying(true);
     try {
       const { jobId: newJobId } = await apiClient.retryJob(jobId);
       router.push(`/builds/${newJobId}/view`);
-    } catch {
+    } catch (err) {
+      console.error('retryJob failed:', err);
       setRetrying(false);
     }
   }, [jobId, router]);
 
   const handleDelete = useCallback(async () => {
-    if (!confirm(t('deleteConfirm'))) return;
     setDeleting(true);
     try {
       await apiClient.deleteJob(jobId);
       removeJob(jobId);
       router.push('/builds');
-    } catch {
+    } catch (err) {
+      console.error('deleteJob failed:', err);
       setDeleting(false);
+      setShowDeleteConfirm(false);
     }
-  }, [jobId, t, removeJob, router]);
+  }, [jobId, removeJob, router]);
 
   // Mark as seen when viewing failed results
   useEffect(() => {
@@ -103,18 +108,31 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
               {retrying ? t('retrying') : t('retry')}
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={retrying || deleting}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              {deleting ? t('deleting') : t('delete')}
+              <Trash2 className="w-4 h-4" />
+              {t('delete')}
             </button>
           </div>
           <Link href="/builds" className="text-slate-500 hover:text-slate-300 text-sm mt-4 inline-block">
             {t('backToBuilds')}
           </Link>
         </div>
+        {showDeleteConfirm && (
+          <ConfirmModal
+            title={t('deleteTitle')}
+            message={t('deleteConfirm')}
+            confirmLabel={t('delete')}
+            cancelLabel={tc('cancel')}
+            loading={deleting}
+            loadingLabel={t('deleting')}
+            variant="danger"
+            onConfirm={handleDelete}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
+        )}
       </main>
     );
   }

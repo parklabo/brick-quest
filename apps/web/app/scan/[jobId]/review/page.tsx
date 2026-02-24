@@ -8,6 +8,7 @@ import { storage } from '../../../../lib/firebase';
 import { useJobsStore } from '../../../../lib/stores/jobs';
 import { apiClient } from '../../../../lib/api/client';
 import { ScanReviewPanel } from '../../../../components/scan/ScanReviewPanel';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { ScanResult } from '@brick-quest/shared';
@@ -22,30 +23,34 @@ export default function ScanReviewPage({ params }: { params: Promise<{ jobId: st
   const removeJob = useJobsStore((s) => s.removeJob);
   const router = useRouter();
   const [imageUrl, setImageUrl] = useState<string | undefined>();
+  const tc = useTranslations('common');
   const [retrying, setRetrying] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleRetry = useCallback(async () => {
     setRetrying(true);
     try {
       const { jobId: newJobId } = await apiClient.retryJob(jobId);
       router.push(`/scan/${newJobId}/review`);
-    } catch {
+    } catch (err) {
+      console.error('retryJob failed:', err);
       setRetrying(false);
     }
   }, [jobId, router]);
 
   const handleDelete = useCallback(async () => {
-    if (!confirm(t('deleteConfirm'))) return;
     setDeleting(true);
     try {
       await apiClient.deleteJob(jobId);
       removeJob(jobId);
       router.push('/scan');
-    } catch {
+    } catch (err) {
+      console.error('deleteJob failed:', err);
       setDeleting(false);
+      setShowDeleteConfirm(false);
     }
-  }, [jobId, t, removeJob, router]);
+  }, [jobId, removeJob, router]);
 
   // Fetch original scan image from Storage
   useEffect(() => {
@@ -119,18 +124,31 @@ export default function ScanReviewPage({ params }: { params: Promise<{ jobId: st
               {retrying ? t('retrying') : t('retry')}
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={retrying || deleting}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              {deleting ? t('deleting') : t('delete')}
+              <Trash2 className="w-4 h-4" />
+              {t('delete')}
             </button>
           </div>
           <Link href="/scan" className="text-slate-500 hover:text-slate-300 text-sm mt-4 inline-block">
             {t('backToScans')}
           </Link>
         </div>
+        {showDeleteConfirm && (
+          <ConfirmModal
+            title={t('deleteTitle')}
+            message={t('deleteConfirm')}
+            confirmLabel={t('delete')}
+            cancelLabel={tc('cancel')}
+            loading={deleting}
+            loadingLabel={t('deleting')}
+            variant="danger"
+            onConfirm={handleDelete}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
+        )}
       </main>
     );
   }

@@ -10,6 +10,7 @@ import type { JobType } from '@brick-quest/shared';
 
 interface JobHistoryProps {
   type: JobType;
+  onJobSelect?: (id: string) => void;
 }
 
 const unseenSelectors = {
@@ -18,7 +19,7 @@ const unseenSelectors = {
   design: selectUnseenDesignCount,
 };
 
-export function JobHistory({ type }: JobHistoryProps) {
+export function JobHistory({ type, onJobSelect }: JobHistoryProps) {
   const t = useTranslations('jobs');
   const tc = useTranslations('common');
   const allJobs = useJobsStore((s) => s.jobs);
@@ -65,7 +66,7 @@ export function JobHistory({ type }: JobHistoryProps) {
           </div>
           <div className="space-y-2">
             {group.jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
+              <JobCard key={job.id} job={job} onSelect={onJobSelect} />
             ))}
           </div>
         </div>

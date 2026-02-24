@@ -58,6 +58,7 @@ function getStepIndex(step: PipelineStep): number {
 export function DesignPipeline() {
   const t = useTranslations('create');
   const allJobs = useJobsStore((s) => s.jobs);
+  const selectedId = useJobsStore((s) => s.selectedDesignJobId);
 
   const activeJob = useMemo(() => {
     const active = ['pending', 'processing', 'generating_views', 'views_ready', 'generating_build'];
@@ -68,10 +69,16 @@ export function DesignPipeline() {
     return allJobs.find((j) => j.type === 'design' && j.status === 'completed' && !j.seen);
   }, [allJobs]);
 
-  const displayJob = activeJob || latestCompleted;
+  const selectedJob = useMemo(() => {
+    if (!selectedId) return null;
+    return allJobs.find((j) => j.id === selectedId) || null;
+  }, [allJobs, selectedId]);
+
+  // Priority: active processing job > manually selected > latest unseen completed
+  const displayJob = activeJob || selectedJob || latestCompleted;
   const currentStep = displayJob ? getActiveStep(displayJob.status) : 'upload';
   const currentIdx = getStepIndex(currentStep);
-  const isProcessing = displayJob && displayJob.status !== 'completed' && displayJob.status !== 'failed';
+  const isProcessing = displayJob && displayJob.status !== 'completed' && displayJob.status !== 'failed' && displayJob.status !== 'views_ready';
 
   return (
     <div className="space-y-4">
@@ -144,8 +151,8 @@ export function DesignPipeline() {
         })}
       </div>
 
-      {/* Active Job Card */}
-      {displayJob && (
+      {/* Active Job Card — only show when actionable (views_ready, completed), not during processing */}
+      {displayJob && !isProcessing && (
         <ActiveJobCard job={displayJob} />
       )}
     </div>

@@ -5,9 +5,11 @@ import { Sparkles } from 'lucide-react';
 import { CreateUploader } from '../../components/create/CreateUploader';
 import { DesignPipeline } from '../../components/create/DesignPipeline';
 import { JobHistory } from '../../components/jobs/JobHistory';
+import { useJobsStore } from '../../lib/stores/jobs';
 
 export default function CreatePage() {
   const t = useTranslations('create');
+  const selectDesignJob = useJobsStore((s) => s.selectDesignJob);
 
   return (
     <main className="min-h-screen p-4 sm:p-8">
@@ -36,7 +38,7 @@ export default function CreatePage() {
         {/* History */}
         <div className="mt-10 pt-6 border-t border-white/[0.06]">
           <h2 className="text-sm font-semibold text-slate-400 mb-4">{t('history')}</h2>
-          <JobHistory type="design" />
+          <JobHistory type="design" onJobSelect={selectDesignJob} />
         </div>
       </div>
     </main>

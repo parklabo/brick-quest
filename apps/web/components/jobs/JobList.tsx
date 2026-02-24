@@ -116,7 +116,7 @@ function getJobHref(job: TrackedJob): string | undefined {
   return `/builds/${job.id}/view`;
 }
 
-export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
+export const JobCard = memo(function JobCard({ job, onSelect }: { job: TrackedJob; onSelect?: (id: string) => void }) {
   const t = useTranslations('jobs');
   const tc = useTranslations('common');
   const markSeen = useJobsStore((s) => s.markSeen);
@@ -235,9 +235,17 @@ export const JobCard = memo(function JobCard({ job }: { job: TrackedJob }) {
 
   if (href) {
     return (
-      <Link href={href} onClick={() => markSeen(job.id)} className="block">
+      <Link href={href} onClick={() => { markSeen(job.id); onSelect?.(job.id); }} className="block">
         {content}
       </Link>
+    );
+  }
+
+  if (onSelect) {
+    return (
+      <div role="button" tabIndex={0} onClick={() => onSelect(job.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(job.id); }} className="cursor-pointer">
+        {content}
+      </div>
     );
   }
 

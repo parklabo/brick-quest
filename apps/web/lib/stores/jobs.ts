@@ -35,6 +35,7 @@ export interface TrackedJob {
   result?: unknown;
   error?: string;
   views?: DesignViews;
+  usedFallbackModel?: boolean;
   createdAt: number; // epoch ms
   seen: boolean;
   addedToInventory: boolean;
@@ -42,11 +43,14 @@ export interface TrackedJob {
 
 interface JobsStore {
   jobs: TrackedJob[];
+  selectedDesignJobId: string | null;
   addJob: (id: string, type: JobType) => void;
   removeJob: (id: string) => void;
   markSeen: (id: string) => void;
   markAddedToInventory: (id: string) => void;
   unmarkAddedToInventory: (id: string) => void;
+  selectDesignJob: (id: string) => void;
+  clearDesignJob: () => void;
   _initJobsListener: (uid: string) => () => void;
 }
 
@@ -55,6 +59,7 @@ const addedIds = loadIdSet(ADDED_IDS_KEY);
 
 export const useJobsStore = create<JobsStore>()((set, get) => ({
   jobs: [],
+  selectedDesignJobId: null,
 
   addJob: (id, type) => {
     set((s) => {
@@ -102,6 +107,9 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
     }));
   },
 
+  selectDesignJob: (id) => set({ selectedDesignJobId: id }),
+  clearDesignJob: () => set({ selectedDesignJobId: null }),
+
   _initJobsListener: (uid: string) => {
     const q = query(
       collection(firestore, 'jobs'),
@@ -137,6 +145,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
             result: data.result,
             error: data.error,
             views: data.views,
+            usedFallbackModel: data.usedFallbackModel,
           };
         } else {
           const needsAttention = data.status === 'completed' || data.status === 'failed' || data.status === 'views_ready';
@@ -147,6 +156,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
             result: data.result,
             error: data.error,
             views: data.views,
+            usedFallbackModel: data.usedFallbackModel,
             createdAt,
             seen: seenIds.has(id) || !needsAttention,
             addedToInventory: addedIds.has(id),

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ref, getDownloadURL, getBlob } from 'firebase/storage';
 import { Loader2, ExternalLink, Box, Download, ArrowRight, CheckCircle, RefreshCw, Trash2 } from 'lucide-react';
+import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { storage } from '../../../../lib/firebase';
 import { useJobsStore } from '../../../../lib/stores/jobs';
 import { useWorkspaceStore } from '../../../../lib/stores/workspace';
@@ -137,10 +138,12 @@ function ViewsReview({
   views,
   jobId,
   referenceUrl,
+  usedFallbackModel,
 }: {
   views: DesignViews;
   jobId: string;
   referenceUrl?: string;
+  usedFallbackModel?: boolean;
 }) {
   const t = useTranslations('createResult');
   const [approving, setApproving] = useState(false);
@@ -168,6 +171,11 @@ function ViewsReview({
 
   return (
     <div>
+      {usedFallbackModel && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+          {t('fallbackModelNotice')}
+        </div>
+      )}
       {/* Photo → LEGO Views comparison */}
       <div className="grid grid-cols-[100px_1fr] sm:grid-cols-[140px_1fr] gap-4 items-start mb-8">
         {/* Original photo */}
@@ -254,6 +262,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
   const router = useRouter();
   const [retrying, setRetrying] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const referenceUrl = useStorageUrl(`designs/${jobId}/reference.jpeg`);
   const compositeUrl = useStorageUrl(job?.views?.composite);
@@ -263,22 +272,24 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
     try {
       const { jobId: newJobId } = await apiClient.retryJob(jobId);
       router.push(`/create/${newJobId}/result`);
-    } catch {
+    } catch (err) {
+      console.error('retryJob failed:', err);
       setRetrying(false);
     }
   }, [jobId, router]);
 
   const handleDelete = useCallback(async () => {
-    if (!confirm(t('deleteConfirm'))) return;
     setDeleting(true);
     try {
       await apiClient.deleteJob(jobId);
       removeJob(jobId);
       router.push('/create');
-    } catch {
+    } catch (err) {
+      console.error('deleteJob failed:', err);
       setDeleting(false);
+      setShowDeleteConfirm(false);
     }
-  }, [jobId, t, removeJob, router]);
+  }, [jobId, removeJob, router]);
 
   useEffect(() => {
     if (job && (job.status === 'completed' || job.status === 'views_ready' || job.status === 'failed') && !job.seen) {
@@ -378,18 +389,31 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
               {retrying ? t('retrying') : t('retry')}
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={retrying || deleting}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              {deleting ? t('deleting') : t('delete')}
+              <Trash2 className="w-4 h-4" />
+              {t('delete')}
             </button>
           </div>
           <Link href="/create" className="text-slate-500 hover:text-slate-300 text-sm mt-4 inline-block">
             {t('backToCreate')}
           </Link>
         </div>
+        {showDeleteConfirm && (
+          <ConfirmModal
+            title={t('deleteTitle')}
+            message={t('deleteConfirm')}
+            confirmLabel={t('delete')}
+            cancelLabel={tc('cancel')}
+            loading={deleting}
+            loadingLabel={t('deleting')}
+            variant="danger"
+            onConfirm={handleDelete}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
+        )}
       </main>
     );
   }
@@ -430,7 +454,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
               {t('reviewDescription')}
             </p>
           </div>
-          <ViewsReview views={job.views} jobId={jobId} referenceUrl={referenceUrl} />
+          <ViewsReview views={job.views} jobId={jobId} referenceUrl={referenceUrl} usedFallbackModel={job.usedFallbackModel} />
         </div>
       </main>
     );
