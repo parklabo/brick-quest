@@ -230,7 +230,11 @@
     "pipelineComplete": "Done",
     "activeDesign": "In Progress",
     "noActiveDesign": "Upload a reference photo to start",
-    "viewResult": "View"
+    "viewResult": "View",
+    "jobInProgress": "Design in progress...",
+    "jobInProgressHint": "Your LEGO design is being generated. This may take a few minutes.",
+    "viewFullResult": "View full result",
+    "viewsPreview": "Generated LEGO views"
   },
   "createResult": {
     "stepViews": "Generate Views",

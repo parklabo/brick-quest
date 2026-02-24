@@ -47,15 +47,10 @@ function getStepIndex(step: PipelineStep): number {
   return STEPS.findIndex((s) => s.key === step);
 }
 
-export function DesignPipeline() {
+export function DesignPipeline({ activeJob }: { activeJob?: TrackedJob }) {
   const t = useTranslations('create');
   const allJobs = useJobsStore((s) => s.jobs);
   const selectedId = useJobsStore((s) => s.selectedDesignJobId);
-
-  const activeJob = useMemo(() => {
-    const active = ['pending', 'processing', 'generating_views', 'views_ready', 'generating_build'];
-    return allJobs.find((j) => j.type === 'design' && active.includes(j.status));
-  }, [allJobs]);
 
   const latestCompleted = useMemo(() => {
     return allJobs.find((j) => j.type === 'design' && j.status === 'completed' && !j.seen);

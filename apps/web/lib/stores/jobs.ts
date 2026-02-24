@@ -25,6 +25,8 @@ export interface TrackedJob {
   id: string;
   type: JobType;
   status: JobStatus;
+  progress: number;
+  logs: string[];
   result?: unknown;
   error?: string;
   views?: DesignViews;
@@ -58,7 +60,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
     set((s) => {
       if (s.jobs.some((j) => j.id === id)) return s;
       return {
-        jobs: [{ id, type, status: 'pending', createdAt: Date.now(), seen: false, addedToInventory: false }, ...s.jobs],
+        jobs: [{ id, type, status: 'pending', progress: 0, logs: [], createdAt: Date.now(), seen: false, addedToInventory: false }, ...s.jobs],
       };
     });
   },
@@ -126,6 +128,8 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
           updated[idx] = {
             ...updated[idx],
             status: data.status,
+            progress: data.progress ?? updated[idx].progress,
+            logs: data.logs ?? updated[idx].logs,
             result: data.result,
             error: data.error,
             views: data.views,
@@ -137,6 +141,8 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
             id,
             type: data.type,
             status: data.status,
+            progress: data.progress ?? 0,
+            logs: data.logs ?? [],
             result: data.result,
             error: data.error,
             views: data.views,

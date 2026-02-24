@@ -4,11 +4,10 @@ import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ref, getDownloadURL, getBlob } from 'firebase/storage';
 import { Loader2, ExternalLink, Box, Download, ArrowRight, CheckCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
-import { storage } from '../../../../lib/firebase';
 import { useJobsStore } from '../../../../lib/stores/jobs';
+import { useStorageUrl } from '../../../../lib/hooks/useStorageUrl';
 import { useWorkspaceStore } from '../../../../lib/stores/workspace';
 import { apiClient } from '../../../../lib/api/client';
 import type { DesignResult, RequiredPart, DesignViews } from '@brick-quest/shared';
@@ -103,37 +102,6 @@ function DesignStepIndicator({ activeStep, completedSteps }: { activeStep: Desig
 }
 
 // --- Views Review ---
-
-function useStorageUrl(path: string | undefined) {
-  const [url, setUrl] = useState<string | undefined>();
-
-  useEffect(() => {
-     
-    if (!path) {
-      setUrl(undefined);
-      return;
-    }
-    let blobUrl: string | undefined;
-    const imageRef = ref(storage, path);
-    getDownloadURL(imageRef)
-      .then(setUrl)
-      .catch(() => {
-        getBlob(imageRef)
-          .then((blob) => {
-            blobUrl = URL.createObjectURL(blob);
-            setUrl(blobUrl);
-          })
-          .catch(() => {
-            /* non-critical */
-          });
-      });
-    return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
-  }, [path]);
-
-  return url;
-}
 
 function ViewsReview({
   views,

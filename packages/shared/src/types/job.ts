@@ -8,6 +8,7 @@ export interface JobState<T = unknown> {
   userId: string;
   status: JobStatus;
   progress: number; // 0-100
+  logs?: string[];
   result?: T;
   error?: string;
   createdAt: string;

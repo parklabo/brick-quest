@@ -230,7 +230,11 @@
     "pipelineComplete": "完了",
     "activeDesign": "進行中",
     "noActiveDesign": "参考写真をアップロードして開始",
-    "viewResult": "確認"
+    "viewResult": "確認",
+    "jobInProgress": "デザイン進行中...",
+    "jobInProgressHint": "レゴデザインを生成しています。数分かかる場合があります。",
+    "viewFullResult": "全結果を見る",
+    "viewsPreview": "生成されたレゴビュー"
   },
   "createResult": {
     "stepViews": "ビュー生成",

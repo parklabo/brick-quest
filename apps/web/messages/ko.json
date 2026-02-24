@@ -230,7 +230,11 @@
     "pipelineComplete": "완료",
     "activeDesign": "진행 중",
     "noActiveDesign": "참고 사진을 업로드해서 시작하세요",
-    "viewResult": "보기"
+    "viewResult": "보기",
+    "jobInProgress": "디자인 진행 중...",
+    "jobInProgressHint": "레고 디자인을 생성하고 있습니다. 몇 분 정도 걸릴 수 있습니다.",
+    "viewFullResult": "전체 결과 보기",
+    "viewsPreview": "생성된 레고 뷰"
   },
   "createResult": {
     "stepViews": "뷰 생성",
