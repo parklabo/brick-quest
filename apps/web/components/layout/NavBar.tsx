@@ -157,6 +157,33 @@ export function NavBar() {
         </div>
       </nav>
 
+      {/* Mobile: My Bricks sub-tabs (above bottom bar) */}
+      {isMyBricksActive && (
+        <div className="sm:hidden fixed bottom-[calc(3.25rem+env(safe-area-inset-bottom))] left-0 right-0 z-39 bg-lego-surface/90 backdrop-blur-sm border-t border-white/[0.06]">
+          <div className="flex items-center justify-around px-2 py-1">
+            {[
+              { href: '/scan', label: t('scanBricks'), icon: ScanLine },
+              { href: '/builds', label: t('build'), icon: Hammer },
+              { href: '/inventory', label: t('inventory'), icon: Package },
+            ].map(({ href, label, icon: Icon }) => {
+              const itemActive = pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                    itemActive ? 'text-lego-yellow bg-lego-yellow/10' : 'text-slate-500'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Mobile: bottom tab bar */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-lego-border bg-lego-surface/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around px-1 py-1">
