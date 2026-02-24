@@ -76,7 +76,39 @@
     "inventory": "Inventory",
     "inventoryDesc": "Browse and manage your brick collection",
     "workspace": "Workspace",
-    "workspaceDesc": "Interactive 3D workspace for builds"
+    "workspaceDesc": "Interactive 3D workspace for builds",
+    "designIsland": "Design Studio",
+    "designIslandDesc": "Photo to LEGO",
+    "myBricksIsland": "My Bricks",
+    "myBricksIslandDesc": "Scan & Build",
+    "keyboardHints": "WASD Move · QE Rotate · Scroll Zoom",
+    "pressEnter": "Press Enter",
+    "designStation": "Design Studio",
+    "scanStation": "Brick Scanner",
+    "buildStation": "Build Planner",
+    "inventoryStation": "Inventory",
+    "stationDesignDesc": "Create LEGO from photos",
+    "stationScanDesc": "Scan your bricks",
+    "stationBuildDesc": "AI build plans",
+    "stationInventoryDesc": "Manage collection",
+    "designZone": "Design Block Land",
+    "myBrickZone": "My Brick Block Land",
+    "controlMove": "Move",
+    "controlRotate": "Rotate",
+    "controlPan": "Pan",
+    "controlZoom": "Zoom",
+    "controlMobileMove": "Joystick to move",
+    "controlMobileLook": "Drag to rotate",
+    "controlMobileZoom": "Pinch to zoom",
+    "noticeBoard": "Notice",
+    "noticeTitle": "Service Announcements",
+    "noticeItem1Title": "Welcome to Brick Quest!",
+    "noticeItem1Desc": "AI-powered LEGO building instructions are now available. Try designing your own creations!",
+    "noticeItem2Title": "Hackathon Entry",
+    "noticeItem2Desc": "This project is submitted to the 4th Agentic AI Hackathon with Google Cloud, sponsored by Zenn.",
+    "noticeItem3Title": "New Feature: Design Studio",
+    "noticeItem3Desc": "Upload any photo and our AI will generate LEGO building instructions for it. Try it now!",
+    "noticeClose": "Close"
   },
   "scan": {
     "title": "Scan Bricks",
@@ -133,7 +165,8 @@
     "retrying": "Retrying...",
     "delete": "Delete",
     "deleting": "Deleting...",
-    "deleteConfirm": "Delete this scan? This cannot be undone."
+    "deleteTitle": "Delete Scan",
+    "deleteConfirm": "This scan and its image will be permanently deleted. This cannot be undone."
   },
   "build": {
     "title": "3D Build Viewer",
@@ -164,7 +197,8 @@
     "retrying": "Retrying...",
     "delete": "Delete",
     "deleting": "Deleting...",
-    "deleteConfirm": "Delete this build? This cannot be undone."
+    "deleteTitle": "Delete Build",
+    "deleteConfirm": "This build will be permanently deleted. This cannot be undone."
   },
   "create": {
     "title": "Design Studio",
@@ -225,7 +259,9 @@
     "retrying": "Retrying...",
     "delete": "Delete",
     "deleting": "Deleting...",
-    "deleteConfirm": "Delete this design? This cannot be undone."
+    "deleteTitle": "Delete Design",
+    "deleteConfirm": "This design and its images will be permanently deleted. This cannot be undone.",
+    "fallbackModelNotice": "Generated with a faster model due to high server demand. Try regenerating if quality isn't satisfactory."
   },
   "inventory": {
     "title": "My Inventory",

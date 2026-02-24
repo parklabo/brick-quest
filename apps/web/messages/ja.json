@@ -76,7 +76,39 @@
     "inventory": "コレクション",
     "inventoryDesc": "ブリックコレクションを管理",
     "workspace": "ワークスペース",
-    "workspaceDesc": "3Dインタラクティブワークスペース"
+    "workspaceDesc": "3Dインタラクティブワークスペース",
+    "designIsland": "デザインスタジオ",
+    "designIslandDesc": "写真をレゴに",
+    "myBricksIsland": "マイブリック",
+    "myBricksIslandDesc": "スキャン＆組み立て",
+    "keyboardHints": "WASD 移動 · QE 回転 · スクロール ズーム",
+    "pressEnter": "Enterキーを押す",
+    "designStation": "デザインスタジオ",
+    "scanStation": "ブリックスキャナー",
+    "buildStation": "組み立てプランナー",
+    "inventoryStation": "コレクション",
+    "stationDesignDesc": "写真からレゴを作成",
+    "stationScanDesc": "ブリックをスキャン",
+    "stationBuildDesc": "AI組み立てプラン",
+    "stationInventoryDesc": "コレクション管理",
+    "designZone": "デザインブロックランド",
+    "myBrickZone": "マイブリックブロックランド",
+    "controlMove": "移動",
+    "controlRotate": "回転",
+    "controlPan": "移動",
+    "controlZoom": "ズーム",
+    "controlMobileMove": "ジョイスティックで移動",
+    "controlMobileLook": "ドラッグで回転",
+    "controlMobileZoom": "ピンチでズーム",
+    "noticeBoard": "お知らせ",
+    "noticeTitle": "サービスのお知らせ",
+    "noticeItem1Title": "Brick Questへようこそ！",
+    "noticeItem1Desc": "AI搭載のレゴ組み立て説明書が利用可能になりました。オリジナル作品をデザインしてみましょう！",
+    "noticeItem2Title": "ハッカソン出展作品",
+    "noticeItem2Desc": "このプロジェクトは第4回 Agentic AI Hackathon with Google Cloudに出展されています。スポンサー：Zenn。",
+    "noticeItem3Title": "新機能：デザインスタジオ",
+    "noticeItem3Desc": "写真をアップロードすると、AIがレゴの組み立て説明書を生成します。今すぐお試しください！",
+    "noticeClose": "閉じる"
   },
   "scan": {
     "title": "ブリックスキャン",
@@ -133,7 +165,8 @@
     "retrying": "再試行中...",
     "delete": "削除",
     "deleting": "削除中...",
-    "deleteConfirm": "このスキャンを削除しますか？元に戻せません。"
+    "deleteTitle": "スキャンを削除",
+    "deleteConfirm": "このスキャンと画像は完全に削除されます。元に戻せません。"
   },
   "build": {
     "title": "3D組み立てビューア",
@@ -164,7 +197,8 @@
     "retrying": "再試行中...",
     "delete": "削除",
     "deleting": "削除中...",
-    "deleteConfirm": "この組み立てを削除しますか？元に戻せません。"
+    "deleteTitle": "組み立てを削除",
+    "deleteConfirm": "この組み立ては完全に削除されます。元に戻せません。"
   },
   "create": {
     "title": "デザインスタジオ",
@@ -225,7 +259,9 @@
     "retrying": "再試行中...",
     "delete": "削除",
     "deleting": "削除中...",
-    "deleteConfirm": "このデザインを削除しますか？元に戻せません。"
+    "deleteTitle": "デザインを削除",
+    "deleteConfirm": "このデザインと画像は完全に削除されます。元に戻せません。",
+    "fallbackModelNotice": "サーバー混雑のため高速モデルで生成されました。品質にご不満の場合は再生成をお試しください。"
   },
   "inventory": {
     "title": "マイコレクション",

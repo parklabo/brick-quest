@@ -76,7 +76,39 @@
     "inventory": "보관함",
     "inventoryDesc": "브릭 컬렉션 관리",
     "workspace": "작업공간",
-    "workspaceDesc": "3D 인터랙티브 작업공간"
+    "workspaceDesc": "3D 인터랙티브 작업공간",
+    "designIsland": "디자인 스튜디오",
+    "designIslandDesc": "사진을 레고로",
+    "myBricksIsland": "내 브릭",
+    "myBricksIslandDesc": "스캔 & 조립",
+    "keyboardHints": "WASD 이동 · QE 회전 · 스크롤 확대",
+    "pressEnter": "Enter 키를 누르세요",
+    "designStation": "디자인 스튜디오",
+    "scanStation": "브릭 스캐너",
+    "buildStation": "조립 플래너",
+    "inventoryStation": "보관함",
+    "stationDesignDesc": "사진으로 레고 만들기",
+    "stationScanDesc": "브릭 스캔하기",
+    "stationBuildDesc": "AI 조립 계획",
+    "stationInventoryDesc": "컬렉션 관리",
+    "designZone": "디자인 블럭랜드",
+    "myBrickZone": "마이 브릭 블럭랜드",
+    "controlMove": "이동",
+    "controlRotate": "회전",
+    "controlPan": "이동",
+    "controlZoom": "확대/축소",
+    "controlMobileMove": "조이스틱으로 이동",
+    "controlMobileLook": "드래그로 회전",
+    "controlMobileZoom": "핀치로 확대/축소",
+    "noticeBoard": "알림",
+    "noticeTitle": "서비스 공지사항",
+    "noticeItem1Title": "Brick Quest에 오신 것을 환영합니다!",
+    "noticeItem1Desc": "AI 기반 레고 조립 설명서가 출시되었습니다. 나만의 작품을 디자인해 보세요!",
+    "noticeItem2Title": "해커톤 출품작",
+    "noticeItem2Desc": "이 프로젝트는 제4회 Agentic AI Hackathon with Google Cloud에 출품되었으며, Zenn이 스폰서합니다.",
+    "noticeItem3Title": "신기능: 디자인 스튜디오",
+    "noticeItem3Desc": "사진을 업로드하면 AI가 레고 조립 설명서를 생성해 드립니다. 지금 바로 사용해 보세요!",
+    "noticeClose": "닫기"
   },
   "scan": {
     "title": "브릭 스캔",
@@ -133,7 +165,8 @@
     "retrying": "재시도 중...",
     "delete": "삭제",
     "deleting": "삭제 중...",
-    "deleteConfirm": "이 스캔을 삭제할까요? 되돌릴 수 없습니다."
+    "deleteTitle": "스캔 삭제",
+    "deleteConfirm": "이 스캔과 이미지가 영구적으로 삭제됩니다. 되돌릴 수 없습니다."
   },
   "build": {
     "title": "3D 조립 뷰어",
@@ -164,7 +197,8 @@
     "retrying": "재시도 중...",
     "delete": "삭제",
     "deleting": "삭제 중...",
-    "deleteConfirm": "이 조립을 삭제할까요? 되돌릴 수 없습니다."
+    "deleteTitle": "조립 삭제",
+    "deleteConfirm": "이 조립이 영구적으로 삭제됩니다. 되돌릴 수 없습니다."
   },
   "create": {
     "title": "디자인 스튜디오",
@@ -225,7 +259,9 @@
     "retrying": "재시도 중...",
     "delete": "삭제",
     "deleting": "삭제 중...",
-    "deleteConfirm": "이 디자인을 삭제할까요? 되돌릴 수 없습니다."
+    "deleteTitle": "디자인 삭제",
+    "deleteConfirm": "이 디자인과 이미지가 영구적으로 삭제됩니다. 되돌릴 수 없습니다.",
+    "fallbackModelNotice": "서버 혼잡으로 빠른 모델로 생성되었습니다. 품질이 마음에 들지 않으면 재생성해 보세요."
   },
   "inventory": {
     "title": "내 보관함",
