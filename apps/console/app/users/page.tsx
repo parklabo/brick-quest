@@ -22,9 +22,7 @@ export default function UsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const snap = await getDocs(
-        query(collection(firestore, 'inventories'), limit(100)),
-      );
+      const snap = await getDocs(query(collection(firestore, 'inventories'), limit(100)));
       const data = snap.docs.map((doc) => {
         const d = doc.data();
         return {
@@ -48,7 +46,9 @@ export default function UsersPage() {
     }
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   return (
     <div className="space-y-6">
@@ -87,9 +87,7 @@ export default function UsersPage() {
                 <tr key={user.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                   <td className="p-4 font-mono text-xs text-slate-300">{user.id}</td>
                   <td className="p-4 text-white font-bold">{user.partCount}</td>
-                  <td className="p-4 text-slate-500 text-xs">
-                    {user.updatedAt ? new Date(user.updatedAt).toLocaleString() : '--'}
-                  </td>
+                  <td className="p-4 text-slate-500 text-xs">{user.updatedAt ? new Date(user.updatedAt).toLocaleString() : '--'}</td>
                 </tr>
               ))}
             </tbody>

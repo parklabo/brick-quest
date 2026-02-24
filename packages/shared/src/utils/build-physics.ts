@@ -159,8 +159,12 @@ export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResul
     return {
       steps,
       report: {
-        inputCount: 0, outputCount: 0, droppedCount: 0,
-        gravitySnappedCount: 0, nudgedCount: 0, droppedPercentage: 0,
+        inputCount: 0,
+        outputCount: 0,
+        droppedCount: 0,
+        gravitySnappedCount: 0,
+        nudgedCount: 0,
+        droppedPercentage: 0,
         corrections: [],
       },
     };

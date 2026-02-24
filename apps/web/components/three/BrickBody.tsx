@@ -35,15 +35,9 @@ export const BrickBody = memo(function BrickBody({
 }: BrickBodyProps) {
   const def = useMemo(() => getShapeDefinition(shape), [shape]);
 
-  const geometry = useMemo(
-    () => getCachedGeometry(def.geometry, width, height, length),
-    [def.geometry, width, height, length],
-  );
+  const geometry = useMemo(() => getCachedGeometry(def.geometry, width, height, length), [def.geometry, width, height, length]);
 
-  const ldrawPart = useMemo(
-    () => resolveLDrawPart(shape, type, width, length),
-    [shape, type, width, length],
-  );
+  const ldrawPart = useMemo(() => resolveLDrawPart(shape, type, width, length), [shape, type, width, length]);
 
   // Track whether the LDraw model has loaded successfully
   const [ldrawReady, setLDrawReady] = useState(false);
@@ -73,12 +67,7 @@ export const BrickBody = memo(function BrickBody({
       {/* Procedural fallback (visible while loading or if no mapping) */}
       {showProcedural && (
         <>
-          <mesh
-            castShadow
-            receiveShadow
-            geometry={geometry}
-            material={getPooledMaterial(hexColor, isGhost, emissive, emissiveIntensity)}
-          />
+          <mesh castShadow receiveShadow geometry={geometry} material={getPooledMaterial(hexColor, isGhost, emissive, emissiveIntensity)} />
           {hasStuds && (
             <BrickStuds
               studConfig={def.studs}

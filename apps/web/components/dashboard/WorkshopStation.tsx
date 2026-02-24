@@ -5,11 +5,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useWorkshopStore } from '../../lib/stores/workshop';
-import {
-  STATION_CYLINDER,
-  STATION_GLOW_RING,
-  STATION_PORTAL_SPHERE,
-} from '../../lib/three/shared-geometries';
+import { STATION_CYLINDER, STATION_GLOW_RING, STATION_PORTAL_SPHERE } from '../../lib/three/shared-geometries';
 import { DashboardBrick } from './DashboardBrick';
 import type { DashboardBrickDef } from './dashboard-layouts';
 
@@ -71,11 +67,7 @@ export function WorkshopStation({ config, playerPos, onNavigate }: WorkshopStati
 
     // Hover scale
     const target = hovered || isNear ? HOVER_SCALE : 1;
-    currentScale.current = THREE.MathUtils.lerp(
-      currentScale.current,
-      target,
-      LERP_SPEED * delta,
-    );
+    currentScale.current = THREE.MathUtils.lerp(currentScale.current, target, LERP_SPEED * delta);
     const s = currentScale.current;
     groupRef.current.scale.set(s, s, s);
   });
@@ -92,18 +84,8 @@ export function WorkshopStation({ config, playerPos, onNavigate }: WorkshopStati
       </mesh>
 
       {/* Glow ring */}
-      <mesh
-        ref={glowRef}
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.12, 0]}
-        geometry={STATION_GLOW_RING}
-      >
-        <meshBasicMaterial
-          color={config.color}
-          transparent
-          opacity={0.3}
-          side={THREE.DoubleSide}
-        />
+      <mesh ref={glowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]} geometry={STATION_GLOW_RING}>
+        <meshBasicMaterial color={config.color} transparent opacity={0.3} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Portal core */}
@@ -133,45 +115,25 @@ export function WorkshopStation({ config, playerPos, onNavigate }: WorkshopStati
       </mesh>
 
       {/* Point light */}
-      <pointLight
-        position={[0, 1.0, 0]}
-        intensity={hovered ? 2.0 : 1.0}
-        color={config.color}
-        distance={4}
-        decay={2}
-      />
+      <pointLight position={[0, 1.0, 0]} intensity={hovered ? 2.0 : 1.0} color={config.color} distance={4} decay={2} />
 
       {/* Brick structure on station */}
       <group position={config.layoutOffset}>
         {config.layout.map((def, i) => (
-          <DashboardBrick
-            key={i}
-            def={def}
-            emissive={hovered ? config.color : '#000000'}
-            emissiveIntensity={hovered ? 0.2 : 0}
-          />
+          <DashboardBrick key={i} def={def} emissive={hovered ? config.color : '#000000'} emissiveIntensity={hovered ? 0.2 : 0} />
         ))}
       </group>
 
       {/* Floating label — clickable */}
-      <Html
-        position={[0, 4.5, 0]}
-        center
-        distanceFactor={15}
-        style={{ userSelect: 'none' }}
-      >
+      <Html position={[0, 4.5, 0]} center distanceFactor={15} style={{ userSelect: 'none' }}>
         <button
           onClick={handleClick}
           className="flex flex-col items-center gap-0.5 whitespace-nowrap cursor-pointer
             bg-black/50 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5
             hover:bg-white/15 hover:border-white/40 transition-colors"
         >
-          <span className="text-white font-bold text-sm drop-shadow-lg">
-            {config.label}
-          </span>
-          <span className="text-slate-400 text-[10px] drop-shadow-md">
-            {config.subtitle}
-          </span>
+          <span className="text-white font-bold text-sm drop-shadow-lg">{config.label}</span>
+          <span className="text-slate-400 text-[10px] drop-shadow-md">{config.subtitle}</span>
         </button>
       </Html>
     </group>

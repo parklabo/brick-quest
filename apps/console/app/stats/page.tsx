@@ -27,12 +27,7 @@ export default function StatsPage() {
     setError(null);
     try {
       const snap = await getDocs(
-        query(
-          collection(firestore, 'jobs'),
-          where('type', '==', 'build'),
-          orderBy('createdAt', 'desc'),
-          limit(100),
-        ),
+        query(collection(firestore, 'jobs'), where('type', '==', 'build'), orderBy('createdAt', 'desc'), limit(100))
       );
       const data = snap.docs.map((doc) => {
         const d = doc.data();
@@ -55,12 +50,13 @@ export default function StatsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchBuilds(); }, [fetchBuilds]);
+  useEffect(() => {
+    fetchBuilds();
+  }, [fetchBuilds]);
 
   const completedBuilds = builds.filter((b) => b.status === 'completed');
-  const avgSteps = completedBuilds.length > 0
-    ? Math.round(completedBuilds.reduce((sum, b) => sum + (b.stepCount ?? 0), 0) / completedBuilds.length)
-    : 0;
+  const avgSteps =
+    completedBuilds.length > 0 ? Math.round(completedBuilds.reduce((sum, b) => sum + (b.stepCount ?? 0), 0) / completedBuilds.length) : 0;
 
   return (
     <div className="space-y-6">
@@ -116,14 +112,10 @@ export default function StatsPage() {
               {builds.map((build) => (
                 <tr key={build.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                   <td className="p-4 text-white font-medium text-xs">{build.title ?? build.id.slice(0, 12)}</td>
-                  <td className={`p-4 font-bold text-xs uppercase ${STATUS_COLOR[build.status] ?? 'text-slate-400'}`}>
-                    {build.status}
-                  </td>
+                  <td className={`p-4 font-bold text-xs uppercase ${STATUS_COLOR[build.status] ?? 'text-slate-400'}`}>{build.status}</td>
                   <td className="p-4 text-slate-400 text-xs capitalize">{build.difficulty ?? '--'}</td>
                   <td className="p-4 text-white font-bold">{build.stepCount ?? '--'}</td>
-                  <td className="p-4 text-slate-500 text-xs">
-                    {build.createdAt ? new Date(build.createdAt).toLocaleString() : '--'}
-                  </td>
+                  <td className="p-4 text-slate-500 text-xs">{build.createdAt ? new Date(build.createdAt).toLocaleString() : '--'}</td>
                 </tr>
               ))}
             </tbody>

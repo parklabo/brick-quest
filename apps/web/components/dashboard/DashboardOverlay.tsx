@@ -15,16 +15,8 @@ export function DashboardOverlay() {
     <div className="absolute inset-0 pointer-events-none flex flex-col items-center">
       {/* Title */}
       <div className="mt-4 sm:mt-6 flex items-center gap-2.5">
-        <Image
-          src="/logo.png"
-          alt="Brick Quest"
-          width={32}
-          height={32}
-          className="rounded-lg"
-        />
-        <h1 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">
-          {t('title')}
-        </h1>
+        <Image src="/logo.png" alt="Brick Quest" width={32} height={32} className="rounded-lg" />
+        <h1 className="text-xl sm:text-2xl font-bold text-white drop-shadow-lg">{t('title')}</h1>
       </div>
 
       {/* Stats row — only when inventory has items */}

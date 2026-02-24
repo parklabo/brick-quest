@@ -8,7 +8,8 @@ export function needsAgentRetry(report: PhysicsValidationReport): boolean {
 export function buildPhysicsFeedback(report: PhysicsValidationReport): string {
   const dropped = report.corrections.filter((c) => c.action === 'dropped');
   const lines = dropped.map(
-    (c) => `- Step ${c.stepId} "${c.partName}" at (${c.originalPosition.x},${c.originalPosition.y},${c.originalPosition.z}) size ${c.size.width}x${c.size.length}: ${c.reason}`,
+    (c) =>
+      `- Step ${c.stepId} "${c.partName}" at (${c.originalPosition.x},${c.originalPosition.y},${c.originalPosition.z}) size ${c.size.width}x${c.size.length}: ${c.reason}`
   );
   return `PHYSICS FEEDBACK — ${report.droppedCount} bricks were REMOVED because they overlapped and could not be nudged.
 The surviving build has ${report.outputCount} bricks (${report.droppedPercentage.toFixed(1)}% dropped).

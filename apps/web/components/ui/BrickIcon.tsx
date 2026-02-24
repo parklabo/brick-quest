@@ -55,7 +55,7 @@ export const BrickIcon = memo(function BrickIcon({
 
   const { sideColor, deepShadowColor } = useMemo(
     () => ({ sideColor: darkenColor(hexColor, 20), deepShadowColor: darkenColor(hexColor, 40) }),
-    [hexColor],
+    [hexColor]
   );
 
   const stepSize = 0.5;
@@ -77,10 +77,7 @@ export const BrickIcon = memo(function BrickIcon({
   const clipPath = def.icon2d.clipPath ?? (isCorner ? 'polygon(0 0, 100% 0, 100% 50%, 50% 50%, 50% 100%, 0 100%)' : 'none');
 
   return (
-    <div
-      className={`relative flex items-center justify-center ${className}`}
-      style={{ width: maxSize, height: maxSize }}
-    >
+    <div className={`relative flex items-center justify-center ${className}`} style={{ width: maxSize, height: maxSize }}>
       <div
         style={{
           transform: 'rotateX(60deg) rotateZ(45deg) translate(-10%, -10%)',
@@ -95,8 +92,9 @@ export const BrickIcon = memo(function BrickIcon({
             width: '100%',
             height: '100%',
             backgroundColor: hexColor,
-            backgroundImage: def.icon2d.gradient
-              ?? (isSlope
+            backgroundImage:
+              def.icon2d.gradient ??
+              (isSlope
                 ? 'linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(0,0,0,0.2) 100%)'
                 : 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.1) 100%)'),
             borderRadius: def.icon2d.borderRadius,
@@ -104,9 +102,7 @@ export const BrickIcon = memo(function BrickIcon({
             gridTemplateColumns: `repeat(${width}, 1fr)`,
             gridTemplateRows: `repeat(${length}, 1fr)`,
             boxShadow: isCorner ? 'none' : extrusionShadow,
-            filter: isCorner
-              ? `${dropShadowFilter} drop-shadow(2px 2px 4px rgba(0,0,0,0.4))`
-              : 'drop-shadow(5px 5px 6px rgba(0,0,0,0.3))',
+            filter: isCorner ? `${dropShadowFilter} drop-shadow(2px 2px 4px rgba(0,0,0,0.4))` : 'drop-shadow(5px 5px 6px rgba(0,0,0,0.3))',
             clipPath,
           }}
         >

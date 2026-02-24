@@ -3,7 +3,15 @@ import type { Schema } from '@google/genai';
 import { config, LIMITS } from '../config.js';
 import { logger } from 'firebase-functions';
 import type { DesignResult, DesignDetail, BuildStepBlock } from '@brick-quest/shared';
-import { getBrickHeight, resolveShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport, COORDINATE_SYSTEM_PROMPT, CRITICAL_RULES_PROMPT } from '@brick-quest/shared';
+import {
+  getBrickHeight,
+  resolveShape,
+  getGeminiShapeEnum,
+  getGeminiShapeDescriptions,
+  fixBuildPhysicsWithReport,
+  COORDINATE_SYSTEM_PROMPT,
+  CRITICAL_RULES_PROMPT,
+} from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
 import { getAI } from './gemini-client.js';
@@ -54,9 +62,12 @@ const evaluationSchema: Schema = {
 function summarizeBuildPlan(steps: BuildStepBlock[]): string {
   if (steps.length === 0) return 'Empty build plan (0 bricks)';
 
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
-  let minZ = Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
+  let minZ = Infinity,
+    maxZ = -Infinity;
 
   const layers = new Map<number, { count: number; colors: Map<string, number>; minX: number; maxX: number; minZ: number; maxZ: number }>();
   const colorCounts = new Map<string, number>();
@@ -95,15 +106,21 @@ function summarizeBuildPlan(steps: BuildStepBlock[]): string {
   const colorSummary = [...colorCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
-    .map(([color, count]) => `${color}: ${count} (${Math.round(count / total * 100)}%)`)
+    .map(([color, count]) => `${color}: ${count} (${Math.round((count / total) * 100)}%)`)
     .join(', ');
 
-  const layerLines = sortedLayers.map(([y, layer]) => {
-    const w = Math.round(layer.maxX - layer.minX);
-    const d = Math.round(layer.maxZ - layer.minZ);
-    const topColors = [...layer.colors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c, n]) => `${c}×${n}`).join(', ');
-    return `  Y=${y}: ${layer.count} bricks, ${w}×${d} footprint [${topColors}]`;
-  }).join('\n');
+  const layerLines = sortedLayers
+    .map(([y, layer]) => {
+      const w = Math.round(layer.maxX - layer.minX);
+      const d = Math.round(layer.maxZ - layer.minZ);
+      const topColors = [...layer.colors.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([c, n]) => `${c}×${n}`)
+        .join(', ');
+      return `  Y=${y}: ${layer.count} bricks, ${w}×${d} footprint [${topColors}]`;
+    })
+    .join('\n');
 
   return `Total: ${total} bricks across ${sortedLayers.length} layers
 Bounding box: ${Math.round(maxX - minX)}W × ${Math.round(maxZ - minZ)}D × ${(maxY - minY).toFixed(1)}H
@@ -116,10 +133,7 @@ ${layerLines}`;
  * Use Flash model to evaluate how well a build plan matches the composite views.
  * Returns quality scores and specific improvement feedback.
  */
-async function evaluateBuildQuality(
-  compositeView: ImageData,
-  steps: BuildStepBlock[],
-): Promise<BuildEvaluation> {
+async function evaluateBuildQuality(compositeView: ImageData, steps: BuildStepBlock[]): Promise<BuildEvaluation> {
   const ai = getAI();
   const summary = summarizeBuildPlan(steps);
 
@@ -127,9 +141,13 @@ async function evaluateBuildQuality(
     ai.models.generateContent({
       model: config.gemini.fastModel,
       contents: [
-        { text: 'You are a LEGO build quality inspector. Compare this build plan against the target composite views.\n\nCOMPOSITE VIEWS (2×2 grid — top-left: hero 3/4, top-right: front, bottom-left: right side, bottom-right: back):' },
+        {
+          text: 'You are a LEGO build quality inspector. Compare this build plan against the target composite views.\n\nCOMPOSITE VIEWS (2×2 grid — top-left: hero 3/4, top-right: front, bottom-left: right side, bottom-right: back):',
+        },
         { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } },
-        { text: `BUILD PLAN SPATIAL SUMMARY:\n${summary}\n\nEVALUATE how accurately this build plan reproduces the model shown in the 4 views above:\n\n1. shapeAccuracy (1-10): Does the build's bounding box, layer widths, and silhouette progression match the views? Check head-to-body ratio, overall proportions.\n2. colorAccuracy (1-10): Are the right colors in the right layers? Compare the color distribution against what each view shows (e.g., skin color on face layers, hair color on top layers).\n3. completeness (1-10): Are key recognizable features present? Check for eyes, mouth, ears, hair, accessories, clothing details visible in the views.\n4. overallScore (1-10): If someone built this and viewed it from the same 4 angles, would it be recognizable as the same model?\n\nList specific MISSING features and provide actionable IMPROVEMENTS.` },
+        {
+          text: `BUILD PLAN SPATIAL SUMMARY:\n${summary}\n\nEVALUATE how accurately this build plan reproduces the model shown in the 4 views above:\n\n1. shapeAccuracy (1-10): Does the build's bounding box, layer widths, and silhouette progression match the views? Check head-to-body ratio, overall proportions.\n2. colorAccuracy (1-10): Are the right colors in the right layers? Compare the color distribution against what each view shows (e.g., skin color on face layers, hair color on top layers).\n3. completeness (1-10): Are key recognizable features present? Check for eyes, mouth, ears, hair, accessories, clothing details visible in the views.\n4. overallScore (1-10): If someone built this and viewed it from the same 4 angles, would it be recognizable as the same model?\n\nList specific MISSING features and provide actionable IMPROVEMENTS.`,
+        },
       ],
       config: {
         responseMimeType: 'application/json',
@@ -138,14 +156,14 @@ async function evaluateBuildQuality(
       },
     }),
     EVAL_TIMEOUT,
-    'Build quality evaluation',
+    'Build quality evaluation'
   );
 
   return JSON.parse(response.text || '{}');
 }
 
 export interface ImageData {
-  data: string;      // base64
+  data: string; // base64
   mimeType: string;
   usedFallback?: boolean;
 }
@@ -239,7 +257,7 @@ export async function generateOrthographicViews(
   base64Image: string,
   mimeType: string,
   detail: DesignDetail = 'standard',
-  userPrompt = '',
+  userPrompt = ''
 ): Promise<ImageData> {
   const ai = getAI();
   const prompt = compositeViewPrompt(detail, userPrompt);
@@ -256,17 +274,14 @@ export async function generateOrthographicViews(
       const response = await withTimeout(
         ai.models.generateContent({
           model: config.gemini.imageModel,
-          contents: [
-            { text: prompt },
-            { inlineData: { mimeType, data: base64Image } },
-          ],
+          contents: [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }],
           config: {
             responseModalities: ['TEXT', 'IMAGE'],
             imageConfig: { imageSize: '2K' },
           },
         }),
         DESIGN_TIMEOUT,
-        'composite views generation',
+        'composite views generation'
       );
 
       const candidates = response.candidates;
@@ -307,13 +322,10 @@ export async function generateOrthographicViews(
       const response = await withTimeout(
         ai.models.generateContent({
           model: config.gemini.fallbackImageModel,
-          contents: [
-            { text: prompt },
-            { inlineData: { mimeType, data: base64Image } },
-          ],
+          contents: [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }],
         }),
         DESIGN_TIMEOUT,
-        'composite views generation (fallback)',
+        'composite views generation (fallback)'
       );
 
       const candidates = response.candidates;
@@ -342,7 +354,7 @@ export async function generateDesignFromPhoto(
   mimeType: string,
   detail: DesignDetail = 'standard',
   userPrompt = '',
-  compositeView?: ImageData,
+  compositeView?: ImageData
 ): Promise<DesignResult> {
   const ai = getAI();
 
@@ -393,7 +405,10 @@ export async function generateDesignFromPhoto(
     required: ['referenceDescription', 'title', 'description', 'lore', 'steps'],
   };
 
-  const complexityConfig: Record<DesignDetail, { instruction: string; minBricks: number; targetMin: number; brickRange: string; maxOutput: number; thinking: number }> = {
+  const complexityConfig: Record<
+    DesignDetail,
+    { instruction: string; minBricks: number; targetMin: number; brickRange: string; maxOutput: number; thinking: number }
+  > = {
     simple: {
       instruction: 'Simplified build — capture the basic silhouette and key colors. Use larger bricks (2x4, 2x6) predominantly.',
       minBricks: 25,
@@ -403,7 +418,8 @@ export async function generateDesignFromPhoto(
       thinking: 8192,
     },
     standard: {
-      instruction: 'Standard Brickheadz-style build — solid, complete model with all key features, colors, and proportions. No gaps or holes in the surface.',
+      instruction:
+        'Standard Brickheadz-style build — solid, complete model with all key features, colors, and proportions. No gaps or holes in the surface.',
       minBricks: 80,
       targetMin: 100,
       brickRange: '80-150 bricks, mix of 2x4 structure + 1x2 detail',
@@ -411,7 +427,8 @@ export async function generateDesignFromPhoto(
       thinking: 16384,
     },
     detailed: {
-      instruction: 'Maximum detail — capture fine details, textures, facial features, accessories, and patterns. Use small bricks (1x1, 1x2) for pixel-art precision.',
+      instruction:
+        'Maximum detail — capture fine details, textures, facial features, accessories, and patterns. Use small bricks (1x1, 1x2) for pixel-art precision.',
       minBricks: 150,
       targetMin: 200,
       brickRange: '150-300 bricks, 1x1/1x2 for pixel precision',
@@ -423,9 +440,7 @@ export async function generateDesignFromPhoto(
   const cfg = complexityConfig[detail];
   const complexityInstruction = cfg.instruction;
 
-  const themeInstruction = userPrompt
-    ? `USER NOTE: "${userPrompt}". Consider this when designing.`
-    : '';
+  const themeInstruction = userPrompt ? `USER NOTE: "${userPrompt}". Consider this when designing.` : '';
 
   const viewsInstruction = compositeView
     ? `
@@ -558,9 +573,7 @@ Return ONLY valid JSON.`;
 
     logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS} (model: ${useModel}, ${Math.round(remaining / 1000)}s remaining)`);
 
-    const currentPrompt = feedbackPrompt
-      ? `${prompt}\n\n${feedbackPrompt}`
-      : prompt;
+    const currentPrompt = feedbackPrompt ? `${prompt}\n\n${feedbackPrompt}` : prompt;
 
     // Inner parse-retry loop
     const PARSE_RETRIES = 3;
@@ -579,7 +592,7 @@ Return ONLY valid JSON.`;
         if (compositeView) {
           contentParts.push(
             { text: '[Composite Views: hero 3/4, front, right side, back — 2×2 grid]' },
-            { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } },
+            { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } }
           );
         }
         contentParts.push({ text: currentPrompt });
@@ -598,11 +611,12 @@ Return ONLY valid JSON.`;
               responseSchema: designSchema,
               maxOutputTokens: cfg.maxOutput,
               thinkingConfig: { thinkingBudget },
-              systemInstruction: 'You are an award-winning LEGO Master Builder who specializes in recreating real-world objects as LEGO models. You have expert-level 3D spatial reasoning.',
+              systemInstruction:
+                'You are an award-winning LEGO Master Builder who specializes in recreating real-world objects as LEGO models. You have expert-level 3D spatial reasoning.',
             },
           }),
           callTimeout,
-          'Design generation',
+          'Design generation'
         );
 
         if (!response.text) {
@@ -679,8 +693,8 @@ Return ONLY valid JSON.`;
 
     logger.info(
       `Agent iteration ${iteration}: ${report.inputCount} input → ${report.outputCount} output ` +
-      `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
-      `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged)`,
+        `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
+        `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged)`
     );
 
     // Build requiredParts from the final steps
@@ -728,8 +742,8 @@ Return ONLY valid JSON.`;
 
           logger.info(
             `Agent iteration ${iteration} evaluation: ` +
-            `shape=${evaluation.shapeAccuracy}, color=${evaluation.colorAccuracy}, ` +
-            `completeness=${evaluation.completeness}, overall=${qualityScore}/10`,
+              `shape=${evaluation.shapeAccuracy}, color=${evaluation.colorAccuracy}, ` +
+              `completeness=${evaluation.completeness}, overall=${qualityScore}/10`
           );
           if (evaluation.missingFeatures.length > 0) {
             logger.info(`  Missing: ${evaluation.missingFeatures.join(', ')}`);
@@ -744,14 +758,18 @@ Return ONLY valid JSON.`;
     }
 
     // Track best result (prefer highest quality score, break ties by brick count)
-    if (!bestResult || qualityScore > bestResult.qualityScore || (qualityScore === bestResult.qualityScore && fixedSteps.length > bestResult.survivingCount)) {
+    if (
+      !bestResult ||
+      qualityScore > bestResult.qualityScore ||
+      (qualityScore === bestResult.qualityScore && fixedSteps.length > bestResult.survivingCount)
+    ) {
       bestResult = { result: iterationResult, survivingCount: fixedSteps.length, qualityScore };
     }
 
     // --- Decide whether to retry ---
     const needsPhysicsFix = needsAgentRetry(report);
     const qualityAcceptable = qualityScore >= QUALITY_ACCEPT_THRESHOLD;
-    const scorePlateau = iteration > 1 && (qualityScore - prevQualityScore) < 1;
+    const scorePlateau = iteration > 1 && qualityScore - prevQualityScore < 1;
     prevQualityScore = qualityScore;
 
     // Accept if: physics OK AND (quality acceptable OR quality plateaued)
@@ -769,12 +787,8 @@ Return ONLY valid JSON.`;
 
       // Quality feedback from evaluation (most valuable — specific to the model)
       if (!qualityAcceptable && qualityFeedback) {
-        const missingStr = evaluation?.missingFeatures.length
-          ? `\nMISSING FEATURES: ${evaluation.missingFeatures.join(', ')}`
-          : '';
-        feedbackParts.push(
-          `QUALITY EVALUATION (score: ${qualityScore}/10):${missingStr}\n\n${qualityFeedback}`,
-        );
+        const missingStr = evaluation?.missingFeatures.length ? `\nMISSING FEATURES: ${evaluation.missingFeatures.join(', ')}` : '';
+        feedbackParts.push(`QUALITY EVALUATION (score: ${qualityScore}/10):${missingStr}\n\n${qualityFeedback}`);
         logger.info(`Agent iteration ${iteration}: quality ${qualityScore}/10, retrying with visual feedback`);
       }
 
@@ -786,7 +800,9 @@ Return ONLY valid JSON.`;
 
       feedbackPrompt = feedbackParts.join('\n\n');
     } else {
-      logger.info(`Agent iteration ${iteration}: final iteration, using best result (${fixedSteps.length} bricks, quality ${qualityScore}/10)`);
+      logger.info(
+        `Agent iteration ${iteration}: final iteration, using best result (${fixedSteps.length} bricks, quality ${qualityScore}/10)`
+      );
     }
   }
 
@@ -797,7 +813,7 @@ Return ONLY valid JSON.`;
   const { result, qualityScore: finalScore } = bestResult;
   logger.info(
     `Design generated: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} unique parts ` +
-    `(${result.buildPlan.agentIterations} iteration(s), quality ${finalScore}/10)`,
+      `(${result.buildPlan.agentIterations} iteration(s), quality ${finalScore}/10)`
   );
   return result;
 }
@@ -810,7 +826,7 @@ Return ONLY valid JSON.`;
 export async function generateLegoPreview(
   base64Image: string,
   mimeType: string,
-  referenceDescription: string,
+  referenceDescription: string
 ): Promise<{ data: string; mimeType: string } | null> {
   const ai = getAI();
 
@@ -831,17 +847,14 @@ Rules:
       const response = await withTimeout(
         ai.models.generateContent({
           model,
-          contents: [
-            { text: prompt },
-            { inlineData: { mimeType, data: base64Image } },
-          ],
+          contents: [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }],
           config: {
             responseModalities: ['TEXT', 'IMAGE'],
             imageConfig: { imageSize: '2K' },
           },
         }),
         DESIGN_TIMEOUT,
-        'LEGO preview generation',
+        'LEGO preview generation'
       );
 
       const candidates = response.candidates;

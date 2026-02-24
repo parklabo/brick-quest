@@ -1,12 +1,6 @@
 import { RefreshCw } from 'lucide-react';
 
-export function RefreshButton({
-  onClick,
-  loading,
-}: {
-  onClick: () => void;
-  loading: boolean;
-}) {
+export function RefreshButton({ onClick, loading }: { onClick: () => void; loading: boolean }) {
   return (
     <button
       onClick={onClick}

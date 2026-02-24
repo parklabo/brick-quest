@@ -59,11 +59,13 @@ export function HowItWorksSection() {
             <ul className="space-y-6">
               {STEPS.map((i) => (
                 <li key={`${activeTab}-${i}`} className="flex items-start gap-4">
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${
-                    activeTab === 'create'
-                      ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/30'
-                      : 'bg-brand-accent/10 text-brand-accent border-brand-accent/30'
-                  }`}>
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${
+                      activeTab === 'create'
+                        ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/30'
+                        : 'bg-brand-accent/10 text-brand-accent border-brand-accent/30'
+                    }`}
+                  >
                     {i}
                   </div>
                   <div>
@@ -76,11 +78,13 @@ export function HowItWorksSection() {
           </div>
 
           <div className="flex-1 relative w-full aspect-square">
-            <div className={`absolute inset-0 rounded-full blur-3xl ${
-              activeTab === 'create'
-                ? 'bg-linear-to-tr from-brand-primary/20 to-brand-secondary/20'
-                : 'bg-linear-to-tr from-brand-accent/20 to-brand-secondary/20'
-            }`} />
+            <div
+              className={`absolute inset-0 rounded-full blur-3xl ${
+                activeTab === 'create'
+                  ? 'bg-linear-to-tr from-brand-primary/20 to-brand-secondary/20'
+                  : 'bg-linear-to-tr from-brand-accent/20 to-brand-secondary/20'
+              }`}
+            />
             <div className="relative z-10 w-full h-full glass-card rounded-3xl p-4 rotate-3 hover:rotate-0 transition-transform duration-500">
               <div className="relative w-full h-full rounded-2xl overflow-hidden">
                 <Image src={config.image} fill loading="lazy" className="object-cover" alt={config.alt} />

@@ -58,11 +58,7 @@ export function InteractiveBrick({ brick }: InteractiveBrickProps) {
     <group
       ref={groupRef}
       position={[brick.position.x, brick.position.y + height / 2, brick.position.z]}
-      rotation={[
-        brick.rotation.x * (Math.PI / 180),
-        brick.rotation.y * (Math.PI / 180),
-        brick.rotation.z * (Math.PI / 180),
-      ]}
+      rotation={[brick.rotation.x * (Math.PI / 180), brick.rotation.y * (Math.PI / 180), brick.rotation.z * (Math.PI / 180)]}
       onClick={handleClick}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}

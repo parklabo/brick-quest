@@ -65,14 +65,14 @@ export default function DashboardPage() {
     }
   };
 
-  useEffect(() => { fetchCounts(); }, []);
+  useEffect(() => {
+    fetchCounts();
+  }, []);
 
   const tier1Count = ALL_BRICK_SHAPES.filter((s) => SHAPE_REGISTRY.get(s)?.tier === 1).length;
   const tier2Count = ALL_BRICK_SHAPES.filter((s) => SHAPE_REGISTRY.get(s)?.tier === 2).length;
 
-  const categories = Array.from(
-    new Set(Array.from(SHAPE_REGISTRY.values()).map((d) => d.category)),
-  ).sort();
+  const categories = Array.from(new Set(Array.from(SHAPE_REGISTRY.values()).map((d) => d.category))).sort();
 
   return (
     <div className="space-y-8">
@@ -106,9 +106,7 @@ export default function DashboardPage() {
               <div key={cat} className="bg-slate-800 rounded-xl p-3">
                 <span className="text-[9px] font-bold text-slate-400 uppercase">{cat}</span>
                 <p className="text-lg font-bold text-white mt-1">{shapes.length} shapes</p>
-                <p className="text-[10px] text-slate-500 mt-1">
-                  {shapes.map((s) => s.id).join(', ')}
-                </p>
+                <p className="text-[10px] text-slate-500 mt-1">{shapes.map((s) => s.id).join(', ')}</p>
               </div>
             );
           })}

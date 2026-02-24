@@ -7,12 +7,7 @@ import { useGLTF, useAnimations, Billboard, Text } from '@react-three/drei';
 import { usePlayerStore } from '../../lib/stores/player';
 import { useProfileStore } from '../../lib/stores/profile';
 import { useTintedClone } from '../../lib/three/use-tinted-clone';
-import {
-  SHADOW_CIRCLE_LG,
-  SELECT_RING_LG,
-  STATUS_SPHERE_PLAYER,
-  CLICK_SPHERE,
-} from '../../lib/three/shared-geometries';
+import { SHADOW_CIRCLE_LG, SELECT_RING_LG, STATUS_SPHERE_PLAYER, CLICK_SPHERE } from '../../lib/three/shared-geometries';
 import type { KeyState } from '../../lib/hooks/use-keyboard';
 
 const MOVE_SPEED = 5;
@@ -20,10 +15,7 @@ const BOUNDS = { min: -9, max: 9 };
 const MODEL_SCALE = 0.42;
 
 const IDLE_CANDIDATES = ['Idle', 'Idle_Loop', 'Unarmed_Idle'];
-const WALK_CANDIDATES = [
-  'Walking_A', 'Walk', 'Walking', 'Walk_Fwd_Loop',
-  'Run', 'Running', 'Jog_Fwd_Loop',
-];
+const WALK_CANDIDATES = ['Walking_A', 'Walk', 'Walking', 'Walk_Fwd_Loop', 'Run', 'Running', 'Jog_Fwd_Loop'];
 
 interface PlayerCharacterProps {
   onPositionChange: (pos: THREE.Vector3) => void;
@@ -48,7 +40,7 @@ function buildAnimationIndex(actions: Record<string, THREE.AnimationAction | nul
 function findAnimationAction(
   actions: Record<string, THREE.AnimationAction | null>,
   candidates: string[],
-  index: Map<string, THREE.AnimationAction>,
+  index: Map<string, THREE.AnimationAction>
 ): THREE.AnimationAction | null {
   for (const name of candidates) {
     const found = index.get(name);
@@ -67,15 +59,7 @@ function findAnimationAction(
 
 /* ── Animated GLB model ── */
 
-function PlayerModel({
-  isMoving,
-  modelUrl,
-  bodyColor,
-}: {
-  isMoving: boolean;
-  modelUrl: string;
-  bodyColor: string;
-}) {
+function PlayerModel({ isMoving, modelUrl, bodyColor }: { isMoving: boolean; modelUrl: string; bodyColor: string }) {
   const groupRef = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(modelUrl);
   const prevAnimRef = useRef<string | null>(null);
@@ -151,11 +135,7 @@ function FallbackBody() {
 
 /* ── Main player component ── */
 
-export function PlayerCharacter({
-  onPositionChange,
-  azimuthRef,
-  keysRef,
-}: PlayerCharacterProps) {
+export function PlayerCharacter({ onPositionChange, azimuthRef, keysRef }: PlayerCharacterProps) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRotation = useRef(0);
   const [isMoving, setIsMoving] = useState(false);
@@ -180,10 +160,22 @@ export function PlayerCharacter({
     let dx = 0;
     let dz = 0;
 
-    if (keys.forward) { dx += forwardX; dz += forwardZ; }
-    if (keys.backward) { dx -= forwardX; dz -= forwardZ; }
-    if (keys.left) { dx -= rightX; dz -= rightZ; }
-    if (keys.right) { dx += rightX; dz += rightZ; }
+    if (keys.forward) {
+      dx += forwardX;
+      dz += forwardZ;
+    }
+    if (keys.backward) {
+      dx -= forwardX;
+      dz -= forwardZ;
+    }
+    if (keys.left) {
+      dx -= rightX;
+      dz -= rightZ;
+    }
+    if (keys.right) {
+      dx += rightX;
+      dz += rightZ;
+    }
 
     const len = Math.sqrt(dx * dx + dz * dz);
     const moving = len > 0;
@@ -249,20 +241,12 @@ export function PlayerCharacter({
 
       {/* Character model */}
       <Suspense fallback={<FallbackBody />}>
-        <PlayerModel
-          isMoving={isMoving}
-          modelUrl={modelUrl}
-          bodyColor={bodyColor}
-        />
+        <PlayerModel isMoving={isMoving} modelUrl={modelUrl} bodyColor={bodyColor} />
       </Suspense>
 
       {/* Status indicator */}
       <mesh position={[0, 2.0, 0]} geometry={STATUS_SPHERE_PLAYER}>
-        <meshStandardMaterial
-          color="#22c55e"
-          emissive="#22c55e"
-          emissiveIntensity={0.8}
-        />
+        <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.8} />
       </mesh>
 
       {/* Name tag */}

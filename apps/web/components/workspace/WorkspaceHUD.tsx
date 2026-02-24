@@ -32,11 +32,19 @@ export function WorkspaceHUD() {
       {/* Desktop: keyboard controls hint */}
       <div className="hidden sm:block absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
         <div className="bg-black/60 backdrop-blur-md rounded-xl px-6 py-3 text-xs text-slate-300 flex gap-4 items-center">
-          <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white">WASD</kbd> {t('pan')}</span>
+          <span>
+            <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white">WASD</kbd> {t('pan')}
+          </span>
           <span className="text-slate-600">|</span>
-          <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white">Q</kbd><kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white ml-0.5">E</kbd> {t('orbit')}</span>
+          <span>
+            <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white">Q</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white ml-0.5">E</kbd> {t('orbit')}
+          </span>
           <span className="text-slate-600">|</span>
-          <span><kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white">R</kbd><kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white ml-0.5">F</kbd> {t('height')}</span>
+          <span>
+            <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white">R</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-white ml-0.5">F</kbd> {t('height')}
+          </span>
           <span className="text-slate-600">|</span>
           <span>Right-drag {t('orbit')}</span>
           <span className="text-slate-600">|</span>
@@ -64,9 +72,7 @@ export function WorkspaceHUD() {
             <p className="text-sm text-white font-medium">
               {plan.title} — {currentStep + 1} / {plan.steps.length} steps
             </p>
-            {currentStepData?.description && (
-              <p className="text-xs text-slate-400 mt-1 max-w-sm">{currentStepData.description}</p>
-            )}
+            {currentStepData?.description && <p className="text-xs text-slate-400 mt-1 max-w-sm">{currentStepData.description}</p>}
           </div>
         </div>
       )}
@@ -83,9 +89,23 @@ export function WorkspaceHUD() {
               </div>
             </div>
             <div className="space-y-1 text-xs text-slate-300">
-              <p>{t('type')} <span className="text-white">{selectedBrick.type}</span> · {t('shape')} <span className="text-white">{selectedBrick.shape}</span></p>
-              <p>{t('size')} <span className="text-white">{selectedBrick.size.width}×{selectedBrick.size.length}</span> {tc('studs')}</p>
-              <p>{t('position')} <span className="text-white">X:{selectedBrick.position.x} Y:{selectedBrick.position.y} Z:{selectedBrick.position.z}</span></p>
+              <p>
+                {t('type')} <span className="text-white">{selectedBrick.type}</span> · {t('shape')}{' '}
+                <span className="text-white">{selectedBrick.shape}</span>
+              </p>
+              <p>
+                {t('size')}{' '}
+                <span className="text-white">
+                  {selectedBrick.size.width}×{selectedBrick.size.length}
+                </span>{' '}
+                {tc('studs')}
+              </p>
+              <p>
+                {t('position')}{' '}
+                <span className="text-white">
+                  X:{selectedBrick.position.x} Y:{selectedBrick.position.y} Z:{selectedBrick.position.z}
+                </span>
+              </p>
               <p className="text-slate-400 italic mt-2">{selectedBrick.description}</p>
             </div>
           </div>

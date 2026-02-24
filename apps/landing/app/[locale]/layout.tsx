@@ -33,9 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = t('description');
   const url = `${BASE_URL}/${locale}`;
 
-  const alternateLanguages = Object.fromEntries(
-    routing.locales.map((l) => [l, `${BASE_URL}/${l}`]),
-  );
+  const alternateLanguages = Object.fromEntries(routing.locales.map((l) => [l, `${BASE_URL}/${l}`]));
 
   return {
     title,
@@ -56,9 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: 'Brick Quest',
       type: 'website',
       locale: OG_LOCALE_MAP[locale] ?? 'en_US',
-      alternateLocale: routing.locales
-        .filter((l) => l !== locale)
-        .map((l) => OG_LOCALE_MAP[l] ?? l),
+      alternateLocale: routing.locales.filter((l) => l !== locale).map((l) => OG_LOCALE_MAP[l] ?? l),
       images: [
         {
           url: '/images/01_home.webp',

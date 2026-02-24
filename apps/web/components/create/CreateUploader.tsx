@@ -41,7 +41,7 @@ export function CreateUploader() {
       if (!file) return;
       processFile(file);
     },
-    [processFile],
+    [processFile]
   );
 
   const handleSubmit = async () => {
@@ -96,11 +96,7 @@ export function CreateUploader() {
         {preview ? (
           <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
             <img src={preview} alt={t('selected')} className="max-h-64 rounded-lg" />
-            <button
-              type="button"
-              onClick={handleDiscard}
-              className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
-            >
+            <button type="button" onClick={handleDiscard} className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
               {t('chooseDifferent')}
             </button>
           </div>
@@ -109,9 +105,7 @@ export function CreateUploader() {
             <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
               <Camera className="w-7 h-7 text-slate-500" />
             </div>
-            <span className="text-slate-500 text-sm text-center max-w-xs">
-              {t('instruction')}
-            </span>
+            <span className="text-slate-500 text-sm text-center max-w-xs">{t('instruction')}</span>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
@@ -140,13 +134,7 @@ export function CreateUploader() {
               className="hidden"
               onChange={handleImageSelect}
             />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageSelect}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
           </div>
         )}
       </Card>
@@ -155,9 +143,7 @@ export function CreateUploader() {
         <>
           {/* Optional prompt */}
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block">
-              {t('notesLabel')}
-            </label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block">{t('notesLabel')}</label>
             <input
               type="text"
               value={userPrompt}

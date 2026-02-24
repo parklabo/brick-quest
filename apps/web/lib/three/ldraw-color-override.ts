@@ -9,12 +9,7 @@ export interface ColorOverrideOptions {
 // ---- Material pool: reuse materials by key to avoid 500+ allocations ----
 const materialPool = new Map<string, THREE.MeshStandardMaterial>();
 
-function getPooledMaterial(
-  hexColor: string,
-  isGhost: boolean,
-  emissive: string,
-  emissiveIntensity: number,
-): THREE.MeshStandardMaterial {
+function getPooledMaterial(hexColor: string, isGhost: boolean, emissive: string, emissiveIntensity: number): THREE.MeshStandardMaterial {
   const key = `${hexColor}:${isGhost}:${emissive}:${emissiveIntensity}`;
   let mat = materialPool.get(key);
   if (!mat) {
@@ -46,11 +41,7 @@ export { getPooledMaterial };
  * MeshStandardMaterial, and strip ALL line-based objects
  * (LineSegments, Line, LineLoop — LDraw edges/conditional lines).
  */
-export function applyBrickQuestColor(
-  group: THREE.Group,
-  hexColor: string,
-  options: ColorOverrideOptions = {},
-): void {
+export function applyBrickQuestColor(group: THREE.Group, hexColor: string, options: ColorOverrideOptions = {}): void {
   const { isGhost = false, emissive = '#000000', emissiveIntensity = 0 } = options;
 
   const toRemove: THREE.Object3D[] = [];

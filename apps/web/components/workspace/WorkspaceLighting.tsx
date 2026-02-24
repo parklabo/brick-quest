@@ -2,8 +2,7 @@
 
 import { useMemo } from 'react';
 
-const useShadowSize = () =>
-  useMemo(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 1024 : 2048), []);
+const useShadowSize = () => useMemo(() => (typeof window !== 'undefined' && window.innerWidth < 768 ? 1024 : 2048), []);
 
 export function WorkspaceLighting() {
   const shadowSize = useShadowSize();

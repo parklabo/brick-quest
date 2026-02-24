@@ -136,11 +136,7 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-between">
             <span>{t('memberSince')}</span>
-            <span className="text-white">
-              {profile?.createdAt
-                ? new Date(profile.createdAt).toLocaleDateString()
-                : '—'}
-            </span>
+            <span className="text-white">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'}</span>
           </div>
         </div>
 

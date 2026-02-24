@@ -56,9 +56,7 @@ export function PartsList() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Package className="w-5 h-5 text-green-500" />
-          <p className="text-slate-400">
-            {t('summary', { count: totalCount, types: filteredParts.length })}
-          </p>
+          <p className="text-slate-400">{t('summary', { count: totalCount, types: filteredParts.length })}</p>
         </div>
         <button
           onClick={clearParts}
@@ -74,9 +72,7 @@ export function PartsList() {
           <button
             onClick={() => setActiveTag(null)}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              activeTag === null
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              activeTag === null ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
           >
             {t('all')}
@@ -86,9 +82,7 @@ export function PartsList() {
               key={tag}
               onClick={() => setActiveTag(activeTag === tag ? null : tag)}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                activeTag === tag
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                activeTag === tag ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
               }`}
             >
               {tag}
@@ -133,9 +127,7 @@ export function PartsList() {
                     {tag}
                   </span>
                 ))}
-                {part.tags.length > 2 && (
-                  <span className="text-[9px] text-slate-500">+{part.tags.length - 2}</span>
-                )}
+                {part.tags.length > 2 && <span className="text-[9px] text-slate-500">+{part.tags.length - 2}</span>}
               </div>
             )}
           </button>

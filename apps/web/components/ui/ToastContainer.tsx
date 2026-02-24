@@ -38,10 +38,7 @@ export function ToastContainer() {
                 </Link>
               )}
             </div>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="text-slate-400 hover:text-white shrink-0"
-            >
+            <button onClick={() => removeToast(toast.id)} className="text-slate-400 hover:text-white shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>

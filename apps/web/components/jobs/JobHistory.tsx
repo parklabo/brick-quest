@@ -27,10 +27,8 @@ export function JobHistory({ type, onJobSelect }: JobHistoryProps) {
   const unseenCount = useJobsStore(unseenSelectors[type]);
   const groups = groupByDateI18n(jobs, tc);
 
-  const emptyLabel =
-    type === 'scan' ? t('noScans') : type === 'design' ? t('noDesigns') : t('noBuilds');
-  const emptyDescription =
-    type === 'scan' ? t('noScansDesc') : type === 'design' ? t('noDesignsDesc') : t('noBuildsDesc');
+  const emptyLabel = type === 'scan' ? t('noScans') : type === 'design' ? t('noDesigns') : t('noBuilds');
+  const emptyDescription = type === 'scan' ? t('noScansDesc') : type === 'design' ? t('noDesignsDesc') : t('noBuildsDesc');
 
   if (jobs.length === 0) {
     return (
@@ -49,18 +47,14 @@ export function JobHistory({ type, onJobSelect }: JobHistoryProps) {
       {unseenCount > 0 && (
         <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg bg-lego-yellow/[0.06] border border-lego-yellow/10">
           <Sparkles className="w-3.5 h-3.5 text-lego-yellow/70 shrink-0" />
-          <p className="text-xs text-lego-yellow/80 font-medium">
-            {t('newResults', { count: unseenCount })}
-          </p>
+          <p className="text-xs text-lego-yellow/80 font-medium">{t('newResults', { count: unseenCount })}</p>
         </div>
       )}
 
       {groups.map((group) => (
         <div key={group.label}>
           <div className="flex items-center gap-3 mb-3">
-            <h3 className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
-              {group.label}
-            </h3>
+            <h3 className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">{group.label}</h3>
             <div className="flex-1 h-px bg-white/[0.04]" />
             <span className="text-[11px] text-slate-600">{group.jobs.length}</span>
           </div>

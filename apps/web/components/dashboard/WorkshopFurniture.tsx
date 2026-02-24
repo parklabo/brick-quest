@@ -66,10 +66,7 @@ function BrickShelf({ position }: { position: [number, number, number] }) {
       {[0.6, 1.0, 1.4].map((y, i) => (
         <mesh key={i} position={[0, y, 0.05]}>
           <boxGeometry args={[0.65, 0.25, 0.22]} />
-          <meshStandardMaterial
-            color={['#E84C38', '#0D69AC', '#4ade80', '#fbbf24'][i]}
-            roughness={0.5}
-          />
+          <meshStandardMaterial color={['#E84C38', '#0D69AC', '#4ade80', '#fbbf24'][i]} roughness={0.5} />
         </mesh>
       ))}
     </group>

@@ -61,8 +61,14 @@ function NoticeBoard() {
       position={[-6.95, 1.4, 0]}
       rotation={[0, Math.PI / 2, 0]}
       onClick={openNotice}
-      onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
-      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onPointerOver={() => {
+        setHovered(true);
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = 'auto';
+      }}
     >
       {/* Cork board frame */}
       <mesh>
@@ -124,13 +130,19 @@ function NoticeBoard() {
         <boxGeometry args={[0.8, 0.18, 0.02]} />
         <meshStandardMaterial color="#3A2A1A" roughness={0.4} />
       </mesh>
-      <Text position={[0, -0.68, 0.06]} fontSize={0.09} color="#FFD700" anchorX="center" anchorY="middle" fontWeight="bold" letterSpacing={0.08}>
+      <Text
+        position={[0, -0.68, 0.06]}
+        fontSize={0.09}
+        color="#FFD700"
+        anchorX="center"
+        anchorY="middle"
+        fontWeight="bold"
+        letterSpacing={0.08}
+      >
         {t('noticeBoard')}
       </Text>
       {/* Hover glow */}
-      {hovered && (
-        <pointLight position={[0, 0, 0.8]} color="#FBBF24" intensity={0.6} distance={3} decay={2} />
-      )}
+      {hovered && <pointLight position={[0, 0, 0.8]} color="#FBBF24" intensity={0.6} distance={3} decay={2} />}
     </group>
   );
 }
@@ -191,13 +203,7 @@ function LogoSculpture() {
    Warp Portal — LEGO brick gate with glowing portal
    ═══════════════════════════════════════════ */
 
-function WarpPortal({
-  config,
-  playerPos,
-}: {
-  config: PortalConfig;
-  playerPos: React.RefObject<THREE.Vector3>;
-}) {
+function WarpPortal({ config, playerPos }: { config: PortalConfig; playerPos: React.RefObject<THREE.Vector3> }) {
   const groupRef = useRef<THREE.Group>(null);
   const portalRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
@@ -257,14 +263,7 @@ function WarpPortal({
       {/* Base glow ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.09, 0]}>
         <ringGeometry args={[1.4, 1.6, 32]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={emissive}
-          emissiveIntensity={0.3}
-          transparent
-          opacity={0.5}
-          side={THREE.DoubleSide}
-        />
+        <meshStandardMaterial color={color} emissive={emissive} emissiveIntensity={0.3} transparent opacity={0.5} side={THREE.DoubleSide} />
       </mesh>
 
       {/* ── Left pillar (LEGO bricks stacked) ── */}
@@ -326,8 +325,15 @@ function WarpPortal({
         ref={portalRef}
         position={[0, 1.2, 0]}
         onClick={handleClick}
-        onPointerOver={(e) => { setHovered(true); document.body.style.cursor = 'pointer'; e.stopPropagation(); }}
-        onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+        onPointerOver={(e) => {
+          setHovered(true);
+          document.body.style.cursor = 'pointer';
+          e.stopPropagation();
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = 'auto';
+        }}
       >
         <planeGeometry args={[1.1, 1.9]} />
         <meshStandardMaterial
@@ -344,13 +350,7 @@ function WarpPortal({
       {/* ── Spinning torus ring around portal ── */}
       <mesh ref={ringRef} position={[0, 1.2, 0]}>
         <torusGeometry args={[0.85, 0.03, 8, 32]} />
-        <meshStandardMaterial
-          color={accentColor}
-          emissive={emissive}
-          emissiveIntensity={0.6}
-          transparent
-          opacity={0.7}
-        />
+        <meshStandardMaterial color={accentColor} emissive={emissive} emissiveIntensity={0.6} transparent opacity={0.7} />
       </mesh>
 
       {/* ── Orbiting small bricks ── */}
@@ -359,24 +359,10 @@ function WarpPortal({
       <OrbitingBrick center={[0, 1.6, 0]} radius={0.9} speed={-0.6} offset={Math.PI / 2} color={color} />
 
       {/* ── Point light for atmosphere ── */}
-      <pointLight
-        position={[0, 1.2, 0.5]}
-        color={emissive}
-        intensity={hovered ? 2.5 : 1.5}
-        distance={5}
-        decay={2}
-      />
+      <pointLight position={[0, 1.2, 0.5]} color={emissive} intensity={hovered ? 2.5 : 1.5} distance={5} decay={2} />
 
       {/* ── Hover glow boost ── */}
-      {hovered && (
-        <pointLight
-          position={[0, 1.2, -0.5]}
-          color={accentColor}
-          intensity={1.5}
-          distance={4}
-          decay={2}
-        />
-      )}
+      {hovered && <pointLight position={[0, 1.2, -0.5]} color={accentColor} intensity={1.5} distance={4} decay={2} />}
     </group>
   );
 }
@@ -424,10 +410,7 @@ const MOVE_SPEED = 4;
 const BOUNDS = { min: -5.5, max: 5.5 };
 const MODEL_SCALE = 0.42;
 
-function findAnim(
-  actions: Record<string, THREE.AnimationAction | null>,
-  candidates: string[],
-): THREE.AnimationAction | null {
+function findAnim(actions: Record<string, THREE.AnimationAction | null>, candidates: string[]): THREE.AnimationAction | null {
   for (const candidate of candidates) {
     for (const [name, action] of Object.entries(actions)) {
       if (!action) continue;
@@ -471,7 +454,9 @@ function CharacterModel({ modelUrl, bodyColor, isMoving }: { modelUrl: string; b
     resolvedAnim.reset().fadeIn(0.3).play();
   }, [resolvedAnim, actions]);
 
-  useFrame((_, delta) => { mixer.update(delta); });
+  useFrame((_, delta) => {
+    mixer.update(delta);
+  });
 
   return (
     <group ref={groupRef} scale={MODEL_SCALE}>
@@ -495,13 +480,7 @@ function CharacterFallback() {
   );
 }
 
-function MovableCharacter({
-  keysRef,
-  posRef,
-}: {
-  keysRef: React.RefObject<KeyState>;
-  posRef: React.RefObject<THREE.Vector3>;
-}) {
+function MovableCharacter({ keysRef, posRef }: { keysRef: React.RefObject<KeyState>; posRef: React.RefObject<THREE.Vector3> }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRotation = useRef(0);
   const isMovingRef = useRef(false);
@@ -524,10 +503,22 @@ function MovableCharacter({
 
     let dx = 0;
     let dz = 0;
-    if (keys.forward) { dx += fwd.x; dz += fwd.z; }
-    if (keys.backward) { dx -= fwd.x; dz -= fwd.z; }
-    if (keys.left) { dx -= right.x; dz -= right.z; }
-    if (keys.right) { dx += right.x; dz += right.z; }
+    if (keys.forward) {
+      dx += fwd.x;
+      dz += fwd.z;
+    }
+    if (keys.backward) {
+      dx -= fwd.x;
+      dz -= fwd.z;
+    }
+    if (keys.left) {
+      dx -= right.x;
+      dz -= right.z;
+    }
+    if (keys.right) {
+      dx += right.x;
+      dz += right.z;
+    }
 
     const len = Math.sqrt(dx * dx + dz * dz);
     const moving = len > 0;
@@ -570,9 +561,18 @@ function MovableCharacter({
     <group
       ref={groupRef}
       position={[0, 0, 2]}
-      onClick={(e) => { e.stopPropagation(); openProfile(); }}
-      onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
-      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={(e) => {
+        e.stopPropagation();
+        openProfile();
+      }}
+      onPointerOver={() => {
+        setHovered(true);
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = 'auto';
+      }}
     >
       {/* Username tooltip on hover */}
       {hovered && (
@@ -595,9 +595,7 @@ function MovableCharacter({
         </mesh>
       )}
       {/* Hover point light */}
-      {hovered && (
-        <pointLight position={[0, 0.8, 0]} color={bodyColor} intensity={1.5} distance={3} decay={2} />
-      )}
+      {hovered && <pointLight position={[0, 0.8, 0]} color={bodyColor} intensity={1.5} distance={3} decay={2} />}
       {/* Shadow */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <circleGeometry args={[0.3, 16]} />
@@ -636,23 +634,10 @@ function InventoryDisplay() {
         <meshBasicMaterial color="#a78bfa" transparent opacity={0.2} />
       </mesh>
       {/* Brick count — left */}
-      <Text
-        position={[-0.8, 0.12, 0.001]}
-        fontSize={0.45}
-        color="#f87171"
-        anchorX="center"
-        anchorY="middle"
-        fontWeight="bold"
-      >
+      <Text position={[-0.8, 0.12, 0.001]} fontSize={0.45} color="#f87171" anchorX="center" anchorY="middle" fontWeight="bold">
         {String(totalBricks)}
       </Text>
-      <Text
-        position={[-0.8, -0.28, 0.001]}
-        fontSize={0.16}
-        color="#c4b5d0"
-        anchorX="center"
-        anchorY="middle"
-      >
+      <Text position={[-0.8, -0.28, 0.001]} fontSize={0.16} color="#c4b5d0" anchorX="center" anchorY="middle">
         {t('totalBricks')}
       </Text>
       {/* Divider */}
@@ -661,23 +646,10 @@ function InventoryDisplay() {
         <meshBasicMaterial color="#a78bfa" transparent opacity={0.5} />
       </mesh>
       {/* Parts count — right */}
-      <Text
-        position={[0.8, 0.12, 0.001]}
-        fontSize={0.45}
-        color="#60a5fa"
-        anchorX="center"
-        anchorY="middle"
-        fontWeight="bold"
-      >
+      <Text position={[0.8, 0.12, 0.001]} fontSize={0.45} color="#60a5fa" anchorX="center" anchorY="middle" fontWeight="bold">
         {String(uniqueTypes)}
       </Text>
-      <Text
-        position={[0.8, -0.28, 0.001]}
-        fontSize={0.16}
-        color="#c4b5d0"
-        anchorX="center"
-        anchorY="middle"
-      >
+      <Text position={[0.8, -0.28, 0.001]} fontSize={0.16} color="#c4b5d0" anchorX="center" anchorY="middle">
         {t('uniqueParts')}
       </Text>
     </group>
@@ -730,7 +702,14 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
       {/* ── Lighting — warm workshop ── */}
       <ambientLight intensity={0.55} color="#FFF5E6" />
       <hemisphereLight color="#FFF0D0" groundColor="#C4A870" intensity={0.35} />
-      <directionalLight position={[8, 14, 6]} intensity={1.6} color="#FFF5E0" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <directionalLight
+        position={[8, 14, 6]}
+        intensity={1.6}
+        color="#FFF5E0"
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
       <directionalLight position={[-6, 10, -8]} intensity={0.35} color="#E8E0D4" />
 
       {/* ── Floor ── */}
@@ -792,7 +771,15 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
           <boxGeometry args={[0.82, 0.07, 0.01]} />
           <meshStandardMaterial color="#4285F4" emissive="#4285F4" emissiveIntensity={0.5} />
         </mesh>
-        <Text position={[0, 0.38, 0.055]} fontSize={0.2} color="#FFFFFF" anchorX="center" anchorY="middle" fontWeight="bold" letterSpacing={0.03}>
+        <Text
+          position={[0, 0.38, 0.055]}
+          fontSize={0.2}
+          color="#FFFFFF"
+          anchorX="center"
+          anchorY="middle"
+          fontWeight="bold"
+          letterSpacing={0.03}
+        >
           第4回 Agentic AI Hackathon
         </Text>
         <Text position={[0, 0.1, 0.055]} fontSize={0.16} color="#8AB4F8" anchorX="center" anchorY="middle" letterSpacing={0.03}>
@@ -805,7 +792,15 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
         <Text position={[0, -0.28, 0.055]} fontSize={0.11} color="#AAAAAA" anchorX="center" anchorY="middle">
           Sponsored by
         </Text>
-        <Text position={[0, -0.52, 0.055]} fontSize={0.24} color="#3EA8FF" anchorX="center" anchorY="middle" fontWeight="bold" letterSpacing={0.08}>
+        <Text
+          position={[0, -0.52, 0.055]}
+          fontSize={0.24}
+          color="#3EA8FF"
+          anchorX="center"
+          anchorY="middle"
+          fontWeight="bold"
+          letterSpacing={0.08}
+        >
           Zenn
         </Text>
         <pointLight position={[0, 0, 1]} color="#4285F4" intensity={0.8} distance={4} decay={2} />
@@ -826,7 +821,15 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
           <boxGeometry args={[3.3, 0.05, 0.005]} />
           <meshStandardMaterial color="#10B981" emissive="#10B981" emissiveIntensity={0.5} />
         </mesh>
-        <Text position={[0, 0.3, 0.055]} fontSize={0.28} color="#FFFFFF" anchorX="center" anchorY="middle" fontWeight="bold" letterSpacing={0.06}>
+        <Text
+          position={[0, 0.3, 0.055]}
+          fontSize={0.28}
+          color="#FFFFFF"
+          anchorX="center"
+          anchorY="middle"
+          fontWeight="bold"
+          letterSpacing={0.06}
+        >
           Park Labs
         </Text>
         <Text position={[0, -0.05, 0.055]} fontSize={0.13} color="#9CA3AF" anchorX="center" anchorY="middle" letterSpacing={0.02}>

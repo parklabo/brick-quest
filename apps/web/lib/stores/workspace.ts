@@ -48,8 +48,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
   placedBricks: [],
   setPlacedBricks: (bricks) => set({ placedBricks: bricks }),
   addBrick: (brick) => set({ placedBricks: [...get().placedBricks, brick] }),
-  removeBrick: (instanceId) =>
-    set({ placedBricks: get().placedBricks.filter((b) => b.instanceId !== instanceId) }),
+  removeBrick: (instanceId) => set({ placedBricks: get().placedBricks.filter((b) => b.instanceId !== instanceId) }),
   updateBrickPosition: (instanceId, position) =>
     set({
       placedBricks: get().placedBricks.map((b) => (b.instanceId === instanceId ? { ...b, position } : b)),

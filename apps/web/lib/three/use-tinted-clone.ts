@@ -11,19 +11,11 @@ interface CacheEntry {
 
 const cloneCache = new Map<string, CacheEntry>();
 
-function makeCacheKey(
-  modelUrl: string,
-  bodyColor: string,
-  tintStrength: number,
-) {
+function makeCacheKey(modelUrl: string, bodyColor: string, tintStrength: number) {
   return `${modelUrl}::${bodyColor}::${tintStrength}`;
 }
 
-function createTintedClone(
-  scene: THREE.Group,
-  bodyColor: string,
-  tintStrength: number,
-): THREE.Group {
+function createTintedClone(scene: THREE.Group, bodyColor: string, tintStrength: number): THREE.Group {
   const clone = skeletonClone(scene) as THREE.Group;
   const tintColor = new THREE.Color(bodyColor);
   clone.traverse((child) => {
@@ -55,12 +47,7 @@ function disposeCloneMaterials(clone: THREE.Group) {
  * On unmount: decrement refCount; dispose materials when refCount hits 0.
  * Geometry is shared with the original, so we never dispose it here.
  */
-export function useTintedClone(
-  scene: THREE.Group,
-  modelUrl: string,
-  bodyColor: string,
-  tintStrength = 0.35,
-): THREE.Group {
+export function useTintedClone(scene: THREE.Group, modelUrl: string, bodyColor: string, tintStrength = 0.35): THREE.Group {
   const cacheKey = makeCacheKey(modelUrl, bodyColor, tintStrength);
   const cacheKeyRef = useRef(cacheKey);
 

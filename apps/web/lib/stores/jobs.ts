@@ -1,12 +1,5 @@
 import { create } from 'zustand';
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  type Timestamp,
-} from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, type Timestamp } from 'firebase/firestore';
 import { firestore } from '../firebase';
 import type { JobType, JobStatus, DesignViews } from '@brick-quest/shared';
 
@@ -65,10 +58,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
     set((s) => {
       if (s.jobs.some((j) => j.id === id)) return s;
       return {
-        jobs: [
-          { id, type, status: 'pending', createdAt: Date.now(), seen: false, addedToInventory: false },
-          ...s.jobs,
-        ],
+        jobs: [{ id, type, status: 'pending', createdAt: Date.now(), seen: false, addedToInventory: false }, ...s.jobs],
       };
     });
   },
@@ -111,11 +101,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
   clearDesignJob: () => set({ selectedDesignJobId: null }),
 
   _initJobsListener: (uid: string) => {
-    const q = query(
-      collection(firestore, 'jobs'),
-      where('userId', '==', uid),
-      orderBy('createdAt', 'desc'),
-    );
+    const q = query(collection(firestore, 'jobs'), where('userId', '==', uid), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const current = get().jobs;
@@ -132,9 +118,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
         const data = change.doc.data();
         const createdAt =
-          data.createdAt instanceof Object && 'toMillis' in data.createdAt
-            ? (data.createdAt as Timestamp).toMillis()
-            : Date.now();
+          data.createdAt instanceof Object && 'toMillis' in data.createdAt ? (data.createdAt as Timestamp).toMillis() : Date.now();
 
         const idx = updated.findIndex((j) => j.id === id);
 
@@ -180,11 +164,14 @@ export const selectUnseenBuildCount = (s: { jobs: TrackedJob[] }) =>
   s.jobs.filter((j) => j.type === 'build' && !j.seen && (j.status === 'completed' || j.status === 'failed')).length;
 
 export const selectUnseenDesignCount = (s: { jobs: TrackedJob[] }) =>
-  s.jobs.filter((j) => j.type === 'design' && !j.seen && (j.status === 'completed' || j.status === 'failed' || j.status === 'views_ready')).length;
+  s.jobs.filter((j) => j.type === 'design' && !j.seen && (j.status === 'completed' || j.status === 'failed' || j.status === 'views_ready'))
+    .length;
 
 /** Combined selector — 3→1 subscription for NavBar */
 export const selectUnseenCounts = (s: { jobs: TrackedJob[] }) => {
-  let scan = 0, build = 0, design = 0;
+  let scan = 0,
+    build = 0,
+    design = 0;
   for (const j of s.jobs) {
     if (j.seen) continue;
     const done = j.status === 'completed' || j.status === 'failed';
@@ -196,4 +183,6 @@ export const selectUnseenCounts = (s: { jobs: TrackedJob[] }) => {
 };
 
 export const selectPendingJobs = (s: { jobs: TrackedJob[] }) =>
-  s.jobs.filter((j) => j.status === 'pending' || j.status === 'processing' || j.status === 'generating_views' || j.status === 'generating_build');
+  s.jobs.filter(
+    (j) => j.status === 'pending' || j.status === 'processing' || j.status === 'generating_views' || j.status === 'generating_build'
+  );

@@ -272,15 +272,11 @@ const definitions: ShapeDefinition[] = [
 
 // ── Registry Map ─────────────────────────────────────────
 
-export const SHAPE_REGISTRY: ReadonlyMap<BrickShape, ShapeDefinition> = new Map(
-  definitions.map((d) => [d.id, d]),
-);
+export const SHAPE_REGISTRY: ReadonlyMap<BrickShape, ShapeDefinition> = new Map(definitions.map((d) => [d.id, d]));
 
 export const ALL_BRICK_SHAPES: readonly BrickShape[] = definitions.map((d) => d.id);
 
-export const ALL_BRICK_TYPES: readonly BrickType[] = [
-  'brick', 'plate', 'tile', 'slope', 'technic', 'minifig', 'other',
-];
+export const ALL_BRICK_TYPES: readonly BrickType[] = ['brick', 'plate', 'tile', 'slope', 'technic', 'minifig', 'other'];
 
 // ── Helper Functions ─────────────────────────────────────
 
@@ -299,10 +295,7 @@ export function getBrickHeight(shape: BrickShape, type: BrickType): number {
 }
 
 /** Resolve a shape string (including legacy aliases) to a valid BrickShape ID. */
-export function resolveShape(
-  shape: string,
-  type?: string,
-): BrickShape {
+export function resolveShape(shape: string, type?: string): BrickShape {
   // If it's already a valid shape ID in the registry, pass through as-is
   if (SHAPE_REGISTRY.has(shape as BrickShape)) {
     return shape as BrickShape;
@@ -334,7 +327,5 @@ export function getGeminiShapeEnum(): string[] {
 
 /** Generate shape description text for Gemini prompts. */
 export function getGeminiShapeDescriptions(): string {
-  return definitions
-    .map((d) => `- ${d.id}: ${d.description} Aliases: ${d.geminiAliases.join(', ')}`)
-    .join('\n');
+  return definitions.map((d) => `- ${d.id}: ${d.description} Aliases: ${d.geminiAliases.join(', ')}`).join('\n');
 }

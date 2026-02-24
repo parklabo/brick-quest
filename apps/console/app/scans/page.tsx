@@ -25,12 +25,7 @@ export default function ScansPage() {
     setError(null);
     try {
       const snap = await getDocs(
-        query(
-          collection(firestore, 'jobs'),
-          where('type', '==', 'scan'),
-          orderBy('createdAt', 'desc'),
-          limit(100),
-        ),
+        query(collection(firestore, 'jobs'), where('type', '==', 'scan'), orderBy('createdAt', 'desc'), limit(100))
       );
       const data = snap.docs.map((doc) => {
         const d = doc.data();
@@ -51,7 +46,9 @@ export default function ScansPage() {
     }
   }, []);
 
-  useEffect(() => { fetchScans(); }, [fetchScans]);
+  useEffect(() => {
+    fetchScans();
+  }, [fetchScans]);
 
   return (
     <div className="space-y-6">
@@ -89,14 +86,12 @@ export default function ScansPage() {
             <tbody>
               {scans.map((scan) => (
                 <tr key={scan.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                  <td className="p-4 font-mono text-xs text-slate-300" title={scan.id}>{scan.id.slice(0, 12)}...</td>
-                  <td className={`p-4 font-bold text-xs uppercase ${STATUS_COLOR[scan.status] ?? 'text-slate-400'}`}>
-                    {scan.status}
+                  <td className="p-4 font-mono text-xs text-slate-300" title={scan.id}>
+                    {scan.id.slice(0, 12)}...
                   </td>
+                  <td className={`p-4 font-bold text-xs uppercase ${STATUS_COLOR[scan.status] ?? 'text-slate-400'}`}>{scan.status}</td>
                   <td className="p-4 text-white font-bold">{scan.partCount ?? '--'}</td>
-                  <td className="p-4 text-slate-500 text-xs">
-                    {scan.createdAt ? new Date(scan.createdAt).toLocaleString() : '--'}
-                  </td>
+                  <td className="p-4 text-slate-500 text-xs">{scan.createdAt ? new Date(scan.createdAt).toLocaleString() : '--'}</td>
                 </tr>
               ))}
             </tbody>

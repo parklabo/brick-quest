@@ -20,9 +20,7 @@ export function FAQSection() {
                 {t(`${key}.q`)}
                 <ChevronDown className="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" />
               </summary>
-              <div className="px-6 pb-6 pt-0 text-slate-400 leading-relaxed">
-                {t(`${key}.a`)}
-              </div>
+              <div className="px-6 pb-6 pt-0 text-slate-400 leading-relaxed">{t(`${key}.a`)}</div>
             </details>
           ))}
         </div>

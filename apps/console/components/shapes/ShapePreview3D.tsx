@@ -42,7 +42,7 @@ function buildGeometry(params: GeometryParams, w: number, h: number, l: number):
         geo.translate(
           -(geo.boundingBox.min.x + geo.boundingBox.max.x) / 2,
           -(geo.boundingBox.min.y + geo.boundingBox.max.y) / 2,
-          -(geo.boundingBox.min.z + geo.boundingBox.max.z) / 2,
+          -(geo.boundingBox.min.z + geo.boundingBox.max.z) / 2
         );
       }
       return geo;
@@ -65,7 +65,7 @@ function buildGeometry(params: GeometryParams, w: number, h: number, l: number):
         geo.translate(
           -(geo.boundingBox.min.x + geo.boundingBox.max.x) / 2,
           -(geo.boundingBox.min.y + geo.boundingBox.max.y) / 2,
-          -(geo.boundingBox.min.z + geo.boundingBox.max.z) / 2,
+          -(geo.boundingBox.min.z + geo.boundingBox.max.z) / 2
         );
       }
       return geo;
@@ -84,7 +84,7 @@ function buildGeometry(params: GeometryParams, w: number, h: number, l: number):
         geo.translate(
           -(geo.boundingBox.min.x + geo.boundingBox.max.x) / 2,
           -(geo.boundingBox.min.y + geo.boundingBox.max.y) / 2,
-          -(geo.boundingBox.min.z + geo.boundingBox.max.z) / 2,
+          -(geo.boundingBox.min.z + geo.boundingBox.max.z) / 2
         );
       }
       return geo;
@@ -112,10 +112,7 @@ function PreviewBrick({
 }) {
   const def = getShapeDefinition(shapeId);
 
-  const geometry = useMemo(
-    () => buildGeometry(def.geometry, width, height, length),
-    [def.geometry, width, height, length],
-  );
+  const geometry = useMemo(() => buildGeometry(def.geometry, width, height, length), [def.geometry, width, height, length]);
 
   return (
     <mesh castShadow receiveShadow geometry={geometry}>
@@ -124,27 +121,14 @@ function PreviewBrick({
   );
 }
 
-export function ShapePreview3D({
-  shapeId,
-  width,
-  height,
-  length,
-  color,
-  className = '',
-}: ShapePreview3DProps) {
+export function ShapePreview3D({ shapeId, width, height, length, color, className = '' }: ShapePreview3DProps) {
   return (
     <div className={`bg-slate-950 rounded-xl overflow-hidden ${className}`}>
       <Canvas shadows dpr={[1, 2]} camera={{ position: [4, 4, 4], fov: 45 }}>
         <color attach="background" args={['#020617']} />
         <Environment preset="studio" />
         <Stage environment="city" intensity={0.6} adjustCamera={1.5}>
-          <PreviewBrick
-            shapeId={shapeId}
-            width={width}
-            height={height}
-            length={length}
-            color={color}
-          />
+          <PreviewBrick shapeId={shapeId} width={width} height={height} length={length} color={color} />
         </Stage>
         <OrbitControls autoRotate autoRotateSpeed={3} makeDefault />
       </Canvas>

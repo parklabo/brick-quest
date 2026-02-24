@@ -33,7 +33,9 @@ export function ShapeCard({ shape }: ShapeCardProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white truncate">{shape.label}</h3>
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[shape.category] ?? 'bg-slate-800 text-slate-400'}`}>
+            <span
+              className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[shape.category] ?? 'bg-slate-800 text-slate-400'}`}
+            >
               {shape.category}
             </span>
           </div>
@@ -41,17 +43,9 @@ export function ShapeCard({ shape }: ShapeCardProps) {
           <p className="text-[11px] text-slate-500 line-clamp-2">{shape.description}</p>
 
           <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold text-slate-600 bg-slate-800 px-2 py-0.5 rounded">
-              Tier {shape.tier}
-            </span>
-            <span className="text-[9px] font-bold text-slate-600 bg-slate-800 px-2 py-0.5 rounded">
-              {shape.geometry.kind}
-            </span>
-            {shape.studs.hasStuds && (
-              <span className="text-[9px] font-bold text-slate-600 bg-slate-800 px-2 py-0.5 rounded">
-                studs
-              </span>
-            )}
+            <span className="text-[9px] font-bold text-slate-600 bg-slate-800 px-2 py-0.5 rounded">Tier {shape.tier}</span>
+            <span className="text-[9px] font-bold text-slate-600 bg-slate-800 px-2 py-0.5 rounded">{shape.geometry.kind}</span>
+            {shape.studs.hasStuds && <span className="text-[9px] font-bold text-slate-600 bg-slate-800 px-2 py-0.5 rounded">studs</span>}
           </div>
         </div>
       </div>

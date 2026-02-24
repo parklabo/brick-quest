@@ -86,12 +86,7 @@ const LDRAW_PART_TABLE: Record<string, string> = {
  * Resolve LDraw .dat filename for a BrickQuest part.
  * Returns null if no mapping exists (fallback to procedural geometry).
  */
-export function resolveLDrawPart(
-  shape: BrickShape,
-  type: BrickType,
-  width: number,
-  length: number,
-): string | null {
+export function resolveLDrawPart(shape: BrickShape, type: BrickType, width: number, length: number): string | null {
   const key = `${shape}:${type}:${width}x${length}`;
   return LDRAW_PART_TABLE[key] ?? null;
 }

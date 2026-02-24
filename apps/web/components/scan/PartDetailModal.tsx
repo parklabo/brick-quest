@@ -42,10 +42,7 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-4"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm overflow-y-auto p-4" onClick={onClose}>
       <div
         className="relative bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] my-auto"
         onClick={(e) => e.stopPropagation()}
@@ -56,10 +53,7 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
             <ZoomIn className="w-5 h-5 text-blue-500" />
             {t('inspectBrick')}
           </h3>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 bg-slate-800 rounded-lg transition-colors"
-          >
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-2 bg-slate-800 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -82,15 +76,11 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
           <div className="p-5 space-y-4">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  {t('partName')}
-                </span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('partName')}</span>
                 <p className="text-xl font-bold text-white leading-tight truncate mt-1">{part.name}</p>
               </div>
               <div className="text-right shrink-0 ml-4">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">
-                  {t('quantity')}
-                </span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">{t('quantity')}</span>
                 {onUpdateCount ? (
                   <div className="flex items-center gap-1">
                     <button
@@ -104,9 +94,7 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
                     >
                       <Minus className="w-4 h-4" />
                     </button>
-                    <span className="text-xl font-bold text-yellow-400 w-8 text-center">
-                      {localCount}
-                    </span>
+                    <span className="text-xl font-bold text-yellow-400 w-8 text-center">{localCount}</span>
                     <button
                       onClick={() => {
                         const newCount = localCount + 1;
@@ -126,19 +114,14 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
 
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-slate-800 p-3 rounded-xl flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full border-2 border-slate-600 shrink-0"
-                  style={{ backgroundColor: part.hexColor }}
-                />
+                <div className="w-8 h-8 rounded-full border-2 border-slate-600 shrink-0" style={{ backgroundColor: part.hexColor }} />
                 <div className="min-w-0">
                   <span className="text-[9px] font-bold text-slate-400 block uppercase">{t('color')}</span>
                   <p className="font-medium text-xs text-white truncate">{part.color}</p>
                 </div>
               </div>
               <div className="bg-slate-800 p-3 rounded-xl">
-                <span className="text-[9px] font-bold text-slate-400 block mb-0.5 uppercase">
-                  {t('dimensions')}
-                </span>
+                <span className="text-[9px] font-bold text-slate-400 block mb-0.5 uppercase">{t('dimensions')}</span>
                 <span className="font-mono text-sm text-white font-bold">
                   {part.dimensions.width} x {part.dimensions.length}
                 </span>
@@ -204,7 +187,10 @@ export function PartDetailModal({ part, onClose, onDelete, onUpdateCount, onUpda
                 {localTags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {localTags.map((tag) => (
-                      <span key={tag} className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full">
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full"
+                      >
                         {tag}
                         <button
                           type="button"

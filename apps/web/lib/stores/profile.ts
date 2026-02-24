@@ -54,7 +54,7 @@ export const useProfileStore = create<ProfileStore>()((set, _get) => ({
       (err) => {
         console.error('Profile sync error:', err);
         set({ loading: false });
-      },
+      }
     );
 
     return () => {

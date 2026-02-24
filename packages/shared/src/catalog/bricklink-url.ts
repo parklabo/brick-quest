@@ -13,13 +13,7 @@ export interface BrickLinkPartInfo {
  * Resolve BrickLink catalog info for a single part.
  * Returns a direct catalog URL when mapped, or a search fallback.
  */
-export function resolveBrickLinkInfo(
-  shape: BrickShape,
-  type: BrickType,
-  width: number,
-  length: number,
-  color: string,
-): BrickLinkPartInfo {
+export function resolveBrickLinkInfo(shape: BrickShape, type: BrickType, width: number, length: number, color: string): BrickLinkPartInfo {
   const partId = resolveBrickLinkPartId(shape, type, width, length);
   const colorId = resolveBrickLinkColorId(color);
 

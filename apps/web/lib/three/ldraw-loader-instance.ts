@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js';
 
-const PARTS_LIB_URL =
-  'https://raw.githubusercontent.com/gkjohnson/ldraw-parts-library/master/complete/ldraw/';
+const PARTS_LIB_URL = 'https://raw.githubusercontent.com/gkjohnson/ldraw-parts-library/master/complete/ldraw/';
 
 let loaderInstance: LDrawLoader | null = null;
 let materialsReady = false;
@@ -27,11 +26,9 @@ export async function initLDrawLoader(): Promise<LDrawLoader> {
   }
 
   if (!materialsReady && !materialsPromise) {
-    materialsPromise = loaderInstance
-      .preloadMaterials(`${PARTS_LIB_URL}LDConfig.ldr`)
-      .then(() => {
-        materialsReady = true;
-      });
+    materialsPromise = loaderInstance.preloadMaterials(`${PARTS_LIB_URL}LDConfig.ldr`).then(() => {
+      materialsReady = true;
+    });
   }
 
   if (materialsPromise) {
@@ -45,9 +42,7 @@ export async function initLDrawLoader(): Promise<LDrawLoader> {
  * Load an LDraw part and return a cloned Group.
  * Raw geometry is cached by partFile; caller applies color to the clone.
  */
-export async function loadLDrawModel(
-  partFile: string,
-): Promise<THREE.Group> {
+export async function loadLDrawModel(partFile: string): Promise<THREE.Group> {
   const cached = rawModelCache.get(partFile);
   if (cached) {
     return cached.clone();
@@ -64,7 +59,7 @@ export async function loadLDrawModel(
       fullUrl,
       (model) => resolve(model),
       undefined,
-      (err) => reject(err),
+      (err) => reject(err)
     );
   });
 

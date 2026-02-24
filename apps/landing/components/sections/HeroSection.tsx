@@ -38,9 +38,7 @@ export function HeroSection() {
           </span>
         </div>
 
-        <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mb-10 leading-relaxed font-light">
-          {t('subtitle')}
-        </p>
+        <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mb-10 leading-relaxed font-light">{t('subtitle')}</p>
 
         <div className="flex flex-col sm:flex-row gap-5 w-full justify-center">
           <a
@@ -52,7 +50,10 @@ export function HeroSection() {
             <span className="relative z-10">{t('cta')}</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </a>
-          <a href="#features" className="px-8 py-4 glass-button rounded-2xl text-white font-medium hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-colors">
+          <a
+            href="#features"
+            className="px-8 py-4 glass-button rounded-2xl text-white font-medium hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-colors"
+          >
             {t('secondary')}
           </a>
         </div>

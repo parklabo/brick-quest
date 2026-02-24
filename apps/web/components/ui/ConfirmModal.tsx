@@ -28,10 +28,7 @@ export function ConfirmModal({
   const isDanger = variant === 'danger';
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-      onClick={onCancel}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={onCancel}>
       <div
         className="relative bg-slate-900 w-full max-w-xs rounded-2xl border border-slate-800 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -60,9 +57,7 @@ export function ConfirmModal({
             onClick={onConfirm}
             disabled={loading}
             className={`flex-1 py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-              isDanger
-                ? 'bg-red-600 hover:bg-red-500 text-white'
-                : 'bg-lego-yellow hover:bg-yellow-400 text-slate-900'
+              isDanger ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-lego-yellow hover:bg-yellow-400 text-slate-900'
             }`}
           >
             {loading ? (

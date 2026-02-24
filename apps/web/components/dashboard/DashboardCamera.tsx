@@ -55,10 +55,7 @@ export function DashboardCamera() {
     const desiredX = TARGET.x + ORBIT_RADIUS * Math.sin(angle);
     const desiredZ = TARGET.z + ORBIT_RADIUS * Math.cos(angle);
 
-    camera.position.lerp(
-      _desiredPos.set(desiredX, ELEVATION, desiredZ),
-      LERP_FACTOR * delta,
-    );
+    camera.position.lerp(_desiredPos.set(desiredX, ELEVATION, desiredZ), LERP_FACTOR * delta);
     camera.lookAt(TARGET.x, TARGET.y, TARGET.z);
   });
 

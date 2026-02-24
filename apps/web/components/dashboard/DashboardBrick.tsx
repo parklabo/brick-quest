@@ -11,21 +11,13 @@ interface DashboardBrickProps {
   emissiveIntensity?: number;
 }
 
-export const DashboardBrick = memo(function DashboardBrick({
-  def,
-  emissive = '#000000',
-  emissiveIntensity = 0,
-}: DashboardBrickProps) {
+export const DashboardBrick = memo(function DashboardBrick({ def, emissive = '#000000', emissiveIntensity = 0 }: DashboardBrickProps) {
   const height = getBrickHeight(def.shape, def.type);
   const [tx, ty, tz] = def.position;
   const finalY = ty + height / 2;
 
   const rotation: [number, number, number] = def.rotation
-    ? [
-        def.rotation[0] * (Math.PI / 180),
-        def.rotation[1] * (Math.PI / 180),
-        def.rotation[2] * (Math.PI / 180),
-      ]
+    ? [def.rotation[0] * (Math.PI / 180), def.rotation[1] * (Math.PI / 180), def.rotation[2] * (Math.PI / 180)]
     : [0, 0, 0];
 
   return (

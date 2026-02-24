@@ -98,13 +98,13 @@ graph TD
 
 The physics engine runs 5 phases on every build plan:
 
-| Phase | Name | Description |
-|-------|------|-------------|
-| 0 | **Snap** | Align dimensions and positions to the stud grid |
-| 1 | **Sort** | Order bricks bottom-up by Y position |
-| 2 | **Gravity** | Drop floating bricks to nearest support |
-| 3 | **Overlap** | Detect collisions, nudge before removing |
-| 4 | **Renumber** | Reassign sequential step IDs |
+| Phase | Name         | Description                                     |
+| ----- | ------------ | ----------------------------------------------- |
+| 0     | **Snap**     | Align dimensions and positions to the stud grid |
+| 1     | **Sort**     | Order bricks bottom-up by Y position            |
+| 2     | **Gravity**  | Drop floating bricks to nearest support         |
+| 3     | **Overlap**  | Detect collisions, nudge before removing        |
+| 4     | **Renumber** | Reassign sequential step IDs                    |
 
 ---
 
@@ -154,11 +154,11 @@ pnpm dev
 
 ### Local Services
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| Landing | http://localhost:7030 | Marketing site (en/ko/ja) |
-| Web App | http://localhost:7031 | Main application |
-| Console | http://localhost:7032 | Admin dashboard |
+| Service     | URL                   | Description                 |
+| ----------- | --------------------- | --------------------------- |
+| Landing     | http://localhost:7030 | Marketing site (en/ko/ja)   |
+| Web App     | http://localhost:7031 | Main application            |
+| Console     | http://localhost:7032 | Admin dashboard             |
 | Emulator UI | http://localhost:7020 | Firebase emulator dashboard |
 
 ### Commands
@@ -179,17 +179,17 @@ pnpm firebase:deploy      # Deploy functions to production
 
 ## Cloud Functions
 
-| Function | Type | Description |
-|----------|------|-------------|
-| `submitScan` | Callable | Upload image, create scan job |
-| `submitBuild` | Callable | Parts + difficulty, create build job |
-| `submitDesign` | Callable | Reference image, create design job |
-| `cancelJob` | Callable | Cancel a pending/processing job |
-| `approveDesignViews` | Callable | Approve views, trigger build generation |
-| `regenerateDesignViews` | Callable | Re-generate orthographic views |
-| `setAdminRole` | Callable | Set admin custom claim |
-| `processJob` | Trigger (onCreate) | Orchestrate scan/build/design processing |
-| `processDesignUpdate` | Trigger (onUpdate) | Handle design state transitions |
+| Function                | Type               | Description                              |
+| ----------------------- | ------------------ | ---------------------------------------- |
+| `submitScan`            | Callable           | Upload image, create scan job            |
+| `submitBuild`           | Callable           | Parts + difficulty, create build job     |
+| `submitDesign`          | Callable           | Reference image, create design job       |
+| `cancelJob`             | Callable           | Cancel a pending/processing job          |
+| `approveDesignViews`    | Callable           | Approve views, trigger build generation  |
+| `regenerateDesignViews` | Callable           | Re-generate orthographic views           |
+| `setAdminRole`          | Callable           | Set admin custom claim                   |
+| `processJob`            | Trigger (onCreate) | Orchestrate scan/build/design processing |
+| `processDesignUpdate`   | Trigger (onUpdate) | Handle design state transitions          |
 
 All functions: `region: asia-northeast1` | `memory: 1GiB` | `timeout: 540s`
 
@@ -217,29 +217,29 @@ graph LR
     SB --> DF
 ```
 
-| Service | Platform | Trigger |
-|---------|----------|---------|
-| Landing | Firebase Hosting (static) | Push to main (if `apps/landing/` changed) |
-| Web App | Firebase App Hosting | Push to `deploy/web` branch |
-| Console | Firebase App Hosting | Push to `deploy/console` branch |
+| Service   | Platform                  | Trigger                                         |
+| --------- | ------------------------- | ----------------------------------------------- |
+| Landing   | Firebase Hosting (static) | Push to main (if `apps/landing/` changed)       |
+| Web App   | Firebase App Hosting      | Push to `deploy/web` branch                     |
+| Console   | Firebase App Hosting      | Push to `deploy/console` branch                 |
 | Functions | Cloud Functions (2nd gen) | Push to main (if `packages/functions/` changed) |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technologies |
-|-------|-------------|
-| **Runtime** | Node.js 22, pnpm 9, Turborepo |
-| **Frontend** | Next.js 16, React 19, Tailwind CSS v4 |
-| **3D** | Three.js, @react-three/fiber, @react-three/drei |
-| **State** | Zustand |
-| **Backend** | Firebase Functions (2nd gen), Firestore, Cloud Storage |
-| **AI** | Google Gemini 3 Pro (@google/genai) |
-| **i18n** | next-intl (English, Korean, Japanese) |
-| **UI** | Lucide React, Framer Motion |
-| **CI/CD** | GitHub Actions (6 workflows) |
-| **Hosting** | Firebase App Hosting, Firebase Hosting |
+| Layer        | Technologies                                           |
+| ------------ | ------------------------------------------------------ |
+| **Runtime**  | Node.js 22, pnpm 9, Turborepo                          |
+| **Frontend** | Next.js 16, React 19, Tailwind CSS v4                  |
+| **3D**       | Three.js, @react-three/fiber, @react-three/drei        |
+| **State**    | Zustand                                                |
+| **Backend**  | Firebase Functions (2nd gen), Firestore, Cloud Storage |
+| **AI**       | Google Gemini 3 Pro (@google/genai)                    |
+| **i18n**     | next-intl (English, Korean, Japanese)                  |
+| **UI**       | Lucide React, Framer Motion                            |
+| **CI/CD**    | GitHub Actions (6 workflows)                           |
+| **Hosting**  | Firebase App Hosting, Firebase Hosting                 |
 
 ---
 

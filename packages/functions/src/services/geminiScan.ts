@@ -31,7 +31,7 @@ export async function analyzeLegoParts(base64Image: string, mimeType = 'image/jp
           type: Type.OBJECT,
           properties: {
             name: { type: Type.STRING, description: "Common name, e.g. '2x4 Brick'" },
-            color: { type: Type.STRING, description: "Simple LEGO-like color name" },
+            color: { type: Type.STRING, description: 'Simple LEGO-like color name' },
             hexColor: { type: Type.STRING, description: "CSS hex color code, e.g. '#FF0000'" },
             count: { type: Type.INTEGER, description: 'How many visible (conservative estimate)' },
             type: {
@@ -73,8 +73,7 @@ Return ONLY valid JSON matching the schema.`;
   let lastError: Error | null = null;
   let data: any = {};
 
-  outer:
-  for (const model of modelsToTry) {
+  outer: for (const model of modelsToTry) {
     for (let attempt = 1; attempt <= SCAN_RETRIES; attempt++) {
       try {
         logger.info(`Scan attempt ${attempt}/${SCAN_RETRIES} (model: ${model})`);
@@ -82,10 +81,7 @@ Return ONLY valid JSON matching the schema.`;
         const response = await withTimeout(
           ai.models.generateContent({
             model,
-            contents: [
-              { text: prompt },
-              { inlineData: { mimeType, data: base64Image } },
-            ],
+            contents: [{ text: prompt }, { inlineData: { mimeType, data: base64Image } }],
             config: {
               responseMimeType: 'application/json',
               responseSchema: partSchema,
@@ -94,7 +90,7 @@ Return ONLY valid JSON matching the schema.`;
             },
           }),
           SCAN_TIMEOUT,
-          'Image analysis',
+          'Image analysis'
         );
 
         data = JSON.parse(response.text || '{}');

@@ -1,11 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import {
-  Upload,
-  Loader2,
-  Camera,
-} from 'lucide-react';
+import { Upload, Loader2, Camera } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Card } from '../ui/Card';
 import { apiClient } from '../../lib/api/client';
@@ -53,30 +49,33 @@ export function ScanUploader() {
       if (!file) return;
       processFile(file);
     },
-    [processFile],
+    [processFile]
   );
 
-  const handleUseSample = useCallback(async (path: string) => {
-    setLoadingSample(true);
-    setError(null);
-    try {
-      const res = await fetch(path);
-      const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        setPreview(dataUrl);
-        const base64 = dataUrl.split(',')[1];
-        setImage(base64);
-        setPhase('selected');
-      };
-      reader.readAsDataURL(blob);
-    } catch {
-      setError(t('sampleError'));
-    } finally {
-      setLoadingSample(false);
-    }
-  }, [t]);
+  const handleUseSample = useCallback(
+    async (path: string) => {
+      setLoadingSample(true);
+      setError(null);
+      try {
+        const res = await fetch(path);
+        const blob = await res.blob();
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          setPreview(dataUrl);
+          const base64 = dataUrl.split(',')[1];
+          setImage(base64);
+          setPhase('selected');
+        };
+        reader.readAsDataURL(blob);
+      } catch {
+        setError(t('sampleError'));
+      } finally {
+        setLoadingSample(false);
+      }
+    },
+    [t]
+  );
 
   const handleScan = async () => {
     if (!image) return;
@@ -132,20 +131,14 @@ export function ScanUploader() {
         {preview ? (
           <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
             <img src={preview} alt={t('selected')} className="max-h-64 rounded-lg" />
-            <button
-              type="button"
-              onClick={handleDiscard}
-              className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
-            >
+            <button type="button" onClick={handleDiscard} className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
               {t('chooseDifferent')}
             </button>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
             <Camera className="w-12 h-12 text-slate-500" />
-            <span className="text-slate-400 text-center">
-              {t('instruction')}
-            </span>
+            <span className="text-slate-400 text-center">{t('instruction')}</span>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
@@ -186,11 +179,7 @@ export function ScanUploader() {
                     {loadingSample ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <img
-                        src={sample.path}
-                        alt={sample.label}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
+                      <img src={sample.path} alt={sample.label} className="w-12 h-12 rounded-lg object-cover" />
                     )}
                     <span className="text-xs font-medium">{sample.label}</span>
                     <span className="text-[10px] text-slate-500">{sample.description}</span>
@@ -207,13 +196,7 @@ export function ScanUploader() {
               className="hidden"
               onChange={handleImageSelect}
             />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageSelect}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
           </div>
         )}
       </Card>

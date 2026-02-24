@@ -37,11 +37,7 @@ interface FollowCameraProps {
 
 const _desiredPos = new THREE.Vector3();
 
-export function FollowCamera({
-  targetRef,
-  azimuthRef,
-  keysRef,
-}: FollowCameraProps) {
+export function FollowCamera({ targetRef, azimuthRef, keysRef }: FollowCameraProps) {
   const { camera, gl } = useThree();
   const zoomRef = useRef(50);
   const elevationRef = useRef(INITIAL_ELEVATION);
@@ -58,10 +54,7 @@ export function FollowCamera({
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     const delta = -e.deltaY * 0.05;
-    zoomRef.current = Math.max(
-      MIN_ZOOM,
-      Math.min(MAX_ZOOM, zoomRef.current + delta * ZOOM_SPEED),
-    );
+    zoomRef.current = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomRef.current + delta * ZOOM_SPEED));
   }, []);
 
   // Right-click drag for orbit
@@ -81,10 +74,7 @@ export function FollowCamera({
     lastMouse.current = { x: e.clientX, y: e.clientY };
 
     internalAzimuth.current -= dx * DRAG_ROTATE_SPEED;
-    elevationRef.current = Math.max(
-      MIN_ELEVATION,
-      Math.min(MAX_ELEVATION, elevationRef.current + dy * DRAG_ELEVATE_SPEED),
-    );
+    elevationRef.current = Math.max(MIN_ELEVATION, Math.min(MAX_ELEVATION, elevationRef.current + dy * DRAG_ELEVATE_SPEED));
   }, []);
 
   const handlePointerUp = useCallback((e: PointerEvent) => {
@@ -122,10 +112,7 @@ export function FollowCamera({
       lastTouchRef.current = { x: e.touches[0]!.clientX, y: e.touches[0]!.clientY };
 
       internalAzimuth.current -= dx * TOUCH_ORBIT_SPEED;
-      elevationRef.current = Math.max(
-        MIN_ELEVATION,
-        Math.min(MAX_ELEVATION, elevationRef.current + dy * TOUCH_ELEVATE_SPEED),
-      );
+      elevationRef.current = Math.max(MIN_ELEVATION, Math.min(MAX_ELEVATION, elevationRef.current + dy * TOUCH_ELEVATE_SPEED));
     } else if (e.touches.length === 2) {
       // Pinch zoom
       const dx = e.touches[0]!.clientX - e.touches[1]!.clientX;
@@ -134,10 +121,7 @@ export function FollowCamera({
       const pinchDelta = dist - lastPinchDist.current;
       lastPinchDist.current = dist;
 
-      zoomRef.current = Math.max(
-        MIN_ZOOM,
-        Math.min(MAX_ZOOM, zoomRef.current + pinchDelta * PINCH_ZOOM_SPEED),
-      );
+      zoomRef.current = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomRef.current + pinchDelta * PINCH_ZOOM_SPEED));
     }
   }, []);
 
@@ -186,16 +170,10 @@ export function FollowCamera({
 
     // Keyboard elevation (R/F)
     if (keys.elevateUp) {
-      elevationRef.current = Math.min(
-        MAX_ELEVATION,
-        elevationRef.current + ELEVATE_SPEED * delta,
-      );
+      elevationRef.current = Math.min(MAX_ELEVATION, elevationRef.current + ELEVATE_SPEED * delta);
     }
     if (keys.elevateDown) {
-      elevationRef.current = Math.max(
-        MIN_ELEVATION,
-        elevationRef.current - ELEVATE_SPEED * delta,
-      );
+      elevationRef.current = Math.max(MIN_ELEVATION, elevationRef.current - ELEVATE_SPEED * delta);
     }
 
     // Sync azimuth for player movement direction
@@ -209,7 +187,7 @@ export function FollowCamera({
     _desiredPos.set(
       target.x + ORBIT_DISTANCE * Math.cos(elevation) * Math.sin(azimuth),
       target.y + ORBIT_DISTANCE * Math.sin(elevation),
-      target.z + ORBIT_DISTANCE * Math.cos(elevation) * Math.cos(azimuth),
+      target.z + ORBIT_DISTANCE * Math.cos(elevation) * Math.cos(azimuth)
     );
 
     // Smooth follow

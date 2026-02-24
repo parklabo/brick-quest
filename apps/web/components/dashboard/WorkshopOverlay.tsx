@@ -25,9 +25,7 @@ function useZoneMenuItems(t: ReturnType<typeof useTranslations<'dashboard'>>) {
       design: {
         label: t('designZone'),
         color: '#fbbf24',
-        items: [
-          { href: '/create', label: t('designStation'), desc: t('stationDesignDesc'), icon: Paintbrush, color: '#fbbf24' },
-        ],
+        items: [{ href: '/create', label: t('designStation'), desc: t('stationDesignDesc'), icon: Paintbrush, color: '#fbbf24' }],
       },
       mybrick: {
         label: t('myBrickZone'),
@@ -39,7 +37,7 @@ function useZoneMenuItems(t: ReturnType<typeof useTranslations<'dashboard'>>) {
         ],
       },
     }),
-    [t],
+    [t]
   );
 }
 
@@ -70,10 +68,7 @@ function ZoneMenu() {
           style={{ background: `linear-gradient(135deg, ${zone.color}22, ${zone.color}44)`, borderBottom: `2px solid ${zone.color}55` }}
         >
           <h2 className="text-white font-bold text-base tracking-wide">{zone.label}</h2>
-          <button
-            onClick={closeZone}
-            className="text-white/60 hover:text-white transition-colors p-1"
-          >
+          <button onClick={closeZone} className="text-white/60 hover:text-white transition-colors p-1">
             <X size={18} />
           </button>
         </div>
@@ -95,9 +90,7 @@ function ZoneMenu() {
                 <item.icon size={20} style={{ color: item.color }} />
               </div>
               <div className="flex flex-col">
-                <span className="text-white font-semibold text-sm group-hover:translate-x-0.5 transition-transform">
-                  {item.label}
-                </span>
+                <span className="text-white font-semibold text-sm group-hover:translate-x-0.5 transition-transform">{item.label}</span>
                 <span className="text-slate-400 text-xs">{item.desc}</span>
               </div>
             </Link>
@@ -149,10 +142,7 @@ function NoticeModal() {
           {notices.map((notice, i) => {
             const Icon = notice.icon;
             return (
-              <div
-                key={i}
-                className="flex items-start gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10"
-              >
+              <div key={i} className="flex items-start gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10">
                 <div
                   className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
                   style={{ background: `${notice.color}15`, border: `1px solid ${notice.color}30` }}
@@ -189,9 +179,7 @@ function DemoToggle() {
       </div>
       <button
         onClick={toggleDemo}
-        className={`relative w-10 h-5.5 rounded-full transition-colors ${
-          demoMode ? 'bg-violet-500' : 'bg-white/15'
-        }`}
+        className={`relative w-10 h-5.5 rounded-full transition-colors ${demoMode ? 'bg-violet-500' : 'bg-white/15'}`}
       >
         <span
           className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-white transition-transform shadow-sm ${
@@ -271,22 +259,18 @@ function ProfilePopup() {
                     maxLength={30}
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveName();
+                      if (e.key === 'Escape') setEditingName(false);
+                    }}
                     className="w-32 bg-white/10 border border-white/20 rounded px-2 py-0.5 text-sm text-white focus:outline-none focus:border-violet-400"
                   />
-                  <button
-                    onClick={handleSaveName}
-                    disabled={saving}
-                    className="text-violet-400 hover:text-violet-300 transition-colors"
-                  >
+                  <button onClick={handleSaveName} disabled={saving} className="text-violet-400 hover:text-violet-300 transition-colors">
                     <Check size={14} />
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={handleStartEdit}
-                  className="flex items-center gap-1.5 group text-left"
-                >
+                <button onClick={handleStartEdit} className="flex items-center gap-1.5 group text-left">
                   <span className="text-white font-bold text-sm">{displayName}</span>
                   <Pencil size={11} className="text-white/30 group-hover:text-white/70 transition-colors" />
                 </button>
@@ -361,7 +345,9 @@ function ProfilePopup() {
                 return (
                   <button
                     key={loc}
-                    onClick={() => { if (!active) setLocale(loc); }}
+                    onClick={() => {
+                      if (!active) setLocale(loc);
+                    }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all border ${
                       active
                         ? 'bg-violet-500/20 border-violet-400/50 text-violet-300'
@@ -383,7 +369,10 @@ function ProfilePopup() {
 
           {/* Sign out */}
           <button
-            onClick={async () => { closeProfile(); await logout(); }}
+            onClick={async () => {
+              closeProfile();
+              await logout();
+            }}
             className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 transition-all text-left"
           >
             <LogOut size={16} className="text-slate-400" />
@@ -426,7 +415,6 @@ export function WorkshopOverlay() {
   return (
     <>
       <div className="fixed inset-0 top-14 z-50 pointer-events-none flex flex-col items-center">
-
         {/* Control hints (bottom-center, always visible) */}
         <div className="fixed bottom-20 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
           <div className="bg-black/50 backdrop-blur-md border border-white/15 rounded-xl px-5 py-2.5">
@@ -444,7 +432,10 @@ export function WorkshopOverlay() {
                 <div className="flex items-center gap-1.5">
                   <div className="flex gap-0.5">
                     {['W', 'A', 'S', 'D'].map((key) => (
-                      <kbd key={key} className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90">
+                      <kbd
+                        key={key}
+                        className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90"
+                      >
                         {key}
                       </kbd>
                     ))}
@@ -454,25 +445,19 @@ export function WorkshopOverlay() {
                 <div className="w-px h-4 bg-white/20" />
                 {/* Left mouse = Rotate */}
                 <div className="flex items-center gap-1.5">
-                  <kbd className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90">
-                    LMB
-                  </kbd>
+                  <kbd className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90">LMB</kbd>
                   <span>{t('controlRotate')}</span>
                 </div>
                 <div className="w-px h-4 bg-white/20" />
                 {/* Right mouse = Pan */}
                 <div className="flex items-center gap-1.5">
-                  <kbd className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90">
-                    RMB
-                  </kbd>
+                  <kbd className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90">RMB</kbd>
                   <span>{t('controlPan')}</span>
                 </div>
                 <div className="w-px h-4 bg-white/20" />
                 {/* Scroll = Zoom */}
                 <div className="flex items-center gap-1.5">
-                  <kbd className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90">
-                    Scroll
-                  </kbd>
+                  <kbd className="bg-white/15 border border-white/25 rounded px-1.5 py-0.5 font-mono text-[11px] text-white/90">Scroll</kbd>
                   <span>{t('controlZoom')}</span>
                 </div>
               </div>
@@ -494,9 +479,7 @@ export function WorkshopOverlay() {
               </button>
             ) : (
               <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-xl px-5 py-2.5 flex items-center gap-2">
-                <kbd className="bg-white/10 border border-white/20 rounded px-2 py-0.5 text-xs font-mono text-white/80">
-                  Enter
-                </kbd>
+                <kbd className="bg-white/10 border border-white/20 rounded px-2 py-0.5 text-xs font-mono text-white/80">Enter</kbd>
                 <span className="text-sm text-white/90">
                   {t('pressEnter')} &mdash; {stationLabels[nearStation] ?? nearStation}
                 </span>

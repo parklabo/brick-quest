@@ -21,7 +21,10 @@ export function Navigation() {
           </span>
         </Link>
         <div className="flex items-center gap-6">
-          <a href="#features" className="hidden md:block text-sm font-medium text-slate-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary rounded transition-colors">
+          <a
+            href="#features"
+            className="hidden md:block text-sm font-medium text-slate-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary rounded transition-colors"
+          >
             {t('features')}
           </a>
           <LanguageSwitcher />

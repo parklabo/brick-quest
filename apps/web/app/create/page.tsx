@@ -22,9 +22,7 @@ export default function CreatePage() {
             </div>
             <h1 className="text-xl font-bold">{t('title')}</h1>
           </div>
-          <p className="text-sm text-slate-500 ml-[38px]">
-            {t('description')}
-          </p>
+          <p className="text-sm text-slate-500 ml-[38px]">{t('description')}</p>
         </div>
 
         {/* Pipeline Stepper */}

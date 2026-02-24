@@ -34,12 +34,8 @@ export function CreateModeSection() {
             <span className="inline-block px-4 py-1.5 rounded-full text-sm font-bold tracking-wider uppercase bg-brand-primary/15 text-brand-primary border border-brand-primary/30 mb-6">
               {t('label')}
             </span>
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
-              {t('title')}
-            </h2>
-            <p className="text-lg text-slate-400 mb-8 leading-relaxed">
-              {t('description')}
-            </p>
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">{t('title')}</h2>
+            <p className="text-lg text-slate-400 mb-8 leading-relaxed">{t('description')}</p>
             <ul className="space-y-4">
               {bullets.map((key) => (
                 <li key={key} className="flex items-start gap-3">
@@ -67,13 +63,9 @@ export function CreateModeSection() {
                     <div className="w-14 h-14 rounded-2xl bg-brand-primary/15 flex items-center justify-center mb-4 group-hover:bg-brand-primary/25 transition-colors">
                       <Icon className="w-7 h-7 text-brand-primary" />
                     </div>
-                    <span className="text-sm font-bold text-white leading-tight">
-                      {t(key)}
-                    </span>
+                    <span className="text-sm font-bold text-white leading-tight">{t(key)}</span>
                   </div>
-                  {index < steps.length - 1 && (
-                    <ChevronRight className="hidden sm:block w-5 h-5 text-brand-primary/50 flex-shrink-0" />
-                  )}
+                  {index < steps.length - 1 && <ChevronRight className="hidden sm:block w-5 h-5 text-brand-primary/50 flex-shrink-0" />}
                 </div>
               ))}
             </div>

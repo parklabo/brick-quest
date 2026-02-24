@@ -1,11 +1,4 @@
-export type JobStatus =
-  | 'pending'
-  | 'processing'
-  | 'generating_views'
-  | 'views_ready'
-  | 'generating_build'
-  | 'completed'
-  | 'failed';
+export type JobStatus = 'pending' | 'processing' | 'generating_views' | 'views_ready' | 'generating_build' | 'completed' | 'failed';
 
 export type JobType = 'scan' | 'build' | 'design';
 

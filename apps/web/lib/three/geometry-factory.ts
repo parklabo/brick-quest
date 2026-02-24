@@ -9,12 +9,7 @@ import type { GeometryKind, GeometryParams } from '@brick-quest/shared';
  * @param height - brick height in units (1.2 for brick, 0.4 for plate)
  * @param length - brick length in studs
  */
-export function createBrickGeometry(
-  params: GeometryParams,
-  width: number,
-  height: number,
-  length: number,
-): THREE.BufferGeometry {
+export function createBrickGeometry(params: GeometryParams, width: number, height: number, length: number): THREE.BufferGeometry {
   const factory = GEOMETRY_FACTORIES[params.kind];
   if (!factory) return createBox(width, height, length);
   return factory(params, width, height, length);
@@ -26,22 +21,12 @@ function createBox(w: number, h: number, l: number): THREE.BufferGeometry {
   return new THREE.BoxGeometry(w - 0.05, h, l - 0.05);
 }
 
-function createCylinder(
-  _params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createCylinder(_params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const radius = Math.min(w, l) / 2 - 0.05;
   return new THREE.CylinderGeometry(radius, radius, h, 32);
 }
 
-function createLShape(
-  _params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createLShape(_params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   // Two boxes merged: full-width bottom row + 1-stud-wide column
   const part1 = new THREE.BoxGeometry(w - 0.05, h, 1 - 0.05);
   part1.translate(0, 0, -(l / 2) + 0.5);
@@ -55,12 +40,7 @@ function createLShape(
   return part1;
 }
 
-function createWedge(
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createWedge(params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const angleDeg = params.slopeAngleDeg ?? 45;
   const angleRad = (angleDeg * Math.PI) / 180;
 
@@ -107,12 +87,7 @@ function createWedge(
   return geo;
 }
 
-function createInvertedWedge(
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createInvertedWedge(params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const angleDeg = params.slopeAngleDeg ?? 45;
   const angleRad = (angleDeg * Math.PI) / 180;
   const slopeRun = Math.min(h / Math.tan(angleRad), l);
@@ -145,12 +120,7 @@ function createInvertedWedge(
   return geo;
 }
 
-function createCurvedWedge(
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createCurvedWedge(params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const segments = params.curveSegments ?? 12;
 
   // Curved slope: smooth curve from top-back down to bottom-front
@@ -160,11 +130,7 @@ function createCurvedWedge(
   shape.lineTo(l / 2, h / 2);
 
   // Bezier curve for the slope surface
-  shape.bezierCurveTo(
-    l / 2 - l * 0.3, h / 2,
-    -l / 2 + l * 0.1, -h / 2 + h * 0.1,
-    -l / 2, -h / 2,
-  );
+  shape.bezierCurveTo(l / 2 - l * 0.3, h / 2, -l / 2 + l * 0.1, -h / 2 + h * 0.1, -l / 2, -h / 2);
 
   const geo = new THREE.ExtrudeGeometry(shape, {
     steps: 1,
@@ -185,12 +151,7 @@ function createCurvedWedge(
   return geo;
 }
 
-function createArch(
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createArch(params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const segments = params.curveSegments ?? 16;
 
   // Arch: rectangular box with a semicircular cutout at the bottom
@@ -226,23 +187,13 @@ function createArch(
   return geo;
 }
 
-function createCone(
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createCone(params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const radius = Math.min(w, l) / 2 - 0.05;
   const segments = params.curveSegments ?? 32;
   return new THREE.ConeGeometry(radius, h, segments);
 }
 
-function createTriangularPlate(
-  _params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createTriangularPlate(_params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const shape = new THREE.Shape();
   shape.moveTo(-w / 2, -l / 2);
   shape.lineTo(w / 2, -l / 2);
@@ -268,24 +219,14 @@ function createTriangularPlate(
   return geo;
 }
 
-function createDome(
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createDome(params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const radius = Math.min(w, l) / 2 - 0.05;
   const segments = params.curveSegments ?? 24;
   // Half sphere — only the top half (phi from 0 to PI/2)
   return new THREE.SphereGeometry(radius, segments, segments / 2, 0, Math.PI * 2, 0, Math.PI / 2);
 }
 
-function createHalfCylinder(
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createHalfCylinder(params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   const radius = h / 2;
   const segments = params.curveSegments ?? 16;
 
@@ -297,12 +238,7 @@ function createHalfCylinder(
   return geo;
 }
 
-function createBeamWithHoles(
-  _params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-): THREE.BufferGeometry {
+function createBeamWithHoles(_params: GeometryParams, w: number, h: number, l: number): THREE.BufferGeometry {
   // Simplified: box with visual representation. True holes would need CSG.
   // We add rounded ends for the technic beam look.
   const shape = new THREE.Shape();
@@ -350,12 +286,7 @@ function createBeamWithHoles(
 
 // ── Factory Lookup ────────────────────────────────────────
 
-type GeometryFactory = (
-  params: GeometryParams,
-  w: number,
-  h: number,
-  l: number,
-) => THREE.BufferGeometry;
+type GeometryFactory = (params: GeometryParams, w: number, h: number, l: number) => THREE.BufferGeometry;
 
 const GEOMETRY_FACTORIES: Record<GeometryKind, GeometryFactory> = {
   box: (_p, w, h, l) => createBox(w, h, l),
@@ -380,12 +311,7 @@ const geometryCache = new Map<string, THREE.BufferGeometry>();
  * Get or create a cached geometry for the given params + dimensions.
  * The cache key includes all parameters that affect the resulting geometry.
  */
-export function getCachedGeometry(
-  params: GeometryParams,
-  width: number,
-  height: number,
-  length: number,
-): THREE.BufferGeometry {
+export function getCachedGeometry(params: GeometryParams, width: number, height: number, length: number): THREE.BufferGeometry {
   const key = `${params.kind}:${params.slopeAngleDeg ?? ''}:${params.curveSegments ?? ''}:${width}:${height}:${length}`;
   let geo = geometryCache.get(key);
   if (!geo) {

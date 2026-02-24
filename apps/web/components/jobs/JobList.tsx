@@ -5,18 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useJobsStore } from '../../lib/stores/jobs';
 import { apiClient } from '../../lib/api/client';
-import {
-  ScanLine,
-  Hammer,
-  Sparkles,
-  Loader2,
-  CheckCircle,
-  XCircle,
-  Clock,
-  ChevronRight,
-  Eye,
-  Ban,
-} from 'lucide-react';
+import { ScanLine, Hammer, Sparkles, Loader2, CheckCircle, XCircle, Clock, ChevronRight, Eye, Ban } from 'lucide-react';
 import { PackageCheck } from 'lucide-react';
 import type { TrackedJob } from '../../lib/stores/jobs';
 import type { ScanResult, BuildPlan, DesignResult } from '@brick-quest/shared';
@@ -124,21 +113,29 @@ export const JobCard = memo(function JobCard({ job, onSelect }: { job: TrackedJo
 
   const isCancellable = CANCELLABLE.has(job.status);
 
-  const handleCancel = useCallback(async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm(t('cancelConfirm'))) return;
-    setCancelling(true);
-    try {
-      await apiClient.cancelJob(job.id);
-    } catch {
-      setCancelling(false);
-    }
-  }, [job.id, t]);
+  const handleCancel = useCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!confirm(t('cancelConfirm'))) return;
+      setCancelling(true);
+      try {
+        await apiClient.cancelJob(job.id);
+      } catch {
+        setCancelling(false);
+      }
+    },
+    [job.id, t]
+  );
 
   const jobMeta = {
     scan: { Icon: ScanLine, label: t('scanType'), iconBg: 'bg-lego-blue/15 ring-1 ring-lego-blue/25', iconText: 'text-lego-blue' },
-    design: { Icon: Sparkles, label: t('designType'), iconBg: 'bg-lego-yellow/15 ring-1 ring-lego-yellow/25', iconText: 'text-lego-yellow' },
+    design: {
+      Icon: Sparkles,
+      label: t('designType'),
+      iconBg: 'bg-lego-yellow/15 ring-1 ring-lego-yellow/25',
+      iconText: 'text-lego-yellow',
+    },
     build: { Icon: Hammer, label: t('buildType'), iconBg: 'bg-lego-orange/15 ring-1 ring-lego-orange/25', iconText: 'text-lego-orange' },
   };
   const { Icon, label, iconBg, iconText } = jobMeta[job.type];
@@ -180,9 +177,7 @@ export const JobCard = memo(function JobCard({ job, onSelect }: { job: TrackedJo
           <div className="absolute top-3.5 right-3.5 w-2 h-2 rounded-full bg-lego-yellow shadow-[0_0_6px_rgba(250,204,21,0.5)]" />
         )}
 
-        <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}
-        >
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
           <Icon className={`w-4 h-4 ${iconText}`} />
         </div>
 
@@ -205,9 +200,7 @@ export const JobCard = memo(function JobCard({ job, onSelect }: { job: TrackedJo
               {relativeTimeI18n(job.createdAt, tc)}
             </span>
           </div>
-          {job.status === 'failed' && job.error && (
-            <p className="text-xs text-red-400/70 mt-1 truncate">{job.error}</p>
-          )}
+          {job.status === 'failed' && job.error && <p className="text-xs text-red-400/70 mt-1 truncate">{job.error}</p>}
         </div>
 
         {isCancellable && (
@@ -218,24 +211,25 @@ export const JobCard = memo(function JobCard({ job, onSelect }: { job: TrackedJo
             className="shrink-0 w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
             title={t('cancel')}
           >
-            {cancelling ? (
-              <Loader2 className="w-3.5 h-3.5 text-red-400 animate-spin" />
-            ) : (
-              <Ban className="w-3.5 h-3.5 text-red-400" />
-            )}
+            {cancelling ? <Loader2 className="w-3.5 h-3.5 text-red-400 animate-spin" /> : <Ban className="w-3.5 h-3.5 text-red-400" />}
           </button>
         )}
 
-        {href && (
-          <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
-        )}
+        {href && <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />}
       </div>
     </div>
   );
 
   if (href) {
     return (
-      <Link href={href} onClick={() => { markSeen(job.id); onSelect?.(job.id); }} className="block">
+      <Link
+        href={href}
+        onClick={() => {
+          markSeen(job.id);
+          onSelect?.(job.id);
+        }}
+        className="block"
+      >
         {content}
       </Link>
     );
@@ -243,7 +237,15 @@ export const JobCard = memo(function JobCard({ job, onSelect }: { job: TrackedJo
 
   if (onSelect) {
     return (
-      <div role="button" tabIndex={0} onClick={() => onSelect(job.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(job.id); }} className="cursor-pointer">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelect(job.id)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') onSelect(job.id);
+        }}
+        className="cursor-pointer"
+      >
         {content}
       </div>
     );

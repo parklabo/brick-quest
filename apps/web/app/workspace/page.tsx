@@ -2,10 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
-const WorkspaceScene = dynamic(
-  () => import('../../components/workspace/WorkspaceScene'),
-  { ssr: false }
-);
+const WorkspaceScene = dynamic(() => import('../../components/workspace/WorkspaceScene'), { ssr: false });
 
 export default function WorkspacePage() {
   return (

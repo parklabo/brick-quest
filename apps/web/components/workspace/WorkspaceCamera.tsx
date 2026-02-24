@@ -137,8 +137,8 @@ export function WorkspaceCamera({ keysRef }: WorkspaceCameraProps) {
       const forwardX = Math.sin(azimuth);
       const forwardZ = Math.cos(azimuth);
       // Screen X → strafe, Screen Y → forward/backward
-      const moveX = -panDx * (-forwardZ) + -panDy * (-forwardX);
-      const moveZ = -panDx * (forwardX) + -panDy * (-forwardZ);
+      const moveX = -panDx * -forwardZ + -panDy * -forwardX;
+      const moveZ = -panDx * forwardX + -panDy * -forwardZ;
       const target = targetRef.current;
       target.x = Math.max(-BOUND, Math.min(BOUND, target.x + moveX * TOUCH_PAN_SPEED));
       target.z = Math.max(-BOUND, Math.min(BOUND, target.z + moveZ * TOUCH_PAN_SPEED));
@@ -175,7 +175,17 @@ export function WorkspaceCamera({ keysRef }: WorkspaceCameraProps) {
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [gl.domElement, handleWheel, handlePointerDown, handlePointerMove, handlePointerUp, handleContextMenu, handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [
+    gl.domElement,
+    handleWheel,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleContextMenu,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+  ]);
 
   useFrame((_, delta) => {
     const keys = keysRef.current;
@@ -194,11 +204,24 @@ export function WorkspaceCamera({ keysRef }: WorkspaceCameraProps) {
     const azimuth = azimuthRef.current;
     const forwardX = Math.sin(azimuth);
     const forwardZ = Math.cos(azimuth);
-    let dx = 0, dz = 0;
-    if (keys.forward) { dx -= forwardX; dz -= forwardZ; }
-    if (keys.backward) { dx += forwardX; dz += forwardZ; }
-    if (keys.left) { dx -= forwardZ; dz += forwardX; }
-    if (keys.right) { dx += forwardZ; dz -= forwardX; }
+    let dx = 0,
+      dz = 0;
+    if (keys.forward) {
+      dx -= forwardX;
+      dz -= forwardZ;
+    }
+    if (keys.backward) {
+      dx += forwardX;
+      dz += forwardZ;
+    }
+    if (keys.left) {
+      dx -= forwardZ;
+      dz += forwardX;
+    }
+    if (keys.right) {
+      dx += forwardZ;
+      dz -= forwardX;
+    }
 
     const len = Math.sqrt(dx * dx + dz * dz);
     if (len > 0) {

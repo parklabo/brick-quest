@@ -7,9 +7,7 @@
       "pnpm --filter @brick-quest/functions build",
       "node scripts/prepare-functions-deploy.js"
     ],
-    "postdeploy": [
-      "node scripts/cleanup-functions-deploy.js"
-    ]
+    "postdeploy": ["node scripts/cleanup-functions-deploy.js"]
   },
   "firestore": {
     "rules": "firestore.rules",

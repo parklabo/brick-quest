@@ -27,7 +27,7 @@ function useLDrawModel(
   hexColor: string,
   colorOptions: ColorOverrideOptions,
   onLoaded?: () => void,
-  onError?: () => void,
+  onError?: () => void
 ) {
   const [model, setModel] = useState<THREE.Group | null>(null);
   const mountedRef = useRef(true);

@@ -3,7 +3,15 @@ import type { Schema } from '@google/genai';
 import { config, LIMITS } from '../config.js';
 import { logger } from 'firebase-functions';
 import type { DetectedPart, BuildPlan, BuildStepBlock, Difficulty } from '@brick-quest/shared';
-import { getBrickHeight, resolveShape, getGeminiShapeEnum, getGeminiShapeDescriptions, fixBuildPhysicsWithReport, COORDINATE_SYSTEM_PROMPT, CRITICAL_RULES_PROMPT } from '@brick-quest/shared';
+import {
+  getBrickHeight,
+  resolveShape,
+  getGeminiShapeEnum,
+  getGeminiShapeDescriptions,
+  fixBuildPhysicsWithReport,
+  COORDINATE_SYSTEM_PROMPT,
+  CRITICAL_RULES_PROMPT,
+} from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
 import { getAI } from './gemini-client.js';
@@ -20,11 +28,7 @@ function isRetryableModelError(error: any): boolean {
   return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
 }
 
-export async function generateBuildPlan(
-  parts: DetectedPart[],
-  difficulty: Difficulty = 'normal',
-  userPrompt = '',
-): Promise<BuildPlan> {
+export async function generateBuildPlan(parts: DetectedPart[], difficulty: Difficulty = 'normal', userPrompt = ''): Promise<BuildPlan> {
   const ai = getAI();
 
   const buildSchema: Schema = {
@@ -81,8 +85,9 @@ export async function generateBuildPlan(
     required: ['title', 'description', 'lore', 'steps'],
   };
 
-  const inventoryLines = parts.map((p, idx) =>
-    `[${idx}] ${p.count}x ${p.color} ${p.name} (${p.dimensions.width}x${p.dimensions.length} studs, type: ${p.type}, shape: ${p.shape})`
+  const inventoryLines = parts.map(
+    (p, idx) =>
+      `[${idx}] ${p.count}x ${p.color} ${p.name} (${p.dimensions.width}x${p.dimensions.length} studs, type: ${p.type}, shape: ${p.shape})`
   );
 
   const difficultyConfig: Record<Difficulty, { instruction: string; maxSteps: number; maxOutput: number; thinking: number }> = {
@@ -93,13 +98,15 @@ export async function generateBuildPlan(
       thinking: 8192,
     },
     normal: {
-      instruction: 'Create a recognizable, detailed model. Use 50-80 parts (70%+ of inventory). Mix large structural bricks with smaller detail bricks.',
+      instruction:
+        'Create a recognizable, detailed model. Use 50-80 parts (70%+ of inventory). Mix large structural bricks with smaller detail bricks.',
       maxSteps: 80,
       maxOutput: 65536,
       thinking: 16384,
     },
     expert: {
-      instruction: 'Create a MASTERPIECE. Use 100-150+ parts. MAXIMIZE inventory usage (90%+). Use small bricks (1x1, 1x2) for fine detail and larger bricks for structure.',
+      instruction:
+        'Create a MASTERPIECE. Use 100-150+ parts. MAXIMIZE inventory usage (90%+). Use small bricks (1x1, 1x2) for fine detail and larger bricks for structure.',
       maxSteps: 150,
       maxOutput: 131072,
       thinking: 32768,
@@ -232,9 +239,7 @@ Return ONLY valid JSON.`;
 
     logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS} (model: ${useModel}, ${Math.round(remaining / 1000)}s remaining)`);
 
-    const prompt = feedbackPrompt
-      ? `${basePrompt}\n\n${feedbackPrompt}`
-      : basePrompt;
+    const prompt = feedbackPrompt ? `${basePrompt}\n\n${feedbackPrompt}` : basePrompt;
 
     // Inner parse-retry loop
     const PARSE_RETRIES = 3;
@@ -261,11 +266,12 @@ Return ONLY valid JSON.`;
               responseSchema: buildSchema,
               maxOutputTokens: cfg.maxOutput,
               thinkingConfig: { thinkingBudget },
-              systemInstruction: 'You are an award-winning LEGO Master Builder with expertise in 3D spatial reasoning. Complete the entire JSON response.',
+              systemInstruction:
+                'You are an award-winning LEGO Master Builder with expertise in 3D spatial reasoning. Complete the entire JSON response.',
             },
           }),
           callTimeout,
-          'Build plan generation',
+          'Build plan generation'
         );
 
         if (!response.text) {
@@ -347,8 +353,8 @@ Return ONLY valid JSON.`;
 
     logger.info(
       `Agent iteration ${iteration}: ${report.inputCount} input → ${report.outputCount} output ` +
-      `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
-      `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged)`,
+        `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
+        `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged)`
     );
 
     // Track best result (most surviving bricks)

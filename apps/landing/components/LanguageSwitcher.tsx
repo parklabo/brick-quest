@@ -26,7 +26,7 @@ export function LanguageSwitcher() {
       setIsOpen(false);
       buttonRef.current?.focus();
     },
-    [router, pathname],
+    [router, pathname]
   );
 
   const close = useCallback(() => {

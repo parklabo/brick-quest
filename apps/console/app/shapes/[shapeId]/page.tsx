@@ -50,12 +50,8 @@ export default function ShapeDetailPage({ params }: { params: Promise<{ shapeId:
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Geometry</h3>
           <Property label="Kind" value={def.geometry.kind} />
-          {def.geometry.slopeAngleDeg != null && (
-            <Property label="Slope Angle" value={`${def.geometry.slopeAngleDeg}\u00b0`} />
-          )}
-          {def.geometry.curveSegments != null && (
-            <Property label="Curve Segments" value={String(def.geometry.curveSegments)} />
-          )}
+          {def.geometry.slopeAngleDeg != null && <Property label="Slope Angle" value={`${def.geometry.slopeAngleDeg}\u00b0`} />}
+          {def.geometry.curveSegments != null && <Property label="Curve Segments" value={String(def.geometry.curveSegments)} />}
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">

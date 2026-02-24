@@ -14,11 +14,7 @@ export function LegoBrick({ block, isGhost = false }: LegoBrickProps) {
   return (
     <group
       position={[block.position.x, block.position.y + height / 2, block.position.z]}
-      rotation={[
-        block.rotation.x * (Math.PI / 180),
-        block.rotation.y * (Math.PI / 180),
-        block.rotation.z * (Math.PI / 180),
-      ]}
+      rotation={[block.rotation.x * (Math.PI / 180), block.rotation.y * (Math.PI / 180), block.rotation.z * (Math.PI / 180)]}
     >
       <BrickBody
         shape={block.shape}

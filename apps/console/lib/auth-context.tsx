@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -83,11 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = () => firebaseSignOut(auth);
 
-  return (
-    <AuthContext value={{ user, isAdmin, loading, signIn, signOut }}>
-      {children}
-    </AuthContext>
-  );
+  return <AuthContext value={{ user, isAdmin, loading, signIn, signOut }}>{children}</AuthContext>;
 }
 
 export function useAuth() {

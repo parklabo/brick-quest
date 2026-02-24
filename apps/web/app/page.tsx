@@ -75,34 +75,32 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8">
-      <h1 className="text-5xl font-bold mb-2 bg-linear-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-        Brick Quest
-      </h1>
-      <p className="text-slate-400 text-sm mb-8">
-        {t('subtitle')}
-      </p>
+      <h1 className="text-5xl font-bold mb-2 bg-linear-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">Brick Quest</h1>
+      <p className="text-slate-400 text-sm mb-8">{t('subtitle')}</p>
 
       <div className="w-full max-w-sm">
         {/* Tabs */}
         <div className="flex mb-6 bg-slate-900 rounded-lg p-1">
           <button
             type="button"
-            onClick={() => { setTab('signin'); setError(''); }}
+            onClick={() => {
+              setTab('signin');
+              setError('');
+            }}
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-              tab === 'signin'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:text-white'
+              tab === 'signin' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
             }`}
           >
             {t('signIn')}
           </button>
           <button
             type="button"
-            onClick={() => { setTab('signup'); setError(''); }}
+            onClick={() => {
+              setTab('signup');
+              setError('');
+            }}
             className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-              tab === 'signup'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:text-white'
+              tab === 'signup' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
             }`}
           >
             {t('signUp')}
@@ -142,20 +140,14 @@ export default function HomePage() {
             />
           </div>
 
-          {error && (
-            <p className="text-red-400 text-sm">{t(error)}</p>
-          )}
+          {error && <p className="text-red-400 text-sm">{t(error)}</p>}
 
           <button
             type="submit"
             disabled={submitting}
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
           >
-            {submitting
-              ? t('loading')
-              : tab === 'signin'
-                ? t('signIn')
-                : t('createAccount')}
+            {submitting ? t('loading') : tab === 'signin' ? t('signIn') : t('createAccount')}
           </button>
         </form>
       </div>

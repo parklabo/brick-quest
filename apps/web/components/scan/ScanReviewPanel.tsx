@@ -3,17 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import {
-  CheckCircle,
-  Camera,
-  Sparkles,
-  Plus,
-  X,
-  Package,
-  ScanLine,
-  PackageCheck,
-  Undo2,
-} from 'lucide-react';
+import { CheckCircle, Camera, Sparkles, Plus, X, Package, ScanLine, PackageCheck, Undo2 } from 'lucide-react';
 import { BrickIcon } from '../ui/BrickIcon';
 import { TagInput } from '../ui/TagInput';
 import { PartDetailModal } from './PartDetailModal';
@@ -46,9 +36,8 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
   const handleAddToInventory = () => {
     if (scannedParts.length > 0) {
       const totalPieces = scannedParts.reduce((sum, p) => sum + p.count, 0);
-      const partsWithTags = scanTags.length > 0
-        ? scannedParts.map((p) => ({ ...p, tags: [...(p.tags ?? []), ...scanTags] }))
-        : scannedParts;
+      const partsWithTags =
+        scanTags.length > 0 ? scannedParts.map((p) => ({ ...p, tags: [...(p.tags ?? []), ...scanTags] })) : scannedParts;
       addParts(partsWithTags);
       setAddedCount(totalPieces);
       setPhase('added');
@@ -83,9 +72,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
             <CheckCircle className="w-10 h-10 text-green-500" />
           </div>
           <h2 className="text-2xl font-bold text-white text-center">{t('added')}</h2>
-          <p className="text-slate-400 text-sm mt-2 text-center">
-            {t('bricksAdded', { count: addedCount })}
-          </p>
+          <p className="text-slate-400 text-sm mt-2 text-center">{t('bricksAdded', { count: addedCount })}</p>
           <div className="flex flex-col gap-3 w-full mt-8">
             <button
               onClick={() => router.push('/inventory')}
@@ -131,10 +118,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
     <div className="space-y-0">
       {/* Mobile Image Preview Overlay */}
       {showImagePreview && imageUrl && (
-        <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
-          onClick={() => setShowImagePreview(false)}
-        >
+        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4" onClick={() => setShowImagePreview(false)}>
           <img src={imageUrl} alt={t('original')} className="max-w-full max-h-full object-contain rounded-lg" />
           <button className="absolute top-4 right-4 text-white p-2 bg-black/50 rounded-full">
             <X className="w-6 h-6" />
@@ -245,11 +229,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
             </div>
             {/* Tag Input (before adding) */}
             {!isAdded && (
-              <TagInput
-                tags={scanTags}
-                onTagsChange={setScanTags}
-                className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex-none"
-              />
+              <TagInput tags={scanTags} onTagsChange={setScanTags} className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex-none" />
             )}
             {/* Removal info */}
             {isAdded && removedPartIds.size > 0 && (
@@ -272,7 +252,9 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
                   <Undo2 className="w-5 h-5" />
                   {t('unmarkAdded')}
                 </button>
-              ) : addButton}
+              ) : (
+                addButton
+              )}
             </div>
           </div>
         </div>
@@ -312,9 +294,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
 
         {/* Parts Grid */}
         <div className={`border-x border-slate-800 bg-slate-900 p-3 ${!imageUrl ? 'rounded-t-xl border-t' : ''}`}>
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 px-1">
-            {t('detectedInventory')}
-          </h3>
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 px-1">{t('detectedInventory')}</h3>
           <div className="grid grid-cols-3 gap-3">
             {scannedParts.map((part) => {
               const isRemoved = removedPartIds.has(part.id);
@@ -353,9 +333,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
                     />
                   </div>
                   <span className="font-bold text-white text-lg leading-none mb-1">{part.count}x</span>
-                  <span className="text-[10px] text-slate-400 font-medium uppercase text-center w-full truncate">
-                    {part.color}
-                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium uppercase text-center w-full truncate">{part.color}</span>
                 </button>
               );
             })}
@@ -363,13 +341,7 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
         </div>
 
         {/* Tag Input (before adding) - Mobile */}
-        {!isAdded && (
-          <TagInput
-            tags={scanTags}
-            onTagsChange={setScanTags}
-            className="border-x border-slate-800 bg-slate-900 px-3 pb-3"
-          />
-        )}
+        {!isAdded && <TagInput tags={scanTags} onTagsChange={setScanTags} className="border-x border-slate-800 bg-slate-900 px-3 pb-3" />}
 
         {/* Removal info - Mobile */}
         {isAdded && removedPartIds.size > 0 && (
@@ -410,7 +382,9 @@ export function ScanReviewPanel({ result, imageUrl, alreadyAdded = false, onAdde
                 <Undo2 className="w-5 h-5" />
                 {t('unmarkAdded')}
               </button>
-            ) : addButton}
+            ) : (
+              addButton
+            )}
           </div>
         </div>
       </div>

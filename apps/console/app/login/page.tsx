@@ -31,17 +31,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-xl font-bold text-white">Brick Quest</h1>
-          <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">
-            Admin Console
-          </p>
+          <p className="text-xs text-slate-500 uppercase tracking-widest mt-1">Admin Console</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-slate-900 rounded-xl border border-slate-800 p-6 space-y-4">
-          {error && (
-            <div className="text-sm text-red-400 bg-red-400/10 rounded-lg px-3 py-2">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-sm text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</div>}
 
           <div>
             <label htmlFor="email" className="block text-xs font-medium text-slate-400 mb-1.5">

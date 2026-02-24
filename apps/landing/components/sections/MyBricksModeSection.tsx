@@ -35,12 +35,8 @@ export function MyBricksModeSection() {
             <span className="inline-block px-4 py-1.5 rounded-full text-sm font-bold tracking-wider uppercase bg-brand-accent/15 text-brand-accent border border-brand-accent/30 mb-6">
               {t('label')}
             </span>
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
-              {t('title')}
-            </h2>
-            <p className="text-lg text-slate-400 mb-8 leading-relaxed">
-              {t('description')}
-            </p>
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">{t('title')}</h2>
+            <p className="text-lg text-slate-400 mb-8 leading-relaxed">{t('description')}</p>
             <ul className="space-y-5">
               {STEPS.map((i) => (
                 <li key={i} className="flex items-start gap-4">
@@ -71,13 +67,7 @@ export function MyBricksModeSection() {
                   className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-slate-800 hover:border-brand-accent/40 transition-colors"
                   style={{ transitionDelay: `${index * 50}ms` }}
                 >
-                  <Image
-                    src={src}
-                    alt={alt}
-                    fill
-                    loading="lazy"
-                    className="object-cover"
-                  />
+                  <Image src={src} alt={alt} fill loading="lazy" className="object-cover" />
                 </div>
               ))}
             </div>

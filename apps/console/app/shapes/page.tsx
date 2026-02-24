@@ -11,8 +11,7 @@ export default function ShapesPage() {
   const [category, setCategory] = useState<ShapeCategory | 'all'>('all');
   const [tier, setTier] = useState<'all' | 1 | 2>('all');
 
-  const shapes = ALL_BRICK_SHAPES
-    .map((id) => SHAPE_REGISTRY.get(id)!)
+  const shapes = ALL_BRICK_SHAPES.map((id) => SHAPE_REGISTRY.get(id)!)
     .filter((d) => category === 'all' || d.category === category)
     .filter((d) => tier === 'all' || d.tier === tier);
 
@@ -32,9 +31,7 @@ export default function ShapesPage() {
               key={cat}
               onClick={() => setCategory(cat)}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                category === cat
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                category === cat ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
               {cat}
@@ -49,9 +46,7 @@ export default function ShapesPage() {
               key={String(t)}
               onClick={() => setTier(t)}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                tier === t
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                tier === t ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
               {t === 'all' ? 'all' : `tier ${t}`}
@@ -67,11 +62,7 @@ export default function ShapesPage() {
         ))}
       </div>
 
-      {shapes.length === 0 && (
-        <div className="text-center py-12 text-slate-600">
-          No shapes match the current filters.
-        </div>
-      )}
+      {shapes.length === 0 && <div className="text-center py-12 text-slate-600">No shapes match the current filters.</div>}
     </div>
   );
 }

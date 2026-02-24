@@ -113,7 +113,7 @@ export const processJob = onDocumentCreated(
         updatedAt: FieldValue.serverTimestamp(),
       });
     }
-  },
+  }
 );
 
 /**
@@ -171,10 +171,12 @@ export const processDesignUpdate = onDocumentUpdated(
         logger.error(`View regeneration failed for job ${jobId}:`, error.message);
 
         // Restore to views_ready so user can retry (old composite still exists)
-        await jobRef.update({
-          status: 'views_ready',
-          updatedAt: FieldValue.serverTimestamp(),
-        }).catch(() => {});
+        await jobRef
+          .update({
+            status: 'views_ready',
+            updatedAt: FieldValue.serverTimestamp(),
+          })
+          .catch(() => {});
       }
       return;
     }
@@ -184,11 +186,13 @@ export const processDesignUpdate = onDocumentUpdated(
       // Safety timer: mark job failed before Cloud Functions kills the process
       const safetyTimer = setTimeout(async () => {
         logger.error(`Design build job ${jobId}: approaching function timeout, marking as failed`);
-        await jobRef.update({
-          status: 'failed',
-          error: 'Build generation timed out. Try a simpler detail level.',
-          updatedAt: FieldValue.serverTimestamp(),
-        }).catch(() => {});
+        await jobRef
+          .update({
+            status: 'failed',
+            error: 'Build generation timed out. Try a simpler detail level.',
+            updatedAt: FieldValue.serverTimestamp(),
+          })
+          .catch(() => {});
       }, 520_000); // 520s = 8m40s, 20s safety margin before 540s timeout
 
       try {
@@ -200,8 +204,14 @@ export const processDesignUpdate = onDocumentUpdated(
 
         // Download reference image + composite views in parallel
         const [refBuffer, compositeBuffer] = await Promise.all([
-          bucket.file(imageStoragePath).download().then(([b]) => b),
-          bucket.file(viewPaths.composite).download().then(([b]) => b),
+          bucket
+            .file(imageStoragePath)
+            .download()
+            .then(([b]) => b),
+          bucket
+            .file(viewPaths.composite)
+            .download()
+            .then(([b]) => b),
         ]);
 
         const base64Image = refBuffer.toString('base64');
@@ -241,5 +251,5 @@ export const processDesignUpdate = onDocumentUpdated(
         });
       }
     }
-  },
+  }
 );

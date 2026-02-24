@@ -23,6 +23,7 @@ Turborepo + pnpm monorepo with Firebase backend:
 ```
 
 ### Async Flow
+
 1. Web App → `httpsCallable('submitScan')`, `httpsCallable('submitBuild')`, or `httpsCallable('submitDesign')`
 2. Callable function → Firestore `jobs/{jobId}` document created (status: pending)
 3. `processJob` (onDocumentCreated) trigger fires → calls Gemini API
@@ -31,7 +32,9 @@ Turborepo + pnpm monorepo with Firebase backend:
 6. Web App `onSnapshot` receives real-time update → UI renders result
 
 ### Agent Iteration Flow (Build Jobs)
+
 The `generateBuildPlan()` function implements a self-improving loop:
+
 1. Gemini generates a build plan (with inner parse-retry of up to 3 attempts)
 2. `fixBuildPhysicsWithReport()` validates physics (snap, gravity, overlap, nudge)
 3. If >15% bricks dropped OR >5 absolute bricks dropped → `buildPhysicsFeedback()` creates spatial feedback
@@ -39,6 +42,7 @@ The `generateBuildPlan()` function implements a self-improving loop:
 5. Best result (most surviving bricks) is tracked across all iterations
 
 ### Design Flow (2-stage pipeline)
+
 1. `submitDesign` → job created (status: `pending`)
 2. `processJob` → generates composite orthographic views → status: `views_ready`
 3. User approves → `approveDesignViews` → status: `generating_build`
@@ -85,17 +89,17 @@ brick-quest/
 
 ## Cloud Functions
 
-| Function | Type | Trigger | Description |
-|----------|------|---------|-------------|
-| `submitScan` | onCall | HTTP | Upload image → create scan job |
-| `submitBuild` | onCall | HTTP | Parts + difficulty → create build job |
-| `submitDesign` | onCall | HTTP | Reference image → create design job |
-| `cancelJob` | onCall | HTTP | Cancel a pending/processing job |
-| `setAdminRole` | onCall | HTTP | Set admin custom claim |
-| `approveDesignViews` | onCall | HTTP | Approve views → trigger build generation |
-| `regenerateDesignViews` | onCall | HTTP | Re-generate orthographic views |
-| `processJob` | trigger | document.created (`jobs/{jobId}`) | Process new scan/build/design jobs (build jobs run agent iteration loop) |
-| `processDesignUpdate` | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions: view regeneration + build generation |
+| Function                | Type    | Trigger                           | Description                                                              |
+| ----------------------- | ------- | --------------------------------- | ------------------------------------------------------------------------ |
+| `submitScan`            | onCall  | HTTP                              | Upload image → create scan job                                           |
+| `submitBuild`           | onCall  | HTTP                              | Parts + difficulty → create build job                                    |
+| `submitDesign`          | onCall  | HTTP                              | Reference image → create design job                                      |
+| `cancelJob`             | onCall  | HTTP                              | Cancel a pending/processing job                                          |
+| `setAdminRole`          | onCall  | HTTP                              | Set admin custom claim                                                   |
+| `approveDesignViews`    | onCall  | HTTP                              | Approve views → trigger build generation                                 |
+| `regenerateDesignViews` | onCall  | HTTP                              | Re-generate orthographic views                                           |
+| `processJob`            | trigger | document.created (`jobs/{jobId}`) | Process new scan/build/design jobs (build jobs run agent iteration loop) |
+| `processDesignUpdate`   | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions: view regeneration + build generation    |
 
 **Region**: All functions deployed to `asia-northeast1`
 **Trigger config**: `memory: 1GiB`, `timeoutSeconds: 540`, secrets: `GEMINI_API_KEY` via `defineSecret`
@@ -122,6 +126,7 @@ pnpm firebase:deploy      # Deploy Cloud Functions to production
 ## Deployment
 
 ### App Hosting (web, console)
+
 - Triggered by pushing to `deploy/web` or `deploy/console` branches
 - `sync-branches.yml` auto-detects changes on main and pushes to deploy branches
 - Requires `output: 'standalone'` in next.config.ts
@@ -129,21 +134,25 @@ pnpm firebase:deploy      # Deploy Cloud Functions to production
 - Next.js version must be pinned to exact version (no `^`/`~` prefix) due to buildpack CVE check
 
 ### Firebase Hosting (landing)
+
 - Static export via `output: 'export'` in next.config.ts
 - Deployed via `FirebaseExtended/action-hosting-deploy` GitHub Action
 
 ### Cloud Functions
+
 - Deployed via `firebase deploy --only functions` or GitHub Actions workflow
 - `predeploy` script bundles `@brick-quest/shared` into `_shared/` and replaces `workspace:*` with `file:./_shared`
 - `postdeploy` script restores the original `workspace:*` dependency
 - `GEMINI_API_KEY` managed via Secret Manager (`defineSecret`), not `.env`
 
 ### GitHub Secrets Required
+
 - `FIREBASE_SERVICE_ACCOUNT` — Firebase Admin SDK service account JSON key
 
 ## Environment Setup
 
 **apps/web/.env.local** (also apps/console/.env.local):
+
 ```
 NEXT_PUBLIC_FIREBASE_API_KEY=...
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
@@ -154,6 +163,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 ```
 
 **packages/functions/.env** (deployed to cloud):
+
 ```
 GEMINI_MODEL=gemini-3-pro-preview
 GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview
@@ -161,6 +171,7 @@ GCLOUD_STORAGE_BUCKET=brick-quest.firebasestorage.app
 ```
 
 **packages/functions/.env.local** (local only, not deployed):
+
 ```
 GEMINI_API_KEY=your_api_key
 ```
@@ -171,45 +182,51 @@ GEMINI_API_KEY=your_api_key
 
 ```ts
 LIMITS = {
-  IMAGE_SIZE_BYTES: 15_000_000,   // ~10 MB base64 image size
-  PROMPT_MAX_CHARS: 500,          // Max user prompt length
-  PARTS_MAX_COUNT: 500,           // Max parts in a build request
-  AGENT_MAX_ITERATIONS: 3,        // Max agent loop attempts
-  DROP_THRESHOLD_PCT: 15,         // Physics drop %: retry if exceeded
-  DROP_THRESHOLD_ABS: 5,          // Physics drop count: retry if exceeded
-}
+  IMAGE_SIZE_BYTES: 15_000_000, // ~10 MB base64 image size
+  PROMPT_MAX_CHARS: 500, // Max user prompt length
+  PARTS_MAX_COUNT: 500, // Max parts in a build request
+  AGENT_MAX_ITERATIONS: 3, // Max agent loop attempts
+  DROP_THRESHOLD_PCT: 15, // Physics drop %: retry if exceeded
+  DROP_THRESHOLD_ABS: 5, // Physics drop count: retry if exceeded
+};
 ```
 
 ## Key Shared Types (@brick-quest/shared)
 
 ### Core Brick Types
+
 - `BrickShape` — Union of 16 shape IDs: `rectangle`, `corner`, `round`, `slope_25`, `slope_33`, `slope_45`, `slope_65`, `slope_75`, `slope_inverted`, `curved_slope`, `arch`, `cone`, `dome`, `half_cylinder`, `wedge_plate`, `technic_beam`
 - `BrickType` — Union of 7 type IDs: `brick`, `plate`, `tile`, `slope`, `technic`, `minifig`, `other`
 - `Difficulty` — `'beginner' | 'normal' | 'expert'`
 - `DesignDetail` — `'simple' | 'standard' | 'detailed'`
 
 ### Part & Build Types
+
 - `DetectedPart` — Scanned brick: id, name, color, hexColor, count, type, shape, dimensions, tags?
 - `BuildStepBlock` — Single 3D assembly step: stepId, partName, color, hexColor, type, shape, position, rotation, size, description
 - `BuildPlan` — Full build: title, description, lore, steps[], agentIterations?
 - `ScanResult` — Scan output: parts[], aiInsight
 
 ### Design Types
+
 - `RequiredPart` — Shopping list item: name, shape, type, color, hexColor, dimensions, quantity
 - `DesignViews` — Storage paths: composite (single composite image path)
 - `DesignResult` — Full design output: buildPlan, requiredParts[], referenceDescription, previewImageStoragePath?
 
 ### Job Types
+
 - `JobType` — `'scan' | 'build' | 'design'`
 - `JobStatus` — `'pending' | 'processing' | 'generating_views' | 'views_ready' | 'generating_build' | 'completed' | 'failed'`
 - `JobState<T>` — Async job tracking: id, type, userId, status, progress (0-100), result?, error?, createdAt, updatedAt
 
 ### Physics Types
+
 - `PhysicsResult` — Return type of `fixBuildPhysicsWithReport()`: `{ steps, report }`
 - `PhysicsValidationReport` — Validation summary: inputCount, outputCount, droppedCount, gravitySnappedCount, nudgedCount, droppedPercentage, corrections[]
 - `PhysicsCorrectionEntry` — Per-brick record: stepId, partName, originalPosition, size, action (`dropped` | `gravity_snapped` | `nudged`), reason
 
 ### Registry & Catalog
+
 - `ShapeDefinition` — Full shape metadata: geometry, studs, heights, gemini aliases, icon2d
 - `SHAPE_REGISTRY` — `ReadonlyMap<BrickShape, ShapeDefinition>` with 16 entries
 - BrickLink catalog: parts data, colors data, URL generator
@@ -217,6 +234,7 @@ LIMITS = {
 ## Build Physics (packages/shared/src/utils/build-physics.ts)
 
 Post-processing pipeline for AI-generated LEGO build steps:
+
 1. **Phase 0 — Snap**: `snapDimensions` + `snapToStudGrid` for all steps
 2. **Phase 1 — Sort**: Sort by Y position (bottom-up)
 3. **Phase 2 — Gravity**: Snap bricks down to nearest support
@@ -226,6 +244,7 @@ Post-processing pipeline for AI-generated LEGO build steps:
 ## Part System
 
 Parts have:
+
 - **type**: brick | plate | tile | slope | technic | minifig | other
 - **shape**: 16 shapes defined in `SHAPE_REGISTRY` (packages/shared/src/registry/shape-registry.ts)
   - Basic: rectangle, corner, round
@@ -245,16 +264,16 @@ Parts have:
 
 ## Port Assignments
 
-| Service | Port |
-|---------|------|
-| Emulator UI | 7020 |
+| Service            | Port |
+| ------------------ | ---- |
+| Emulator UI        | 7020 |
 | Functions Emulator | 7021 |
 | Firestore Emulator | 7022 |
-| Storage Emulator | 7023 |
-| Auth Emulator | 7024 |
-| Landing | 7030 |
-| Web App | 7031 |
-| Admin Console | 7032 |
+| Storage Emulator   | 7023 |
+| Auth Emulator      | 7024 |
+| Landing            | 7030 |
+| Web App            | 7031 |
+| Admin Console      | 7032 |
 
 ## Tech Stack
 

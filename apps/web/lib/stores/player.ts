@@ -38,6 +38,6 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: 'bq-player',
       version: 1,
-    },
-  ),
+    }
+  )
 );

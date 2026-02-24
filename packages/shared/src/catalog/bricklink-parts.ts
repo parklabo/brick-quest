@@ -88,12 +88,7 @@ const BRICKLINK_PART_TABLE: Record<string, string> = {
  * Resolve BrickLink part ID for a BrickQuest part.
  * Returns null if no mapping exists (caller should fall back to search URL).
  */
-export function resolveBrickLinkPartId(
-  shape: BrickShape,
-  type: BrickType,
-  width: number,
-  length: number,
-): string | null {
+export function resolveBrickLinkPartId(shape: BrickShape, type: BrickType, width: number, length: number): string | null {
   const key = `${shape}:${type}:${width}x${length}`;
   return BRICKLINK_PART_TABLE[key] ?? null;
 }

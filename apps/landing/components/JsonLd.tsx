@@ -9,8 +9,7 @@ export function OrganizationJsonLd() {
     name: 'Brick Quest',
     url: BASE_URL,
     logo: `${BASE_URL}/logo.png`,
-    description:
-      'AI-powered LEGO brick scanner and 3D build instruction generator',
+    description: 'AI-powered LEGO brick scanner and 3D build instruction generator',
     applicationCategory: 'UtilitiesApplication',
     operatingSystem: 'Web',
     offers: {
@@ -20,12 +19,7 @@ export function OrganizationJsonLd() {
     },
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
-  );
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
 }
 
 export function FAQJsonLd({ items }: { items: FAQItem[] }) {
@@ -42,10 +36,5 @@ export function FAQJsonLd({ items }: { items: FAQItem[] }) {
     })),
   };
 
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-    />
-  );
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />;
 }

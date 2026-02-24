@@ -40,7 +40,12 @@ export function TagInput({ tags, onTagsChange, label, placeholder, className = '
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
           placeholder={placeholder ?? t('tagsPlaceholder')}
           className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
         />
@@ -56,7 +61,10 @@ export function TagInput({ tags, onTagsChange, label, placeholder, className = '
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {tags.map((tag) => (
-            <span key={tag} className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full">
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 bg-blue-500/20 text-blue-400 text-xs font-medium px-2 py-0.5 rounded-full"
+            >
               {tag}
               <button type="button" onClick={() => handleRemove(tag)} className="hover:text-blue-200">
                 <X className="w-3 h-3" />

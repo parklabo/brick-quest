@@ -41,20 +41,10 @@ export function BrickStuds({
   const mat = getPooledMaterial(hexColor, transparent, '#000000', 0);
 
   if (studConfig.layout === 'single_center') {
-    return (
-      <mesh position={[0, y, 0]} geometry={STUD_GEO_32} material={mat} />
-    );
+    return <mesh position={[0, y, 0]} geometry={STUD_GEO_32} material={mat} />;
   }
 
-  return (
-    <GridStuds
-      shape={shape}
-      width={width}
-      length={length}
-      y={y}
-      material={mat}
-    />
-  );
+  return <GridStuds shape={shape} width={width} length={length} y={y} material={mat} />;
 }
 
 interface GridStudsProps {
@@ -105,10 +95,5 @@ function GridStuds({ shape, width, length, y, material }: GridStudsProps) {
 
   if (positions.length === 0) return null;
 
-  return (
-    <instancedMesh
-      ref={instanceRef}
-      args={[STUD_GEO_16, material, positions.length]}
-    />
-  );
+  return <instancedMesh ref={instanceRef} args={[STUD_GEO_16, material, positions.length]} />;
 }

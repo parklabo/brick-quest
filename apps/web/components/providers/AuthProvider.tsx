@@ -34,10 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (prevStatus && prevStatus !== job.status) {
           if (job.status === 'completed') {
             const label = job.type === 'scan' ? 'Scan' : 'Build';
-            const reviewPath =
-              job.type === 'scan'
-                ? `/scan/${job.id}/review`
-                : `/builds/${job.id}/view`;
+            const reviewPath = job.type === 'scan' ? `/scan/${job.id}/review` : `/builds/${job.id}/view`;
             useToastStore.getState().addToast({
               message: `${label} complete!`,
               variant: 'success',
