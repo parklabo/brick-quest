@@ -255,7 +255,7 @@ Return ONLY valid JSON.`;
         const response = await withTimeout(
           ai.models.generateContent({
             model: useModel,
-            contents: { text: prompt },
+            contents: prompt,
             config: {
               responseMimeType: 'application/json',
               responseSchema: buildSchema,

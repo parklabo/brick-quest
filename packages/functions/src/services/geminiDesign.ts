@@ -126,13 +126,11 @@ async function evaluateBuildQuality(
   const response = await withTimeout(
     ai.models.generateContent({
       model: config.gemini.fastModel,
-      contents: {
-        parts: [
-          { text: 'You are a LEGO build quality inspector. Compare this build plan against the target composite views.\n\nCOMPOSITE VIEWS (2×2 grid — top-left: hero 3/4, top-right: front, bottom-left: right side, bottom-right: back):' },
-          { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } },
-          { text: `BUILD PLAN SPATIAL SUMMARY:\n${summary}\n\nEVALUATE how accurately this build plan reproduces the model shown in the 4 views above:\n\n1. shapeAccuracy (1-10): Does the build's bounding box, layer widths, and silhouette progression match the views? Check head-to-body ratio, overall proportions.\n2. colorAccuracy (1-10): Are the right colors in the right layers? Compare the color distribution against what each view shows (e.g., skin color on face layers, hair color on top layers).\n3. completeness (1-10): Are key recognizable features present? Check for eyes, mouth, ears, hair, accessories, clothing details visible in the views.\n4. overallScore (1-10): If someone built this and viewed it from the same 4 angles, would it be recognizable as the same model?\n\nList specific MISSING features and provide actionable IMPROVEMENTS.` },
-        ],
-      },
+      contents: [
+        { text: 'You are a LEGO build quality inspector. Compare this build plan against the target composite views.\n\nCOMPOSITE VIEWS (2×2 grid — top-left: hero 3/4, top-right: front, bottom-left: right side, bottom-right: back):' },
+        { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } },
+        { text: `BUILD PLAN SPATIAL SUMMARY:\n${summary}\n\nEVALUATE how accurately this build plan reproduces the model shown in the 4 views above:\n\n1. shapeAccuracy (1-10): Does the build's bounding box, layer widths, and silhouette progression match the views? Check head-to-body ratio, overall proportions.\n2. colorAccuracy (1-10): Are the right colors in the right layers? Compare the color distribution against what each view shows (e.g., skin color on face layers, hair color on top layers).\n3. completeness (1-10): Are key recognizable features present? Check for eyes, mouth, ears, hair, accessories, clothing details visible in the views.\n4. overallScore (1-10): If someone built this and viewed it from the same 4 angles, would it be recognizable as the same model?\n\nList specific MISSING features and provide actionable IMPROVEMENTS.` },
+      ],
       config: {
         responseMimeType: 'application/json',
         responseSchema: evaluationSchema,
@@ -246,11 +244,11 @@ export async function generateOrthographicViews(
   const ai = getAI();
   const prompt = compositeViewPrompt(detail, userPrompt);
 
-  const PRO_RETRIES = 2;
+  const PRO_RETRIES = 4;
   let lastError: Error | null = null;
   let shouldFallback = false;
 
-  // Phase 1: Try primary (pro) model
+  // Phase 1: Try primary (pro) model with exponential backoff
   for (let attempt = 1; attempt <= PRO_RETRIES; attempt++) {
     try {
       logger.info(`Generating composite views (pro), attempt ${attempt}/${PRO_RETRIES}`);
@@ -258,14 +256,13 @@ export async function generateOrthographicViews(
       const response = await withTimeout(
         ai.models.generateContent({
           model: config.gemini.imageModel,
-          contents: {
-            parts: [
-              { inlineData: { mimeType, data: base64Image } },
-              { text: prompt },
-            ],
-          },
+          contents: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Image } },
+          ],
           config: {
-            responseModalities: ['IMAGE', 'TEXT'],
+            responseModalities: ['TEXT', 'IMAGE'],
+            imageConfig: { imageSize: '2K' },
           },
         }),
         DESIGN_TIMEOUT,
@@ -296,7 +293,9 @@ export async function generateOrthographicViews(
         shouldFallback = true;
       }
       if (attempt < PRO_RETRIES) {
-        await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
+        const delay = Math.min(3000 * 2 ** (attempt - 1), 15000);
+        logger.info(`Waiting ${delay / 1000}s before retry...`);
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
   }
@@ -308,15 +307,10 @@ export async function generateOrthographicViews(
       const response = await withTimeout(
         ai.models.generateContent({
           model: config.gemini.fallbackImageModel,
-          contents: {
-            parts: [
-              { inlineData: { mimeType, data: base64Image } },
-              { text: prompt },
-            ],
-          },
-          config: {
-            responseModalities: ['IMAGE', 'TEXT'],
-          },
+          contents: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Image } },
+          ],
         }),
         DESIGN_TIMEOUT,
         'composite views generation (fallback)',
@@ -598,9 +592,7 @@ Return ONLY valid JSON.`;
         const response = await withTimeout(
           ai.models.generateContent({
             model: useModel,
-            contents: {
-              parts: contentParts,
-            },
+            contents: contentParts,
             config: {
               responseMimeType: 'application/json',
               responseSchema: designSchema,
@@ -839,14 +831,13 @@ Rules:
       const response = await withTimeout(
         ai.models.generateContent({
           model,
-          contents: {
-            parts: [
-              { inlineData: { mimeType, data: base64Image } },
-              { text: prompt },
-            ],
-          },
+          contents: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Image } },
+          ],
           config: {
-            responseModalities: ['IMAGE', 'TEXT'],
+            responseModalities: ['TEXT', 'IMAGE'],
+            imageConfig: { imageSize: '2K' },
           },
         }),
         DESIGN_TIMEOUT,

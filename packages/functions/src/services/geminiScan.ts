@@ -82,12 +82,10 @@ Return ONLY valid JSON matching the schema.`;
         const response = await withTimeout(
           ai.models.generateContent({
             model,
-            contents: {
-              parts: [
-                { inlineData: { mimeType, data: base64Image } },
-                { text: prompt },
-              ],
-            },
+            contents: [
+              { text: prompt },
+              { inlineData: { mimeType, data: base64Image } },
+            ],
             config: {
               responseMimeType: 'application/json',
               responseSchema: partSchema,
