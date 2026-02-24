@@ -9,23 +9,147 @@ import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback
 import { getAI } from './gemini-client.js';
 
 const DESIGN_TIMEOUT = 8 * 60 * 1000;
+/** Total time budget for the agent loop — leaves margin for preview gen + Firestore writes */
+const AGENT_BUDGET_MS = 7 * 60 * 1000;
 const { AGENT_MAX_ITERATIONS } = LIMITS;
+/** Max thinking budget for fallback model (gemini-3-flash-preview) */
+const FALLBACK_MAX_THINKING = 24576;
 
-function buildCountFeedback(actualCount: number, targetMin: number, brickRange: string): string {
-  return `BRICK COUNT FEEDBACK — You only generated ${actualCount} bricks. The MINIMUM target is ${targetMin} and the ideal range is ${brickRange}.
+/** Evaluation timeout — Flash model is fast, 30s is plenty */
+const EVAL_TIMEOUT = 30_000;
 
-INSTRUCTIONS TO GENERATE MORE BRICKS:
-- Build MORE LAYERS. A typical Brickheadz needs 10-14 layers of bricks stacked vertically.
-- Each layer must FULLY TILE its footprint — an 8×6 footprint needs 8-12 bricks per layer.
-- Add fine details: eyes, mouth, accessories, hair, ears, patterns using 1x1 and 1x2 bricks.
-- Add feet/base layers (2-3 layers), body layers (3-4 layers), head layers (4-6 layers), and top features (1-2 layers).
-- Do NOT leave gaps — every stud position in the model's silhouette must be covered by a brick.
-- You MUST generate at LEAST ${targetMin} bricks total. Count your bricks before finishing.`;
+/** Minimum acceptable quality score (1-10) to accept without retry */
+const QUALITY_ACCEPT_THRESHOLD = 7;
+
+interface BuildEvaluation {
+  shapeAccuracy: number;
+  colorAccuracy: number;
+  completeness: number;
+  overallScore: number;
+  missingFeatures: string[];
+  improvements: string;
+}
+
+const evaluationSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    shapeAccuracy: { type: Type.INTEGER, description: 'Silhouette and proportion match (1-10)' },
+    colorAccuracy: { type: Type.INTEGER, description: 'Color placement correctness (1-10)' },
+    completeness: { type: Type.INTEGER, description: 'Key features present (eyes, accessories, etc) (1-10)' },
+    overallScore: { type: Type.INTEGER, description: 'Would someone recognize this as matching the views? (1-10)' },
+    missingFeatures: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'Features visible in views but missing from build (e.g. "ears", "glasses", "tail")',
+    },
+    improvements: { type: Type.STRING, description: 'Specific actionable improvement instructions for the builder' },
+  },
+  required: ['shapeAccuracy', 'colorAccuracy', 'completeness', 'overallScore', 'missingFeatures', 'improvements'],
+};
+
+/**
+ * Summarize a build plan into a spatial description for the evaluator.
+ * Includes bounding box, layer-by-layer breakdown, and color distribution.
+ */
+function summarizeBuildPlan(steps: BuildStepBlock[]): string {
+  if (steps.length === 0) return 'Empty build plan (0 bricks)';
+
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+
+  const layers = new Map<number, { count: number; colors: Map<string, number>; minX: number; maxX: number; minZ: number; maxZ: number }>();
+  const colorCounts = new Map<string, number>();
+
+  for (const step of steps) {
+    const { x, y, z } = step.position;
+    const w = step.size.width;
+    const h = step.size.height;
+    const l = step.size.length;
+
+    minX = Math.min(minX, x - w / 2);
+    maxX = Math.max(maxX, x + w / 2);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y + h);
+    minZ = Math.min(minZ, z - l / 2);
+    maxZ = Math.max(maxZ, z + l / 2);
+
+    const layerY = Math.round(y * 10) / 10;
+    if (!layers.has(layerY)) {
+      layers.set(layerY, { count: 0, colors: new Map(), minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
+    }
+    const layer = layers.get(layerY)!;
+    layer.count++;
+    layer.colors.set(step.color, (layer.colors.get(step.color) || 0) + 1);
+    layer.minX = Math.min(layer.minX, x - w / 2);
+    layer.maxX = Math.max(layer.maxX, x + w / 2);
+    layer.minZ = Math.min(layer.minZ, z - l / 2);
+    layer.maxZ = Math.max(layer.maxZ, z + l / 2);
+
+    colorCounts.set(step.color, (colorCounts.get(step.color) || 0) + 1);
+  }
+
+  const sortedLayers = [...layers.entries()].sort((a, b) => a[0] - b[0]);
+  const total = steps.length;
+
+  const colorSummary = [...colorCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([color, count]) => `${color}: ${count} (${Math.round(count / total * 100)}%)`)
+    .join(', ');
+
+  const layerLines = sortedLayers.map(([y, layer]) => {
+    const w = Math.round(layer.maxX - layer.minX);
+    const d = Math.round(layer.maxZ - layer.minZ);
+    const topColors = [...layer.colors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c, n]) => `${c}×${n}`).join(', ');
+    return `  Y=${y}: ${layer.count} bricks, ${w}×${d} footprint [${topColors}]`;
+  }).join('\n');
+
+  return `Total: ${total} bricks across ${sortedLayers.length} layers
+Bounding box: ${Math.round(maxX - minX)}W × ${Math.round(maxZ - minZ)}D × ${(maxY - minY).toFixed(1)}H
+Colors: ${colorSummary}
+Layers (bottom → top):
+${layerLines}`;
+}
+
+/**
+ * Use Flash model to evaluate how well a build plan matches the composite views.
+ * Returns quality scores and specific improvement feedback.
+ */
+async function evaluateBuildQuality(
+  compositeView: ImageData,
+  steps: BuildStepBlock[],
+): Promise<BuildEvaluation> {
+  const ai = getAI();
+  const summary = summarizeBuildPlan(steps);
+
+  const response = await withTimeout(
+    ai.models.generateContent({
+      model: config.gemini.fastModel,
+      contents: {
+        parts: [
+          { text: 'You are a LEGO build quality inspector. Compare this build plan against the target composite views.\n\nCOMPOSITE VIEWS (2×2 grid — top-left: hero 3/4, top-right: front, bottom-left: right side, bottom-right: back):' },
+          { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } },
+          { text: `BUILD PLAN SPATIAL SUMMARY:\n${summary}\n\nEVALUATE how accurately this build plan reproduces the model shown in the 4 views above:\n\n1. shapeAccuracy (1-10): Does the build's bounding box, layer widths, and silhouette progression match the views? Check head-to-body ratio, overall proportions.\n2. colorAccuracy (1-10): Are the right colors in the right layers? Compare the color distribution against what each view shows (e.g., skin color on face layers, hair color on top layers).\n3. completeness (1-10): Are key recognizable features present? Check for eyes, mouth, ears, hair, accessories, clothing details visible in the views.\n4. overallScore (1-10): If someone built this and viewed it from the same 4 angles, would it be recognizable as the same model?\n\nList specific MISSING features and provide actionable IMPROVEMENTS.` },
+        ],
+      },
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: evaluationSchema,
+        maxOutputTokens: 4096,
+      },
+    }),
+    EVAL_TIMEOUT,
+    'Build quality evaluation',
+  );
+
+  return JSON.parse(response.text || '{}');
 }
 
 export interface ImageData {
   data: string;      // base64
   mimeType: string;
+  usedFallback?: boolean;
 }
 
 function compositeViewPrompt(detail: DesignDetail, userPrompt: string): string {
@@ -103,9 +227,15 @@ DO NOT: smooth or rounded surfaces, organic curves, minifigure style, stickers, 
 STYLE: Official LEGO Brickheadz product photo — as if photographed for the LEGO.com product page. White/light gray background per quadrant. Soft studio lighting showing depth and shadows. High resolution, sharp brick edges and visible studs in ALL views.${userPrompt ? `\n\nUser note: "${userPrompt}"` : ''}`;
 }
 
+function isRetryableModelError(error: any): boolean {
+  const msg = String(error?.message || '');
+  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+}
+
 /**
  * Generate a single composite image with 4 views (hero, front, side, back) of a LEGO model.
  * Uses a single Gemini image generation call for consistency across views.
+ * Falls back to a faster model (flash) if the primary model returns 503/429 after 2 attempts.
  */
 export async function generateOrthographicViews(
   base64Image: string,
@@ -116,12 +246,14 @@ export async function generateOrthographicViews(
   const ai = getAI();
   const prompt = compositeViewPrompt(detail, userPrompt);
 
-  const MAX_RETRIES = 3;
+  const PRO_RETRIES = 2;
   let lastError: Error | null = null;
+  let shouldFallback = false;
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+  // Phase 1: Try primary (pro) model
+  for (let attempt = 1; attempt <= PRO_RETRIES; attempt++) {
     try {
-      logger.info(`Generating composite views, attempt ${attempt}/${MAX_RETRIES}`);
+      logger.info(`Generating composite views (pro), attempt ${attempt}/${PRO_RETRIES}`);
 
       const response = await withTimeout(
         ai.models.generateContent({
@@ -148,7 +280,7 @@ export async function generateOrthographicViews(
 
       for (const part of candidates[0].content.parts) {
         if (part.inlineData?.data) {
-          logger.info('Composite views generated successfully');
+          logger.info('Composite views generated successfully (pro model)');
           return {
             data: part.inlineData.data,
             mimeType: part.inlineData.mimeType || 'image/png',
@@ -158,11 +290,53 @@ export async function generateOrthographicViews(
 
       lastError = new Error('No image data in composite views response');
     } catch (error: any) {
-      logger.error(`Composite views attempt ${attempt} failed:`, error.message);
+      logger.error(`Composite views pro attempt ${attempt} failed:`, error.message);
       lastError = error;
-      if (attempt < MAX_RETRIES) {
+      if (isRetryableModelError(error)) {
+        shouldFallback = true;
+      }
+      if (attempt < PRO_RETRIES) {
         await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
       }
+    }
+  }
+
+  // Phase 2: Fallback to flash model on 503/429
+  if (shouldFallback) {
+    logger.info(`Pro model unavailable, falling back to ${config.gemini.fallbackImageModel}`);
+    try {
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: config.gemini.fallbackImageModel,
+          contents: {
+            parts: [
+              { inlineData: { mimeType, data: base64Image } },
+              { text: prompt },
+            ],
+          },
+          config: {
+            responseModalities: ['IMAGE', 'TEXT'],
+          },
+        }),
+        DESIGN_TIMEOUT,
+        'composite views generation (fallback)',
+      );
+
+      const candidates = response.candidates;
+      if (candidates?.[0]?.content?.parts) {
+        for (const part of candidates[0].content.parts) {
+          if (part.inlineData?.data) {
+            logger.info('Composite views generated successfully (fallback model)');
+            return {
+              data: part.inlineData.data,
+              mimeType: part.inlineData.mimeType || 'image/png',
+              usedFallback: true,
+            };
+          }
+        }
+      }
+    } catch (fallbackError: any) {
+      logger.error('Fallback model also failed:', fallbackError.message);
     }
   }
 
@@ -372,11 +546,23 @@ Keep step descriptions SHORT (3-8 words).
 Return ONLY valid JSON.`;
 
   // Track best result across agent iterations
-  let bestResult: { result: DesignResult; survivingCount: number } | null = null;
+  let bestResult: { result: DesignResult; survivingCount: number; qualityScore: number } | null = null;
   let feedbackPrompt = '';
+  let useModel = config.gemini.model;
+  let prevQualityScore = 0;
+  const agentStart = Date.now();
 
   for (let iteration = 1; iteration <= AGENT_MAX_ITERATIONS; iteration++) {
-    logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS}`);
+    const elapsed = Date.now() - agentStart;
+    const remaining = AGENT_BUDGET_MS - elapsed;
+
+    // Break early if insufficient time for another Gemini call
+    if (remaining < 60_000 && bestResult) {
+      logger.info(`Agent: ${Math.round(elapsed / 1000)}s elapsed, using best result (${bestResult.survivingCount} bricks)`);
+      break;
+    }
+
+    logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS} (model: ${useModel}, ${Math.round(remaining / 1000)}s remaining)`);
 
     const currentPrompt = feedbackPrompt
       ? `${prompt}\n\n${feedbackPrompt}`
@@ -387,6 +573,7 @@ Return ONLY valid JSON.`;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
+    let retryableFailures = 0;
 
     for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
       try {
@@ -403,9 +590,14 @@ Return ONLY valid JSON.`;
         }
         contentParts.push({ text: currentPrompt });
 
+        const isFallback = useModel !== config.gemini.model;
+        const thinkingBudget = isFallback ? Math.min(cfg.thinking, FALLBACK_MAX_THINKING) : cfg.thinking;
+
+        const callTimeout = Math.min(DESIGN_TIMEOUT, AGENT_BUDGET_MS - (Date.now() - agentStart) - 5_000);
+
         const response = await withTimeout(
           ai.models.generateContent({
-            model: config.gemini.model,
+            model: useModel,
             contents: {
               parts: contentParts,
             },
@@ -413,11 +605,11 @@ Return ONLY valid JSON.`;
               responseMimeType: 'application/json',
               responseSchema: designSchema,
               maxOutputTokens: cfg.maxOutput,
-              thinkingConfig: { thinkingBudget: cfg.thinking },
+              thinkingConfig: { thinkingBudget },
               systemInstruction: 'You are an award-winning LEGO Master Builder who specializes in recreating real-world objects as LEGO models. You have expert-level 3D spatial reasoning.',
             },
           }),
-          DESIGN_TIMEOUT,
+          callTimeout,
           'Design generation',
         );
 
@@ -466,6 +658,7 @@ Return ONLY valid JSON.`;
       } catch (error: any) {
         logger.error(`  Parse attempt ${attempt} failed:`, error.message);
         lastError = error;
+        if (isRetryableModelError(error)) retryableFailures++;
         if (attempt < PARSE_RETRIES) {
           await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
         }
@@ -475,6 +668,13 @@ Return ONLY valid JSON.`;
     // If all parse attempts failed for this iteration, continue or use best
     if (!iterationSteps || !iterationMeta) {
       logger.warn(`Agent iteration ${iteration} failed to produce valid steps`);
+
+      // Switch to fallback model if all failures were retryable (503/429)
+      if (retryableFailures === PARSE_RETRIES && useModel !== config.gemini.fallbackModel) {
+        logger.info(`Switching to fallback model: ${config.gemini.fallbackModel}`);
+        useModel = config.gemini.fallbackModel;
+      }
+
       if (bestResult) break;
       if (iteration === AGENT_MAX_ITERATIONS) {
         throw lastError || new Error('Failed to generate design after multiple attempts.');
@@ -521,34 +721,80 @@ Return ONLY valid JSON.`;
       referenceDescription: iterationMeta.referenceDescription,
     };
 
-    // Track best result (most surviving bricks)
-    if (!bestResult || fixedSteps.length > bestResult.survivingCount) {
-      bestResult = { result: iterationResult, survivingCount: fixedSteps.length };
+    // --- Visual quality evaluation (Flash model) ---
+    let qualityScore = 10; // default: skip evaluation if no views
+    let qualityFeedback = '';
+    let evaluation: BuildEvaluation | null = null;
+
+    if (compositeView) {
+      const evalRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
+      if (evalRemaining > EVAL_TIMEOUT + 30_000) {
+        try {
+          evaluation = await evaluateBuildQuality(compositeView, fixedSteps);
+          qualityScore = evaluation.overallScore;
+          qualityFeedback = evaluation.improvements;
+
+          logger.info(
+            `Agent iteration ${iteration} evaluation: ` +
+            `shape=${evaluation.shapeAccuracy}, color=${evaluation.colorAccuracy}, ` +
+            `completeness=${evaluation.completeness}, overall=${qualityScore}/10`,
+          );
+          if (evaluation.missingFeatures.length > 0) {
+            logger.info(`  Missing: ${evaluation.missingFeatures.join(', ')}`);
+          }
+        } catch (error: any) {
+          logger.warn(`Quality evaluation failed (non-critical): ${error.message}`);
+          qualityScore = 10; // skip quality-based retry on evaluation failure
+        }
+      } else {
+        logger.info(`Agent iteration ${iteration}: skipping evaluation (${Math.round(evalRemaining / 1000)}s remaining)`);
+      }
     }
 
-    // Check if results are acceptable (both count and physics)
-    const needsMoreBricks = fixedSteps.length < cfg.targetMin;
-    const needsPhysicsFix = needsAgentRetry(report);
+    // Track best result (prefer highest quality score, break ties by brick count)
+    if (!bestResult || qualityScore > bestResult.qualityScore || (qualityScore === bestResult.qualityScore && fixedSteps.length > bestResult.survivingCount)) {
+      bestResult = { result: iterationResult, survivingCount: fixedSteps.length, qualityScore };
+    }
 
-    if (!needsMoreBricks && !needsPhysicsFix) {
-      logger.info(`Agent iteration ${iteration}: acceptable (${fixedSteps.length} bricks, physics OK), done`);
+    // --- Decide whether to retry ---
+    const needsPhysicsFix = needsAgentRetry(report);
+    const qualityAcceptable = qualityScore >= QUALITY_ACCEPT_THRESHOLD;
+    const scorePlateau = iteration > 1 && (qualityScore - prevQualityScore) < 1;
+    prevQualityScore = qualityScore;
+
+    // Accept if: physics OK AND (quality acceptable OR quality plateaued)
+    if (!needsPhysicsFix && (qualityAcceptable || scorePlateau)) {
+      const reason = qualityAcceptable
+        ? `quality ${qualityScore}/10 ≥ ${QUALITY_ACCEPT_THRESHOLD}`
+        : `quality plateaued (${prevQualityScore} → ${qualityScore})`;
+      logger.info(`Agent iteration ${iteration}: accepted — ${fixedSteps.length} bricks, ${reason}`);
       break;
     }
 
     // Build feedback for next iteration
     if (iteration < AGENT_MAX_ITERATIONS) {
       const feedbackParts: string[] = [];
-      if (needsMoreBricks) {
-        feedbackParts.push(buildCountFeedback(fixedSteps.length, cfg.targetMin, cfg.brickRange));
-        logger.info(`Agent iteration ${iteration}: only ${fixedSteps.length} bricks (target: ${cfg.targetMin}), requesting more`);
+
+      // Quality feedback from evaluation (most valuable — specific to the model)
+      if (!qualityAcceptable && qualityFeedback) {
+        const missingStr = evaluation?.missingFeatures.length
+          ? `\nMISSING FEATURES: ${evaluation.missingFeatures.join(', ')}`
+          : '';
+        feedbackParts.push(
+          `QUALITY EVALUATION (score: ${qualityScore}/10):${missingStr}\n\n${qualityFeedback}`,
+        );
+        logger.info(`Agent iteration ${iteration}: quality ${qualityScore}/10, retrying with visual feedback`);
       }
+
+      // Physics feedback
       if (needsPhysicsFix) {
         feedbackParts.push(buildPhysicsFeedback(report));
         logger.info(`Agent iteration ${iteration}: ${report.droppedCount} bricks dropped, requesting improvement`);
       }
+
       feedbackPrompt = feedbackParts.join('\n\n');
     } else {
-      logger.info(`Agent iteration ${iteration}: final iteration, using best result (${fixedSteps.length} bricks)`);
+      logger.info(`Agent iteration ${iteration}: final iteration, using best result (${fixedSteps.length} bricks, quality ${qualityScore}/10)`);
     }
   }
 
@@ -556,8 +802,11 @@ Return ONLY valid JSON.`;
     throw new Error('Failed to generate design after multiple attempts.');
   }
 
-  const { result } = bestResult;
-  logger.info(`Design generated: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} unique parts (${result.buildPlan.agentIterations} agent iteration(s))`);
+  const { result, qualityScore: finalScore } = bestResult;
+  logger.info(
+    `Design generated: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} unique parts ` +
+    `(${result.buildPlan.agentIterations} iteration(s), quality ${finalScore}/10)`,
+  );
   return result;
 }
 
@@ -583,46 +832,50 @@ Rules:
 - Use a clean, simple background
 - The result should look like a professional LEGO set box art render`;
 
-  try {
-    const response = await withTimeout(
-      ai.models.generateContent({
-        model: config.gemini.imageModel,
-        contents: {
-          parts: [
-            { inlineData: { mimeType, data: base64Image } },
-            { text: prompt },
-          ],
-        },
-        config: {
-          responseModalities: ['IMAGE', 'TEXT'],
-        },
-      }),
-      DESIGN_TIMEOUT,
-      'LEGO preview generation',
-    );
+  const modelsToTry = [config.gemini.imageModel, config.gemini.fallbackImageModel];
 
-    // Extract generated image from response parts
-    const candidates = response.candidates;
-    if (!candidates?.[0]?.content?.parts) {
-      logger.warn('No image parts in preview response');
-      return null;
-    }
+  for (const model of modelsToTry) {
+    try {
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents: {
+            parts: [
+              { inlineData: { mimeType, data: base64Image } },
+              { text: prompt },
+            ],
+          },
+          config: {
+            responseModalities: ['IMAGE', 'TEXT'],
+          },
+        }),
+        DESIGN_TIMEOUT,
+        'LEGO preview generation',
+      );
 
-    for (const part of candidates[0].content.parts) {
-      if (part.inlineData?.data) {
-        logger.info('LEGO preview image generated');
-        return {
-          data: part.inlineData.data,
-          mimeType: part.inlineData.mimeType || 'image/png',
-        };
+      const candidates = response.candidates;
+      if (!candidates?.[0]?.content?.parts) {
+        logger.warn(`No image parts in preview response (${model})`);
+        continue;
       }
-    }
 
-    logger.warn('No inline image data found in preview response');
-    return null;
-  } catch (error: any) {
-    // Preview is non-critical — log and continue without it
-    logger.warn(`LEGO preview generation failed (non-critical): ${error.message}`);
-    return null;
+      for (const part of candidates[0].content.parts) {
+        if (part.inlineData?.data) {
+          logger.info(`LEGO preview image generated (${model})`);
+          return {
+            data: part.inlineData.data,
+            mimeType: part.inlineData.mimeType || 'image/png',
+          };
+        }
+      }
+
+      logger.warn(`No inline image data in preview response (${model})`);
+    } catch (error: any) {
+      logger.warn(`LEGO preview generation failed with ${model}: ${error.message}`);
+      if (!isRetryableModelError(error)) break; // non-retryable error, skip fallback
+    }
   }
+
+  logger.warn('LEGO preview generation failed on all models (non-critical)');
+  return null;
 }

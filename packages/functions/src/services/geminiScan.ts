@@ -8,6 +8,12 @@ import { withTimeout } from '../utils/with-timeout.js';
 import { getAI } from './gemini-client.js';
 
 const SCAN_TIMEOUT = 5 * 60 * 1000;
+const SCAN_RETRIES = 2;
+
+function isRetryableModelError(error: any): boolean {
+  const msg = String(error?.message || '');
+  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+}
 
 export async function analyzeLegoParts(base64Image: string, mimeType = 'image/jpeg'): Promise<ScanResult> {
   const ai = getAI();
@@ -62,27 +68,51 @@ Colors: use simple names like "red", "dark green", "light gray".
 
 Return ONLY valid JSON matching the schema.`;
 
-  const response = await withTimeout(
-    ai.models.generateContent({
-      model: config.gemini.model,
-      contents: {
-        parts: [
-          { inlineData: { mimeType, data: base64Image } },
-          { text: prompt },
-        ],
-      },
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: partSchema,
-        thinkingConfig: { thinkingBudget: 2048 },
-        systemInstruction: 'You are an expert brick sorter. Be precise and conservative. Return only valid JSON.',
-      },
-    }),
-    SCAN_TIMEOUT,
-    'Image analysis',
-  );
+  // Scan uses fast model (3 Flash) with fallback to primary model (3.1 Pro)
+  const modelsToTry = [config.gemini.fastModel, config.gemini.model];
+  let lastError: Error | null = null;
+  let data: any = {};
 
-  const data = JSON.parse(response.text || '{}');
+  outer:
+  for (const model of modelsToTry) {
+    for (let attempt = 1; attempt <= SCAN_RETRIES; attempt++) {
+      try {
+        logger.info(`Scan attempt ${attempt}/${SCAN_RETRIES} (model: ${model})`);
+
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model,
+            contents: {
+              parts: [
+                { inlineData: { mimeType, data: base64Image } },
+                { text: prompt },
+              ],
+            },
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: partSchema,
+              thinkingConfig: { thinkingBudget: 2048 },
+              systemInstruction: 'You are an expert brick sorter. Be precise and conservative. Return only valid JSON.',
+            },
+          }),
+          SCAN_TIMEOUT,
+          'Image analysis',
+        );
+
+        data = JSON.parse(response.text || '{}');
+        break outer;
+      } catch (error: any) {
+        logger.error(`Scan attempt ${attempt} failed (${model}):`, error.message);
+        lastError = error;
+        if (!isRetryableModelError(error)) break; // non-retryable → try next model
+        if (attempt < SCAN_RETRIES) {
+          await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+        }
+      }
+    }
+  }
+
+  if (!data.parts && lastError) throw lastError;
   const rawParts: any[] = Array.isArray(data.parts) ? data.parts : [];
 
   // Merge duplicates

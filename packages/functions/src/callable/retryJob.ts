@@ -1,6 +1,8 @@
+import { logger } from 'firebase-functions';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { config } from '../config.js';
 
 export const retryJob = onCall(
   { maxInstances: 10, region: 'asia-northeast1' },
@@ -41,20 +43,22 @@ export const retryJob = onCall(
       throw new HttpsError('failed-precondition', 'Job has no input data to retry');
     }
 
-    const storage = getStorage();
-    const bucket = storage.bucket();
     const newJobRef = db.collection('jobs').doc();
     const newJobId = newJobRef.id;
 
     // Copy storage files for scan/design jobs
-    if (data.type === 'scan' && input.imageStoragePath) {
-      const newPath = `scans/${newJobId}/image.jpeg`;
-      await bucket.file(input.imageStoragePath).copy(bucket.file(newPath));
-      input.imageStoragePath = newPath;
-    } else if (data.type === 'design' && input.imageStoragePath) {
-      const newPath = `designs/${newJobId}/reference.jpeg`;
-      await bucket.file(input.imageStoragePath).copy(bucket.file(newPath));
-      input.imageStoragePath = newPath;
+    if ((data.type === 'scan' || data.type === 'design') && input.imageStoragePath) {
+      const bucket = getStorage().bucket(config.firebase.storageBucket || undefined);
+      const newPath = data.type === 'scan'
+        ? `scans/${newJobId}/image.jpeg`
+        : `designs/${newJobId}/reference.jpeg`;
+      try {
+        await bucket.file(input.imageStoragePath).copy(bucket.file(newPath));
+        input.imageStoragePath = newPath;
+      } catch (err) {
+        logger.warn(`retryJob: failed to copy ${data.type} image: ${err}`);
+        throw new HttpsError('failed-precondition', 'Original image no longer exists');
+      }
     }
 
     // Create new job document with same input

@@ -1,8 +1,16 @@
+import { logger } from 'firebase-functions';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import { config } from '../config.js';
 
 const DELETABLE = new Set(['failed', 'completed']);
+
+/** Known storage paths per job type */
+const STORAGE_PATHS: Record<string, (jobId: string) => string[]> = {
+  scan: (id) => [`scans/${id}/image.jpeg`],
+  design: (id) => [`designs/${id}/reference.jpeg`, `designs/${id}/composite.png`],
+};
 
 export const deleteJob = onCall(
   { maxInstances: 10, region: 'asia-northeast1' },
@@ -38,14 +46,19 @@ export const deleteJob = onCall(
       );
     }
 
-    // Delete storage files
-    const storage = getStorage();
-    const bucket = storage.bucket();
+    // Delete known storage files individually (compatible with emulator)
+    const bucket = getStorage().bucket(config.firebase.storageBucket || undefined);
+    const pathsFn = STORAGE_PATHS[data.type];
 
-    if (data.type === 'scan') {
-      await bucket.deleteFiles({ prefix: `scans/${jobId}/` }).catch(() => {/* ignore */});
-    } else if (data.type === 'design') {
-      await bucket.deleteFiles({ prefix: `designs/${jobId}/` }).catch(() => {/* ignore */});
+    if (pathsFn) {
+      const paths = pathsFn(jobId);
+      await Promise.all(
+        paths.map((p) =>
+          bucket.file(p).delete().catch((err) => {
+            logger.warn(`Failed to delete ${p}: ${err}`);
+          }),
+        ),
+      );
     }
 
     // Delete Firestore document

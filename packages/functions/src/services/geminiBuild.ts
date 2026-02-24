@@ -9,7 +9,16 @@ import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback
 import { getAI } from './gemini-client.js';
 
 const BUILD_TIMEOUT = 8 * 60 * 1000;
+/** Total time budget for the agent loop — leaves margin for Firestore writes */
+const AGENT_BUDGET_MS = 8 * 60 * 1000;
 const { AGENT_MAX_ITERATIONS } = LIMITS;
+/** Max thinking budget for fallback model (gemini-3-flash-preview) */
+const FALLBACK_MAX_THINKING = 24576;
+
+function isRetryableModelError(error: any): boolean {
+  const msg = String(error?.message || '');
+  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+}
 
 export async function generateBuildPlan(
   parts: DetectedPart[],
@@ -208,9 +217,20 @@ Return ONLY valid JSON.`;
   // Track best result across agent iterations
   let bestResult: { plan: BuildPlan; survivingCount: number } | null = null;
   let feedbackPrompt = '';
+  let useModel = config.gemini.model;
+  const agentStart = Date.now();
 
   for (let iteration = 1; iteration <= AGENT_MAX_ITERATIONS; iteration++) {
-    logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS}`);
+    const elapsed = Date.now() - agentStart;
+    const remaining = AGENT_BUDGET_MS - elapsed;
+
+    // Break early if insufficient time for another Gemini call
+    if (remaining < 60_000 && bestResult) {
+      logger.info(`Agent: ${Math.round(elapsed / 1000)}s elapsed, using best result (${bestResult.survivingCount} bricks)`);
+      break;
+    }
+
+    logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS} (model: ${useModel}, ${Math.round(remaining / 1000)}s remaining)`);
 
     const prompt = feedbackPrompt
       ? `${basePrompt}\n\n${feedbackPrompt}`
@@ -221,24 +241,30 @@ Return ONLY valid JSON.`;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string } | null = null;
+    let retryableFailures = 0;
 
     for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
       try {
         logger.info(`  Parse attempt ${attempt}/${PARSE_RETRIES}`);
 
+        const isFallback = useModel !== config.gemini.model;
+        const thinkingBudget = isFallback ? Math.min(cfg.thinking, FALLBACK_MAX_THINKING) : cfg.thinking;
+
+        const callTimeout = Math.min(BUILD_TIMEOUT, AGENT_BUDGET_MS - (Date.now() - agentStart) - 5_000);
+
         const response = await withTimeout(
           ai.models.generateContent({
-            model: config.gemini.model,
+            model: useModel,
             contents: { text: prompt },
             config: {
               responseMimeType: 'application/json',
               responseSchema: buildSchema,
               maxOutputTokens: cfg.maxOutput,
-              thinkingConfig: { thinkingBudget: cfg.thinking },
+              thinkingConfig: { thinkingBudget },
               systemInstruction: 'You are an award-winning LEGO Master Builder with expertise in 3D spatial reasoning. Complete the entire JSON response.',
             },
           }),
-          BUILD_TIMEOUT,
+          callTimeout,
           'Build plan generation',
         );
 
@@ -292,6 +318,7 @@ Return ONLY valid JSON.`;
       } catch (error: any) {
         logger.error(`  Parse attempt ${attempt} failed:`, error.message);
         lastError = error;
+        if (isRetryableModelError(error)) retryableFailures++;
         if (attempt < PARSE_RETRIES) {
           await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
         }
@@ -301,6 +328,13 @@ Return ONLY valid JSON.`;
     // If all parse attempts failed for this iteration, continue to next or use best
     if (!iterationSteps || !iterationMeta) {
       logger.warn(`Agent iteration ${iteration} failed to produce valid steps`);
+
+      // Switch to fallback model if all failures were retryable (503/429)
+      if (retryableFailures === PARSE_RETRIES && useModel !== config.gemini.fallbackModel) {
+        logger.info(`Switching to fallback model: ${config.gemini.fallbackModel}`);
+        useModel = config.gemini.fallbackModel;
+      }
+
       if (bestResult) break; // use best from previous iteration
       if (iteration === AGENT_MAX_ITERATIONS) {
         throw lastError || new Error('Failed to generate build plan after multiple attempts.');

@@ -1,8 +1,15 @@
 export const config = {
   gemini: {
-    apiKey: process.env.GEMINI_API_KEY || '',
-    model: process.env.GEMINI_MODEL || 'gemini-3-pro-preview',
+    /** Primary reasoning model for complex tasks (build, design) */
+    model: process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview',
+    /** Fast model for simple tasks (scan) — Pro-level quality at Flash speed/cost */
+    fastModel: process.env.GEMINI_FAST_MODEL || 'gemini-3-flash-preview',
+    /** Text fallback on 503/429 errors */
+    fallbackModel: process.env.GEMINI_FALLBACK_MODEL || 'gemini-3-flash-preview',
+    /** Primary image generation model */
     imageModel: process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview',
+    /** Image fallback on 503/429 errors */
+    fallbackImageModel: process.env.GEMINI_FALLBACK_IMAGE_MODEL || 'gemini-2.5-flash-image',
   },
   firebase: {
     storageBucket: process.env.GCLOUD_STORAGE_BUCKET || '',

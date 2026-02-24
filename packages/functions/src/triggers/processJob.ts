@@ -1,5 +1,4 @@
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
-import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
@@ -7,15 +6,12 @@ import { analyzeLegoParts } from '../services/geminiScan.js';
 import { generateBuildPlan } from '../services/geminiBuild.js';
 import { generateDesignFromPhoto, generateLegoPreview, generateOrthographicViews } from '../services/geminiDesign.js';
 
-const geminiApiKey = defineSecret('GEMINI_API_KEY');
-
 export const processJob = onDocumentCreated(
   {
     document: 'jobs/{jobId}',
     region: 'asia-northeast1',
     memory: '1GiB',
     timeoutSeconds: 540,
-    secrets: [geminiApiKey],
   },
   async (event) => {
     const snapshot = event.data;
@@ -102,6 +98,7 @@ export const processJob = onDocumentCreated(
         await jobRef.update({
           status: 'views_ready',
           views: { composite: compositePath },
+          ...(compositeImage.usedFallback && { usedFallbackModel: true }),
           updatedAt: FieldValue.serverTimestamp(),
         });
       } else {
@@ -130,12 +127,17 @@ export const processDesignUpdate = onDocumentUpdated(
     region: 'asia-northeast1',
     memory: '1GiB',
     timeoutSeconds: 540,
-    secrets: [geminiApiKey],
   },
   async (event) => {
     const before = event.data?.before.data();
     const after = event.data?.after.data();
     if (!before || !after || after.type !== 'design') return;
+
+    // Only process the two transitions we care about — skip all other updates
+    // to avoid unnecessary function invocations (and billing) on every status change
+    const isViewRegeneration = before.status === 'views_ready' && after.status === 'generating_views';
+    const isBuildGeneration = before.status !== 'generating_build' && after.status === 'generating_build';
+    if (!isViewRegeneration && !isBuildGeneration) return;
 
     const jobId = event.params.jobId;
     const db = getFirestore();
@@ -160,6 +162,7 @@ export const processDesignUpdate = onDocumentUpdated(
         await jobRef.update({
           status: 'views_ready',
           views: { composite: compositePath },
+          usedFallbackModel: compositeImage.usedFallback || false,
           updatedAt: FieldValue.serverTimestamp(),
         });
 
@@ -178,6 +181,16 @@ export const processDesignUpdate = onDocumentUpdated(
 
     // --- Case 2: Generate build plan (* → generating_build) ---
     if (before.status !== 'generating_build' && after.status === 'generating_build') {
+      // Safety timer: mark job failed before Cloud Functions kills the process
+      const safetyTimer = setTimeout(async () => {
+        logger.error(`Design build job ${jobId}: approaching function timeout, marking as failed`);
+        await jobRef.update({
+          status: 'failed',
+          error: 'Build generation timed out. Try a simpler detail level.',
+          updatedAt: FieldValue.serverTimestamp(),
+        }).catch(() => {});
+      }, 520_000); // 520s = 8m40s, 20s safety margin before 540s timeout
+
       try {
         const { imageStoragePath, mimeType, detail, userPrompt } = after.input;
         const viewPaths = after.views as { composite: string };
@@ -208,6 +221,8 @@ export const processDesignUpdate = onDocumentUpdated(
           logger.info(`Preview image saved to ${previewPath}`);
         }
 
+        clearTimeout(safetyTimer);
+
         await jobRef.update({
           status: 'completed',
           result,
@@ -216,6 +231,7 @@ export const processDesignUpdate = onDocumentUpdated(
 
         logger.info(`Design job ${jobId} completed: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} parts`);
       } catch (error: any) {
+        clearTimeout(safetyTimer);
         logger.error(`Design build job ${jobId} failed:`, error.message);
 
         await jobRef.update({
