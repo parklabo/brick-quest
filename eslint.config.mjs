@@ -51,6 +51,7 @@ export default [
   {
     files: [
       'apps/web/components/three/**/*.{ts,tsx}',
+      'apps/web/components/dashboard/**/*.{ts,tsx}',
       'apps/web/components/workspace/**/*.{ts,tsx}',
       'apps/web/components/scan/PartDetailModal.tsx',
       'apps/console/components/shapes/**/*.{ts,tsx}',

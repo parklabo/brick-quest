@@ -219,6 +219,7 @@ export function FollowCamera({
     const ortho = camera as THREE.OrthographicCamera;
     const zoomDelta = (zoomRef.current - ortho.zoom) * LERP_FACTOR * delta;
     if (Math.abs(zoomDelta) > 0.001) {
+      // eslint-disable-next-line react-hooks/immutability -- mutating Three.js camera in useFrame is intentional
       ortho.zoom += zoomDelta;
       ortho.updateProjectionMatrix();
     }

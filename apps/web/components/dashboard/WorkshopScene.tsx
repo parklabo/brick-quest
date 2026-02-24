@@ -910,6 +910,7 @@ const JOYSTICK_DEADZONE = 8;
 function VirtualJoystick({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
   const baseRef = useRef<HTMLDivElement>(null);
   const [thumbPos, setThumbPos] = useState({ x: 0, y: 0 });
+  const [active, setActive] = useState(false);
   const originRef = useRef({ x: 0, y: 0 });
   const activeRef = useRef(false);
 
@@ -951,6 +952,7 @@ function VirtualJoystick({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
     const rect = baseRef.current!.getBoundingClientRect();
     originRef.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     activeRef.current = true;
+    setActive(true);
     updateFromTouch(touch.clientX, touch.clientY);
   };
 
@@ -962,6 +964,7 @@ function VirtualJoystick({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
 
   const handleTouchEnd = () => {
     activeRef.current = false;
+    setActive(false);
     setThumbPos({ x: 0, y: 0 });
     resetKeys();
   };
@@ -981,7 +984,7 @@ function VirtualJoystick({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
           bg-black/25 border border-black/15"
         style={{
           transform: `translate(calc(-50% + ${thumbPos.x}px), calc(-50% + ${thumbPos.y}px))`,
-          transition: activeRef.current ? 'none' : 'transform 0.15s ease-out',
+          transition: active ? 'none' : 'transform 0.15s ease-out',
         }}
       />
     </div>
