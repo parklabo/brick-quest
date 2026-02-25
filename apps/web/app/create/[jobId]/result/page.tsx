@@ -303,7 +303,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
 
   const handleOpenWorkspace = () => {
     if (!designResult) return;
-    useWorkspaceStore.getState().loadPlan(designResult.buildPlan, `/create/${jobId}/result`);
+    useWorkspaceStore.getState().loadPlan(designResult.buildPlan, `/create/${jobId}/result`, undefined, undefined, job?.voxelGridPath);
     router.push('/workspace');
   };
 

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Box, Boxes } from 'lucide-react';
 import { useWorkspaceStore } from '../../lib/stores/workspace';
 import { GalleryPanel } from './GalleryPanel';
 import type { BuildPlan } from '@brick-quest/shared';
@@ -16,14 +16,21 @@ export function WorkspaceHUD() {
   const currentStep = useWorkspaceStore((s) => s.currentStep);
   const plan = useWorkspaceStore((s) => s.plan);
   const returnPath = useWorkspaceStore((s) => s.returnPath);
+  const viewMode = useWorkspaceStore((s) => s.viewMode);
+  const setViewMode = useWorkspaceStore((s) => s.setViewMode);
+  const voxelGrid = useWorkspaceStore((s) => s.voxelGrid);
+  const voxelGridPath = useWorkspaceStore((s) => s.voxelGridPath);
+  const voxelGridLoading = useWorkspaceStore((s) => s.voxelGridLoading);
+  const loadVoxelGrid = useWorkspaceStore((s) => s.loadVoxelGrid);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const hasVoxelData = !!(voxelGrid || voxelGridPath);
 
   const selectedBrick = selectedBrickId ? placedBricks.find((b) => b.instanceId === selectedBrickId) : null;
   const currentStepData = plan && currentStep >= 0 && currentStep < plan.steps.length ? plan.steps[currentStep] : null;
 
-  const handleSelectPlan = useCallback((selectedPlan: BuildPlan, jobType: 'build' | 'design', jobId: string) => {
+  const handleSelectPlan = useCallback((selectedPlan: BuildPlan, jobType: 'build' | 'design', jobId: string, voxelGridPath?: string) => {
     const currentReturnPath = useWorkspaceStore.getState().returnPath;
-    useWorkspaceStore.getState().loadPlan(selectedPlan, currentReturnPath, jobId, jobType);
+    useWorkspaceStore.getState().loadPlan(selectedPlan, currentReturnPath, jobId, jobType, voxelGridPath);
     setGalleryOpen(false);
   }, []);
 
@@ -40,8 +47,37 @@ export function WorkspaceHUD() {
         </Link>
       </div>
 
-      {/* Gallery toggle — top right */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Toolbar — top right */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        {/* Voxel/Brick toggle */}
+        {hasVoxelData && (
+          <div className="flex items-center bg-black/60 backdrop-blur-md rounded-xl overflow-hidden">
+            <button
+              onClick={() => setViewMode('bricks')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs transition-colors ${
+                viewMode === 'bricks' ? 'text-white bg-white/15' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Boxes className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Bricks</span>
+            </button>
+            <button
+              onClick={() => {
+                setViewMode('voxels');
+                if (!voxelGrid && voxelGridPath) loadVoxelGrid();
+              }}
+              disabled={voxelGridLoading}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs transition-colors ${
+                viewMode === 'voxels' ? 'text-white bg-white/15' : 'text-slate-400 hover:text-white'
+              } ${voxelGridLoading ? 'opacity-50' : ''}`}
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{voxelGridLoading ? 'Loading...' : 'Voxels'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Gallery toggle */}
         <button
           onClick={() => setGalleryOpen((o) => !o)}
           className={`flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl px-4 py-2 text-sm transition-colors ${
@@ -96,10 +132,25 @@ export function WorkspaceHUD() {
       {plan && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
           <div className="bg-black/60 backdrop-blur-md rounded-xl px-6 py-3 text-center">
-            <p className="text-sm text-white font-medium">
-              {plan.title} — {currentStep + 1} / {plan.steps.length} steps
-            </p>
-            {currentStepData?.description && <p className="text-xs text-slate-400 mt-1 max-w-sm">{currentStepData.description}</p>}
+            {viewMode === 'voxels' && voxelGrid ? (
+              <>
+                <p className="text-sm text-white font-medium">
+                  {plan.title} — Voxel Grid
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {voxelGrid.width}×{voxelGrid.depth} studs · {voxelGrid.layers.length} layers · {
+                    voxelGrid.layers.reduce((sum, l) => sum + l.grid.reduce((rs, row) => rs + row.filter(c => c).length, 0), 0)
+                  } voxels
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-white font-medium">
+                  {plan.title} — {currentStep + 1} / {plan.steps.length} steps
+                </p>
+                {currentStepData?.description && <p className="text-xs text-slate-400 mt-1 max-w-sm">{currentStepData.description}</p>}
+              </>
+            )}
           </div>
         </div>
       )}

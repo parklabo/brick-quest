@@ -60,6 +60,8 @@ export interface BuildPlan {
   lore: string;
   steps: BuildStepBlock[];
   agentIterations?: number;
+  /** Raw voxel grid from AI (for debug/comparison view) */
+  voxelGrid?: import('./voxel.js').VoxelGrid;
 }
 
 export interface PhysicsCorrectionEntry {

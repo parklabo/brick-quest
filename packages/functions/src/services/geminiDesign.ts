@@ -2,22 +2,9 @@ import { Type } from '@google/genai';
 import type { Schema } from '@google/genai';
 import { config, LIMITS } from '../config.js';
 import { logger } from 'firebase-functions';
-import type { DesignResult, DesignDetail, BuildStepBlock } from '@brick-quest/shared';
-import {
-  getBrickHeight,
-  resolveShape,
-  getGeminiShapeEnum,
-  getGeminiShapeDescriptions,
-  fixBuildPhysicsWithReport,
-  COORDINATE_SYSTEM_PROMPT,
-  CRITICAL_RULES_PROMPT,
-  PROPORTION_PLANNING_PROMPT,
-  SHAPE_USAGE_GUIDE_PROMPT,
-  ARCHITECTURAL_PATTERNS_PROMPT,
-  ADVANCED_WORKED_EXAMPLE_PROMPT,
-} from '@brick-quest/shared';
+import type { DesignResult, DesignDetail, BuildStepBlock, VoxelGrid } from '@brick-quest/shared';
+import { validateVoxelGrid, voxelGridToBricks, buildVoxelDesignPrompt } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
-import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
 import { getAI, getThinkingConfig } from './gemini-client.js';
 
 const DESIGN_TIMEOUT = 8 * 60 * 1000;
@@ -359,168 +346,59 @@ export async function generateDesignFromPhoto(
   mimeType: string,
   detail: DesignDetail = 'standard',
   userPrompt = '',
-  compositeView?: ImageData
+  compositeView?: ImageData,
+  onProgress?: (msg: string) => Promise<void>
 ): Promise<{ result: DesignResult; usedFallbackModel: boolean }> {
   const ai = getAI();
 
-  const designSchema: Schema = {
+  // Voxel grid schema — much simpler than brick-placement schema
+  const voxelSchema: Schema = {
     type: Type.OBJECT,
     properties: {
       referenceDescription: { type: Type.STRING, description: 'Describe what you see in the photo (1-2 sentences)' },
       title: { type: Type.STRING, description: 'Name of the LEGO creation' },
       description: { type: Type.STRING, description: 'Short description of the model' },
       lore: { type: Type.STRING, description: 'A creative backstory for this LEGO version' },
-      steps: {
+      width: { type: Type.INTEGER, description: 'Grid width in studs (X axis)' },
+      depth: { type: Type.INTEGER, description: 'Grid depth in studs (Z axis)' },
+      layers: {
         type: Type.ARRAY,
         items: {
           type: Type.OBJECT,
           properties: {
-            stepId: { type: Type.INTEGER },
-            partName: { type: Type.STRING },
-            color: { type: Type.STRING },
-            hexColor: { type: Type.STRING },
-            type: { type: Type.STRING, enum: ['brick', 'plate', 'tile', 'slope', 'technic', 'minifig', 'other'] },
-            shape: { type: Type.STRING, enum: getGeminiShapeEnum() },
-            width: { type: Type.INTEGER, description: 'Width in studs (shorter side)' },
-            length: { type: Type.INTEGER, description: 'Length in studs (longer side)' },
-            position: {
-              type: Type.OBJECT,
-              properties: {
-                x: { type: Type.NUMBER },
-                y: { type: Type.NUMBER },
-                z: { type: Type.NUMBER },
+            y: { type: Type.INTEGER, description: 'Layer index (0 = ground)' },
+            heightType: { type: Type.STRING, enum: ['brick', 'plate'], description: 'brick=1.2 units, plate=0.4 units' },
+            grid: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING, description: 'Hex color (e.g. "#FF0000") or "" for empty' },
               },
-              required: ['x', 'y', 'z'],
+              description: 'grid[z][x] — rows front→back, columns left→right',
             },
-            rotation: {
-              type: Type.OBJECT,
-              properties: {
-                x: { type: Type.NUMBER },
-                y: { type: Type.NUMBER },
-                z: { type: Type.NUMBER },
-              },
-              required: ['x', 'y', 'z'],
-            },
-            description: { type: Type.STRING },
           },
-          required: ['stepId', 'partName', 'color', 'hexColor', 'type', 'shape', 'width', 'length', 'position', 'description'],
+          required: ['y', 'heightType', 'grid'],
         },
       },
     },
-    required: ['referenceDescription', 'title', 'description', 'lore', 'steps'],
+    required: ['referenceDescription', 'title', 'description', 'lore', 'width', 'depth', 'layers'],
   };
 
-  const complexityConfig: Record<
-    DesignDetail,
-    { instruction: string; minBricks: number; targetMin: number; brickRange: string; maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high' }
-  > = {
-    simple: {
-      instruction: 'Simplified build — capture the basic silhouette and key colors. Use larger bricks (2x4, 2x6) predominantly.',
-      minBricks: 25,
-      targetMin: 35,
-      brickRange: '25-50 bricks, 2x4/2x6 predominantly',
-      maxOutput: 32768,
-      thinkingLevel: 'low',
-    },
-    standard: {
-      instruction:
-        'Standard Brickheadz-style build — solid, complete model with all key features, colors, and proportions. No gaps or holes in the surface.',
-      minBricks: 80,
-      targetMin: 100,
-      brickRange: '80-150 bricks, mix of 2x4 structure + 1x2 detail',
-      maxOutput: 65536,
-      thinkingLevel: 'medium',
-    },
-    detailed: {
-      instruction:
-        'Maximum detail — capture fine details, textures, facial features, accessories, and patterns. Use small bricks (1x1, 1x2) for pixel-art precision.',
-      minBricks: 150,
-      targetMin: 200,
-      brickRange: '150-300 bricks, 1x1/1x2 for pixel precision',
-      maxOutput: 131072,
-      thinkingLevel: 'high',
-    },
+  const outputConfig: Record<DesignDetail, { maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high' }> = {
+    simple: { maxOutput: 40000, thinkingLevel: 'low' },
+    standard: { maxOutput: 100000, thinkingLevel: 'medium' },
+    detailed: { maxOutput: 200000, thinkingLevel: 'high' },
   };
 
-  const cfg = complexityConfig[detail];
-  const complexityInstruction = cfg.instruction;
-
-  const themeInstruction = userPrompt ? `USER NOTE: "${userPrompt}". Consider this when designing.` : '';
-
-  const viewsInstruction = compositeView
-    ? `
-COMPOSITE VIEW PROVIDED:
-You have a 2×2 grid image showing 4 views of the target LEGO model:
-- Top-left: Hero 3/4 angle (overall shape + depth)
-- Top-right: Front view (face details, front colors)
-- Bottom-left: Right side view (profile, depth, side features)
-- Bottom-right: Back view (rear details)
-
-BEFORE generating any bricks, analyze these views carefully:
-1. FRONT VIEW → determines what you see on the Z=0 face (colors, eyes, mouth, details per X column)
-2. SIDE VIEW → determines what you see on the X=max face (depth, profile shape per Z column)
-3. BACK VIEW → determines what you see on the Z=max face (back details, colors)
-4. HERO VIEW → confirms overall 3D shape, proportions, and color placement
-Use these views as your BLUEPRINT. Every layer you generate must match what the views show at that Y height.
-`
-    : '';
-
-  const prompt = `You are a LEGO Master Builder. Your job is to convert the reference image into a SOLID Brickheadz-style LEGO model with PRECISE brick-by-brick assembly instructions.
-${viewsInstruction}
-${themeInstruction}
-DETAIL LEVEL: ${detail.toUpperCase()}
-${complexityInstruction}
-TARGET: ${cfg.brickRange}. Do NOT generate fewer than ${cfg.minBricks} bricks.
-
-${PROPORTION_PLANNING_PROMPT}
-
-${SHAPE_USAGE_GUIDE_PROMPT}
-
-SHAPES (use exact shape IDs):
-${getGeminiShapeDescriptions()}
-
-${COORDINATE_SYSTEM_PROMPT}
-
-${ARCHITECTURAL_PATTERNS_PROMPT}
-
-═══════════════════════════════════════
-LAYER-BY-LAYER BUILD METHOD (MANDATORY)
-═══════════════════════════════════════
-You MUST build the model as a stack of horizontal layers. Each layer is at a specific Y height.
-
-STEP 1 — DEFINE THE MODEL:
-- Bounding box: decide width (X), depth (Z), and height (number of layers)
-- Typical Brickheadz: 8 wide × 6 deep × 10-12 layers tall
-- Sections: feet (2 layers) → body (3-4 layers) → head (4-5 layers) → top features
-
-STEP 2 — FOR EACH LAYER (from bottom Y=0.0 upward):
-a) Determine the FOOTPRINT of this layer (which stud positions are filled)
-b) Determine the COLOR of each stud position (match the reference views)
-c) TILE the footprint completely with bricks — NO gaps allowed
-d) Use larger bricks (2x4, 2x3, 2x2) first, fill remaining gaps with 1x2 and 1x1
-
-TILING RULE: For each layer, mentally draw a grid of the footprint. EVERY cell must be covered by exactly one brick. If you can't fit a large brick, use smaller ones.
-
-STEP 3 — ADD DETAILS:
-- Eyes: use 1x1 round bricks or plates at the correct Y height on the front face
-- Accessories: glasses, hair, hats, ears — add as extra bricks on the appropriate layer
-
-${ADVANCED_WORKED_EXAMPLE_PROMPT}
-
-${CRITICAL_RULES_PROMPT}
-11. MATCH THE REFERENCE: Colors and features must match the reference photo/views at each layer height.
-12. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
-
-BRICK COUNT: ${cfg.brickRange}
-You MUST generate at least ${cfg.minBricks} bricks.
-
-Keep step descriptions SHORT (3-8 words).
-Return ONLY valid JSON.`;
+  const cfg = outputConfig[detail];
+  const prompt = buildVoxelDesignPrompt(detail, userPrompt, !!compositeView);
 
   // Track best result across agent iterations
-  let bestResult: { result: DesignResult; survivingCount: number; qualityScore: number } | null = null;
+  let bestResult: { result: DesignResult; brickCount: number; qualityScore: number } | null = null;
   let feedbackPrompt = '';
-  let useModel = config.gemini.model;
+  const modelChain = config.gemini.modelChain;
+  let modelIndex = 0;
+  let useModel = modelChain[0];
   let usedFallback = false;
   let prevQualityScore = 0;
   const agentStart = Date.now();
@@ -529,27 +407,29 @@ Return ONLY valid JSON.`;
     const elapsed = Date.now() - agentStart;
     const remaining = AGENT_BUDGET_MS - elapsed;
 
-    // Break early if insufficient time for another Gemini call
     if (remaining < 60_000 && bestResult) {
-      logger.info(`Agent: ${Math.round(elapsed / 1000)}s elapsed, using best result (${bestResult.survivingCount} bricks)`);
+      logger.info(`Agent: ${Math.round(elapsed / 1000)}s elapsed, using best result (${bestResult.brickCount} bricks)`);
       break;
     }
 
     logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS} (model: ${useModel}, ${Math.round(remaining / 1000)}s remaining)`);
 
+    if (onProgress && iteration > 1) {
+      await onProgress(`Improving build (attempt ${iteration}/${AGENT_MAX_ITERATIONS})...`);
+    }
+
     const currentPrompt = feedbackPrompt ? `${prompt}\n\n${feedbackPrompt}` : prompt;
 
     // Inner parse-retry loop
     const PARSE_RETRIES = 3;
-    /** Max time per individual API call — prevents one hung call from eating the entire budget */
-    const PER_CALL_TIMEOUT = 150_000; // 2.5 min
+    const PER_CALL_TIMEOUT = 150_000;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
+    let iterationVoxelGrid: VoxelGrid | null = null;
     let hitRetryableError = false;
 
     for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
-      // Skip if not enough time for a meaningful API call
       const budgetRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
       if (budgetRemaining < 30_000) {
         logger.warn(`  Skipping attempt ${attempt} — only ${Math.round(budgetRemaining / 1000)}s remaining`);
@@ -578,15 +458,15 @@ Return ONLY valid JSON.`;
             contents: contentParts,
             config: {
               responseMimeType: 'application/json',
-              responseSchema: designSchema,
+              responseSchema: voxelSchema,
               maxOutputTokens: cfg.maxOutput,
               thinkingConfig: getThinkingConfig(useModel, cfg.thinkingLevel),
               systemInstruction:
-                'You are an award-winning LEGO Master Builder who specializes in recreating real-world objects as LEGO models. You have expert-level 3D spatial reasoning.',
+                'You are an award-winning LEGO Master Builder. Output a 3D color grid (voxel grid) representing the LEGO model. Each layer is a 2D array of hex color strings.',
             },
           }),
           callTimeout,
-          'Design generation'
+          'Voxel grid generation'
         );
 
         if (!response.text) {
@@ -596,39 +476,47 @@ Return ONLY valid JSON.`;
 
         const raw = JSON.parse(response.text);
 
-        if (!Array.isArray(raw.steps) || raw.steps.length === 0) {
-          lastError = new Error('No valid steps');
+        if (!Array.isArray(raw.layers) || raw.layers.length === 0) {
+          lastError = new Error('No valid layers in voxel grid');
           continue;
         }
 
-        // Enrich steps with computed fields
-        raw.steps = raw.steps.filter((step: any) => {
-          if (!step.type || !step.position) return false;
-
-          step.shape = resolveShape(step.shape || 'rectangle', step.type);
-
-          const width = step.width || 2;
-          const length = step.length || 2;
-          const height = getBrickHeight(step.shape, step.type);
-
-          step.size = { width, height, length };
-
-          if (!step.rotation) step.rotation = { x: 0, y: 0, z: 0 };
-
-          return true;
-        });
-
-        if (raw.steps.length === 0) {
-          lastError = new Error('All steps invalid after filtering');
-          continue;
-        }
-
-        iterationSteps = raw.steps;
-        iterationMeta = {
+        // Validate and normalize the voxel grid
+        const voxelGrid: VoxelGrid = validateVoxelGrid({
           title: raw.title || 'LEGO Creation',
           description: raw.description || 'A LEGO recreation',
           lore: raw.lore || 'Inspired by real life.',
-          referenceDescription: raw.referenceDescription || 'An object from the photo.',
+          referenceDescription: raw.referenceDescription,
+          width: raw.width || 8,
+          depth: raw.depth || 8,
+          layers: raw.layers,
+        });
+
+        if (voxelGrid.layers.length === 0) {
+          lastError = new Error('All layers empty after validation');
+          continue;
+        }
+
+        // Convert voxel grid to brick placements — deterministic, no physics needed
+        const { steps, report } = voxelGridToBricks(voxelGrid);
+
+        logger.info(
+          `  Voxel conversion: ${report.totalVoxels} voxels → ${report.totalBricks} bricks ` +
+            `(avg size ${report.averageBrickSize.toFixed(1)}, ${report.layerCount} layers)`
+        );
+
+        if (steps.length === 0) {
+          lastError = new Error('Voxel conversion produced 0 bricks');
+          continue;
+        }
+
+        iterationSteps = steps;
+        iterationVoxelGrid = voxelGrid;
+        iterationMeta = {
+          title: voxelGrid.title,
+          description: voxelGrid.description,
+          lore: voxelGrid.lore,
+          referenceDescription: voxelGrid.referenceDescription || 'An object from the photo.',
         };
         break;
       } catch (error: any) {
@@ -636,7 +524,6 @@ Return ONLY valid JSON.`;
         lastError = error;
         if (isRetryableModelError(error)) {
           hitRetryableError = true;
-          // On 503/429: skip remaining retries, switch model immediately
           break;
         }
         if (attempt < PARSE_RETRIES) {
@@ -645,15 +532,18 @@ Return ONLY valid JSON.`;
       }
     }
 
-    // If all parse attempts failed for this iteration, continue or use best
+    // If all parse attempts failed, continue or use best
     if (!iterationSteps || !iterationMeta) {
-      logger.warn(`Agent iteration ${iteration} failed to produce valid steps`);
+      logger.warn(`Agent iteration ${iteration} failed to produce valid voxel grid`);
 
-      // Switch to fallback model on ANY retryable error (503/429/timeout)
-      if (hitRetryableError && useModel !== config.gemini.fallbackModel) {
-        logger.info(`Switching to fallback model: ${config.gemini.fallbackModel}`);
-        useModel = config.gemini.fallbackModel;
-        usedFallback = true;
+      if (hitRetryableError && modelIndex < modelChain.length - 1) {
+        modelIndex++;
+        useModel = modelChain[modelIndex];
+        usedFallback = modelIndex > 0;
+        logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${modelChain.length})`);
+        if (onProgress) {
+          await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${modelChain.length})`);
+        }
       }
 
       if (bestResult) break;
@@ -663,18 +553,9 @@ Return ONLY valid JSON.`;
       continue;
     }
 
-    // Physics correction with report
-    const { steps: fixedSteps, report } = fixBuildPhysicsWithReport(iterationSteps);
-
-    logger.info(
-      `Agent iteration ${iteration}: ${report.inputCount} input → ${report.outputCount} output ` +
-        `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
-        `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged, ${report.replacedCount} replaced)`
-    );
-
-    // Build requiredParts from the final steps
+    // Build requiredParts from the converted steps
     const partsMap = new Map<string, any>();
-    for (const step of fixedSteps) {
+    for (const step of iterationSteps) {
       const key = [step.type, step.shape, step.color, step.hexColor, `${step.size.width}x${step.size.length}`].join('|');
       const existing = partsMap.get(key);
       if (existing) {
@@ -695,15 +576,16 @@ Return ONLY valid JSON.`;
     const iterationResult: DesignResult = {
       buildPlan: {
         ...iterationMeta,
-        steps: fixedSteps,
+        steps: iterationSteps,
         agentIterations: iteration,
+        ...(iterationVoxelGrid && { voxelGrid: iterationVoxelGrid }),
       },
       requiredParts: Array.from(partsMap.values()),
       referenceDescription: iterationMeta.referenceDescription,
     };
 
     // --- Visual quality evaluation (Flash model) ---
-    let qualityScore = 10; // default: skip evaluation if no views
+    let qualityScore = 10;
     let qualityFeedback = '';
     let evaluation: BuildEvaluation | null = null;
 
@@ -711,7 +593,7 @@ Return ONLY valid JSON.`;
       const evalRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
       if (evalRemaining > EVAL_TIMEOUT + 30_000) {
         try {
-          evaluation = await evaluateBuildQuality(compositeView, fixedSteps);
+          evaluation = await evaluateBuildQuality(compositeView, iterationSteps);
           qualityScore = evaluation.overallScore;
           qualityFeedback = evaluation.improvements;
 
@@ -723,9 +605,17 @@ Return ONLY valid JSON.`;
           if (evaluation.missingFeatures.length > 0) {
             logger.info(`  Missing: ${evaluation.missingFeatures.join(', ')}`);
           }
+
+          if (onProgress) {
+            const scoreMsg = `Quality: ${qualityScore}/10 (shape: ${evaluation.shapeAccuracy}, color: ${evaluation.colorAccuracy}, detail: ${evaluation.completeness})`;
+            await onProgress(scoreMsg);
+            if (evaluation.missingFeatures.length > 0) {
+              await onProgress(`Missing: ${evaluation.missingFeatures.join(', ')}`);
+            }
+          }
         } catch (error: any) {
           logger.warn(`Quality evaluation failed (non-critical): ${error.message}`);
-          qualityScore = 10; // skip quality-based retry on evaluation failure
+          qualityScore = 10;
         }
       } else {
         logger.info(`Agent iteration ${iteration}: skipping evaluation (${Math.round(evalRemaining / 1000)}s remaining)`);
@@ -736,47 +626,34 @@ Return ONLY valid JSON.`;
     if (
       !bestResult ||
       qualityScore > bestResult.qualityScore ||
-      (qualityScore === bestResult.qualityScore && fixedSteps.length > bestResult.survivingCount)
+      (qualityScore === bestResult.qualityScore && iterationSteps.length > bestResult.brickCount)
     ) {
-      bestResult = { result: iterationResult, survivingCount: fixedSteps.length, qualityScore };
+      bestResult = { result: iterationResult, brickCount: iterationSteps.length, qualityScore };
     }
 
-    // --- Decide whether to retry ---
-    const needsPhysicsFix = needsAgentRetry(report);
+    // --- Decide whether to retry (quality-only, no physics check needed) ---
     const qualityAcceptable = qualityScore >= QUALITY_ACCEPT_THRESHOLD;
     const scorePlateau = iteration > 1 && qualityScore - prevQualityScore < 1;
     prevQualityScore = qualityScore;
 
-    // Accept if: physics OK AND (quality acceptable OR quality plateaued)
-    if (!needsPhysicsFix && (qualityAcceptable || scorePlateau)) {
+    if (qualityAcceptable || scorePlateau) {
       const reason = qualityAcceptable
         ? `quality ${qualityScore}/10 ≥ ${QUALITY_ACCEPT_THRESHOLD}`
         : `quality plateaued (${prevQualityScore} → ${qualityScore})`;
-      logger.info(`Agent iteration ${iteration}: accepted — ${fixedSteps.length} bricks, ${reason}`);
+      logger.info(`Agent iteration ${iteration}: accepted — ${iterationSteps.length} bricks, ${reason}`);
       break;
     }
 
-    // Build feedback for next iteration
+    // Build quality feedback for next iteration (no physics feedback needed)
     if (iteration < AGENT_MAX_ITERATIONS) {
-      const feedbackParts: string[] = [];
-
-      // Quality feedback from evaluation (most valuable — specific to the model)
-      if (!qualityAcceptable && qualityFeedback) {
+      if (qualityFeedback) {
         const missingStr = evaluation?.missingFeatures.length ? `\nMISSING FEATURES: ${evaluation.missingFeatures.join(', ')}` : '';
-        feedbackParts.push(`QUALITY EVALUATION (score: ${qualityScore}/10):${missingStr}\n\n${qualityFeedback}`);
+        feedbackPrompt = `QUALITY EVALUATION (score: ${qualityScore}/10):${missingStr}\n\n${qualityFeedback}\n\nFix the issues above in your next voxel grid. Keep the same grid format.`;
         logger.info(`Agent iteration ${iteration}: quality ${qualityScore}/10, retrying with visual feedback`);
       }
-
-      // Physics feedback
-      if (needsPhysicsFix) {
-        feedbackParts.push(buildPhysicsFeedback(report));
-        logger.info(`Agent iteration ${iteration}: ${report.droppedCount} bricks dropped, requesting improvement`);
-      }
-
-      feedbackPrompt = feedbackParts.join('\n\n');
     } else {
       logger.info(
-        `Agent iteration ${iteration}: final iteration, using best result (${fixedSteps.length} bricks, quality ${qualityScore}/10)`
+        `Agent iteration ${iteration}: final iteration, using best result (${iterationSteps.length} bricks, quality ${qualityScore}/10)`
       );
     }
   }

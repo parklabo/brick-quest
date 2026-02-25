@@ -4,8 +4,8 @@ import { useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import type { KeyState } from '../../lib/hooks/use-keyboard';
+import { useWorkspaceStore } from '../../lib/stores/workspace';
 
-const ORBIT_DISTANCE = 15;
 const INITIAL_AZIMUTH = Math.PI / 4;
 const INITIAL_ELEVATION = Math.PI / 5;
 const MIN_ELEVATION = 0.1;
@@ -16,7 +16,7 @@ const PAN_SPEED = 8;
 const LERP_FACTOR = 5;
 
 const MIN_ZOOM = 5;
-const MAX_ZOOM = 40;
+const MAX_ZOOM = 60;
 const ZOOM_SPEED = 2;
 
 const DRAG_ROTATE_SPEED = 0.008;
@@ -28,8 +28,8 @@ const TOUCH_ELEVATE_SPEED = 0.004;
 const TOUCH_PAN_SPEED = 0.03;
 const PINCH_ZOOM_SPEED = 0.02;
 
-// Baseplate bounds
-const BOUND = 16;
+// Pan bounds (generous to allow free camera movement)
+const BOUND = 30;
 
 // Reusable Vector3 to avoid GC allocations in useFrame (60+ calls/sec)
 const _desiredPos = new THREE.Vector3();
@@ -50,12 +50,20 @@ interface WorkspaceCameraProps {
 
 export function WorkspaceCamera({ keysRef }: WorkspaceCameraProps) {
   const { camera, gl } = useThree();
+  const modelCenter = useWorkspaceStore((s) => s.modelCenter);
+  const modelRadius = useWorkspaceStore((s) => s.modelRadius);
   const targetRef = useRef(new THREE.Vector3(0, 0, 0));
-  const distanceRef = useRef(ORBIT_DISTANCE);
+  const distanceRef = useRef(15);
   const azimuthRef = useRef(INITIAL_AZIMUTH);
   const elevationRef = useRef(INITIAL_ELEVATION);
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
+
+  // Auto-focus camera when model changes (model is centered at world origin by scene offset)
+  useEffect(() => {
+    targetRef.current.set(0, modelCenter.y, 0);
+    distanceRef.current = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, modelRadius * 2.2));
+  }, [modelCenter, modelRadius]);
 
   // Touch state
   const touchCountRef = useRef(0);

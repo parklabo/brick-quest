@@ -14,7 +14,7 @@ import type { BuildPlan, DesignResult } from '@brick-quest/shared';
 interface GalleryPanelProps {
   open: boolean;
   onClose: () => void;
-  onSelectPlan: (plan: BuildPlan, jobType: 'build' | 'design', jobId: string) => void;
+  onSelectPlan: (plan: BuildPlan, jobType: 'build' | 'design', jobId: string, voxelGridPath?: string) => void;
 }
 
 function hasValidPlan(job: TrackedJob): boolean {

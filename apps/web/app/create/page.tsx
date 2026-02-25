@@ -45,16 +45,42 @@ function ProcessingLog({ job }: { job: TrackedJob }) {
             const isLast = i === logs.length - 1;
             const isDone = !isLast || isComplete;
             const isFallback = msg.startsWith('Switched to fallback');
+            const isQuality = msg.startsWith('Quality:');
+            const isMissing = msg.startsWith('Missing:');
+            const isImproving = msg.startsWith('Improving build');
+            const isBuildResult = msg.startsWith('Build generated:');
+            const isAgentDetail = isQuality || isMissing || isImproving || isBuildResult;
+
+            const colorClass = isFallback
+              ? 'text-amber-400'
+              : isQuality
+                ? 'text-blue-400'
+                : isMissing
+                  ? 'text-orange-400'
+                  : isImproving
+                    ? 'text-violet-400'
+                    : isBuildResult
+                      ? 'text-emerald-400'
+                      : isDone
+                        ? 'text-slate-500'
+                        : 'text-lego-yellow';
+
             return (
               <div
                 key={i}
-                className={`flex items-center gap-2 text-xs transition-opacity duration-300 ${
-                  isFallback ? 'text-amber-400' : isDone ? 'text-slate-500' : 'text-lego-yellow'
-                }`}
+                className={`flex items-center gap-2 text-xs transition-opacity duration-300 ${colorClass} ${isAgentDetail ? 'pl-4' : ''}`}
                 style={{ animation: 'fadeIn 0.3s ease-out' }}
               >
                 {isFallback ? (
                   <span className="text-amber-400">⚠</span>
+                ) : isQuality ? (
+                  <span>📊</span>
+                ) : isMissing ? (
+                  <span>🔍</span>
+                ) : isImproving ? (
+                  <span>🔄</span>
+                ) : isBuildResult ? (
+                  <span className="text-emerald-400">✓</span>
                 ) : isDone ? (
                   <span className="text-emerald-400">✓</span>
                 ) : (

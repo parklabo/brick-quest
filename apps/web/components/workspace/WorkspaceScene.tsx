@@ -10,6 +10,7 @@ import { WorkspaceCamera } from './WorkspaceCamera';
 import { WorkspaceFloor } from './WorkspaceFloor';
 import { WorkspaceLighting } from './WorkspaceLighting';
 import { InteractiveBrick } from './InteractiveBrick';
+import { VoxelGridView } from './VoxelGridView';
 import { WorkspaceHUD } from './WorkspaceHUD';
 import { StepControls } from './StepControls';
 
@@ -40,6 +41,9 @@ export default function WorkspaceScene() {
   const placedBricks = useWorkspaceStore((s) => s.placedBricks);
   const currentStep = useWorkspaceStore((s) => s.currentStep);
   const selectBrick = useWorkspaceStore((s) => s.selectBrick);
+  const viewMode = useWorkspaceStore((s) => s.viewMode);
+  const voxelGrid = useWorkspaceStore((s) => s.voxelGrid);
+  const modelCenter = useWorkspaceStore((s) => s.modelCenter);
 
   const visibleBricks = currentStep >= 0 ? placedBricks.slice(0, currentStep + 1) : placedBricks;
 
@@ -69,9 +73,16 @@ export default function WorkspaceScene() {
         <Suspense fallback={null}>
           <WorkspaceFloor />
 
-          {visibleBricks.map((brick) => (
-            <InteractiveBrick key={brick.instanceId} brick={brick} />
-          ))}
+          {/* Offset model so its center is at world origin */}
+          <group position={[-modelCenter.x, 0, -modelCenter.z]}>
+            {viewMode === 'voxels' && voxelGrid ? (
+              <VoxelGridView grid={voxelGrid} />
+            ) : (
+              visibleBricks.map((brick) => (
+                <InteractiveBrick key={brick.instanceId} brick={brick} />
+              ))
+            )}
+          </group>
         </Suspense>
       </Canvas>
 

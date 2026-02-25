@@ -7,7 +7,7 @@ import { Card } from '../ui/Card';
 import { apiClient } from '../../lib/api/client';
 import { useJobsStore } from '../../lib/stores/jobs';
 import { useToastStore } from '../../lib/stores/toasts';
-type Phase = 'idle' | 'selected' | 'submitting' | 'error';
+type Phase = 'idle' | 'loading' | 'selected' | 'submitting' | 'error';
 
 export function CreateUploader() {
   const t = useTranslations('create');
@@ -24,6 +24,7 @@ export function CreateUploader() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback((file: File) => {
+    setPhase('loading');
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -93,12 +94,39 @@ export function CreateUploader() {
   return (
     <div className="space-y-6">
       <Card>
-        {preview ? (
+        {phase === 'loading' ? (
           <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
-            <img src={preview} alt={t('selected')} className="max-h-64 rounded-lg" />
-            <button type="button" onClick={handleDiscard} className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
-              {t('chooseDifferent')}
-            </button>
+            <div className="relative w-48 h-48 rounded-lg bg-white/[0.04] overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent animate-[shimmer_1.5s_infinite]" style={{ backgroundSize: '200% 100%' }} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 text-lego-yellow animate-spin" />
+              </div>
+            </div>
+          </div>
+        ) : preview ? (
+          <div className="flex flex-col items-center gap-4 p-4 sm:p-8">
+            <div className="relative">
+              <img
+                src={preview}
+                alt={t('selected')}
+                className={`max-h-64 rounded-lg transition-all duration-300 ${phase === 'submitting' ? 'brightness-50 scale-[0.98]' : ''}`}
+              />
+              {phase === 'submitting' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                  <div className="relative w-12 h-12">
+                    <div className="absolute inset-0 rounded-full border-2 border-white/20" />
+                    <div className="absolute inset-0 rounded-full border-2 border-t-lego-yellow border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+                    <Upload className="absolute inset-0 m-auto w-5 h-5 text-white animate-pulse" />
+                  </div>
+                  <span className="text-sm font-medium text-white/90 animate-pulse">{t('designing')}</span>
+                </div>
+              )}
+            </div>
+            {phase !== 'submitting' && (
+              <button type="button" onClick={handleDiscard} className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
+                {t('chooseDifferent')}
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-5 p-6 sm:p-10">

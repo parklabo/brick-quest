@@ -10,7 +10,7 @@ import type { BuildPlan, DesignResult } from '@brick-quest/shared';
 interface GalleryCardProps {
   job: TrackedJob;
   isActive: boolean;
-  onSelect: (plan: BuildPlan, jobType: 'build' | 'design', jobId: string) => void;
+  onSelect: (plan: BuildPlan, jobType: 'build' | 'design', jobId: string, voxelGridPath?: string) => void;
 }
 
 function extractPlan(job: TrackedJob): BuildPlan | null {
@@ -36,7 +36,7 @@ export const GalleryCard = memo(function GalleryCard({ job, isActive, onSelect }
   return (
     <button
       type="button"
-      onClick={() => onSelect(plan, job.type as 'build' | 'design', job.id)}
+      onClick={() => onSelect(plan, job.type as 'build' | 'design', job.id, job.voxelGridPath)}
       className={`w-full text-left rounded-xl border-l-2 transition-all duration-200 cursor-pointer ${borderColor} ${
         isActive
           ? 'bg-white/[0.08] ring-1 ring-white/[0.15]'

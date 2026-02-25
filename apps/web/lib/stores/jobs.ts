@@ -1,16 +1,31 @@
 import { create } from 'zustand';
-import { collection, query, where, orderBy, onSnapshot, type Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  serverTimestamp,
+  type Timestamp,
+} from 'firebase/firestore';
 import { firestore } from '../firebase';
 import type { JobType, JobStatus, DesignViews } from '@brick-quest/shared';
 
-const SEEN_IDS_PREFIX = 'brick-quest-seen-job-ids';
 const ADDED_IDS_PREFIX = 'brick-quest-added-job-ids';
 
 let currentUid: string | null = null;
 
-function seenKey() {
-  return currentUid ? `${SEEN_IDS_PREFIX}:${currentUid}` : SEEN_IDS_PREFIX;
-}
+/** Epoch ms — jobs with createdAt <= this are implicitly "seen" */
+let seenBefore: number = 0;
+/** Explicitly seen job IDs (for jobs created after seenBefore) */
+let seenIds = new Set<string>();
+
 function addedKey() {
   return currentUid ? `${ADDED_IDS_PREFIX}:${currentUid}` : ADDED_IDS_PREFIX;
 }
@@ -30,6 +45,10 @@ function saveIdSet(key: string, ids: Set<string>) {
   localStorage.setItem(key, JSON.stringify([...ids]));
 }
 
+function isJobSeen(jobId: string, jobCreatedAt: number): boolean {
+  return jobCreatedAt <= seenBefore || seenIds.has(jobId);
+}
+
 export interface TrackedJob {
   id: string;
   type: JobType;
@@ -40,6 +59,7 @@ export interface TrackedJob {
   error?: string;
   views?: DesignViews;
   usedFallbackModel?: boolean;
+  voxelGridPath?: string;
   createdAt: number; // epoch ms
   seen: boolean;
   addedToInventory: boolean;
@@ -58,7 +78,6 @@ interface JobsStore {
   _initJobsListener: (uid: string) => () => void;
 }
 
-let seenIds = new Set<string>();
 let addedIds = new Set<string>();
 
 export const useJobsStore = create<JobsStore>()((set, get) => ({
@@ -76,7 +95,10 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   removeJob: (id) => {
     seenIds.delete(id);
-    saveIdSet(seenKey(), seenIds);
+    if (currentUid) {
+      const userRef = doc(firestore, 'users', currentUid);
+      updateDoc(userRef, { seenJobIds: arrayRemove(id) }).catch(() => {});
+    }
     addedIds.delete(id);
     saveIdSet(addedKey(), addedIds);
     set((s) => ({
@@ -86,7 +108,10 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   markSeen: (id) => {
     seenIds.add(id);
-    saveIdSet(seenKey(), seenIds);
+    if (currentUid) {
+      const userRef = doc(firestore, 'users', currentUid);
+      updateDoc(userRef, { seenJobIds: arrayUnion(id) }).catch(() => {});
+    }
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, seen: true } : j)),
     }));
@@ -114,13 +139,49 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
   _initJobsListener: (uid: string) => {
     // Reset store and reload per-user localStorage on user switch
     currentUid = uid;
-    seenIds = loadIdSet(seenKey());
+    seenBefore = 0;
+    seenIds = new Set();
     addedIds = loadIdSet(addedKey());
     set({ jobs: [], selectedDesignJobId: null });
 
+    // Load seen state from Firestore, then start jobs listener
+    const userRef = doc(firestore, 'users', uid);
+    let jobsUnsub: (() => void) | null = null;
+
+    const seenReady = getDoc(userRef).then((snap) => {
+      const data = snap.data();
+      if (data?.jobsSeenBefore) {
+        // Existing migration marker — parse it
+        const ts = data.jobsSeenBefore;
+        seenBefore = ts instanceof Object && 'toMillis' in ts ? (ts as Timestamp).toMillis() : new Date(ts).getTime();
+        seenIds = new Set<string>(data.seenJobIds ?? []);
+      } else {
+        // First time: set marker to now so all existing jobs are "seen"
+        setDoc(userRef, { jobsSeenBefore: serverTimestamp(), seenJobIds: [] }, { merge: true }).catch(() => {});
+        seenBefore = Date.now();
+        seenIds = new Set();
+      }
+    }).catch(() => {
+      // Fallback: treat all jobs as seen to avoid false badges
+      seenBefore = Date.now();
+    });
+
     const q = query(collection(firestore, 'jobs'), where('userId', '==', uid), orderBy('createdAt', 'desc'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Track whether initial seenReady has resolved
+    let seenLoaded = false;
+    seenReady.then(() => {
+      seenLoaded = true;
+      // Re-evaluate seen flags on already-loaded jobs
+      set((s) => ({
+        jobs: s.jobs.map((j) => {
+          const needsAttention = j.status === 'completed' || j.status === 'failed' || j.status === 'views_ready';
+          return { ...j, seen: isJobSeen(j.id, j.createdAt) || !needsAttention };
+        }),
+      }));
+    });
+
+    jobsUnsub = onSnapshot(q, (snapshot) => {
       const current = get().jobs;
       const updated = [...current];
 
@@ -149,6 +210,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
             error: data.error,
             views: data.views,
             usedFallbackModel: data.usedFallbackModel,
+            voxelGridPath: data.voxelGridPath ?? updated[idx].voxelGridPath,
           };
         } else {
           const needsAttention = data.status === 'completed' || data.status === 'failed' || data.status === 'views_ready';
@@ -162,8 +224,9 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
             error: data.error,
             views: data.views,
             usedFallbackModel: data.usedFallbackModel,
+            voxelGridPath: data.voxelGridPath,
             createdAt,
-            seen: seenIds.has(id) || !needsAttention,
+            seen: seenLoaded ? (isJobSeen(id, createdAt) || !needsAttention) : !needsAttention,
             addedToInventory: addedIds.has(id),
           });
         }
@@ -173,7 +236,9 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
       set({ jobs: updated });
     });
 
-    return unsubscribe;
+    return () => {
+      jobsUnsub?.();
+    };
   },
 }));
 

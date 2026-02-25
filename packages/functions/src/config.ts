@@ -6,6 +6,12 @@ export const config = {
     fastModel: process.env.GEMINI_FAST_MODEL || 'gemini-3-flash-preview',
     /** Text fallback on 503/429 errors */
     fallbackModel: process.env.GEMINI_FALLBACK_MODEL || 'gemini-3-flash-preview',
+    /** Ordered fallback chain: 3.1 Pro → 3.0 Pro → 3.0 Flash */
+    modelChain: [
+      process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview',
+      'gemini-3-pro-preview',
+      process.env.GEMINI_FALLBACK_MODEL || 'gemini-3-flash-preview',
+    ],
     /** Primary image generation model */
     imageModel: process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview',
     /** Image fallback on 503/429 errors */

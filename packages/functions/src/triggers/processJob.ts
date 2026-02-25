@@ -80,10 +80,19 @@ export const processJob = onDocumentCreated(
         await log('Generating build plan...', 10);
 
         logger.info(`Processing build job ${jobId}`);
-        const { plan: result, usedFallbackModel } = await generateBuildPlan(parts, difficulty, userPrompt);
+        const onProgress = async (msg: string) => {
+          await jobRef.update({ logs: FieldValue.arrayUnion(msg), updatedAt: FieldValue.serverTimestamp() });
+        };
+        const { plan: result, usedFallbackModel } = await generateBuildPlan(parts, difficulty, userPrompt, onProgress);
 
-        if (usedFallbackModel) {
-          await log('Switched to fallback model (primary unavailable)', 95);
+        // Save voxel grid to Storage (too deeply nested for Firestore)
+        let voxelGridPath: string | undefined;
+        if (result.voxelGrid) {
+          const storage = getStorage();
+          const bucket = storage.bucket();
+          voxelGridPath = `builds/${jobId}/voxel-grid.json`;
+          await bucket.file(voxelGridPath).save(JSON.stringify(result.voxelGrid), { contentType: 'application/json' });
+          delete result.voxelGrid;
         }
 
         await log('Complete', 100);
@@ -92,6 +101,7 @@ export const processJob = onDocumentCreated(
           status: 'completed',
           result,
           ...(usedFallbackModel && { usedFallbackModel: true }),
+          ...(voxelGridPath && { voxelGridPath }),
           progress: 100,
           updatedAt: FieldValue.serverTimestamp(),
         });
@@ -281,13 +291,18 @@ export const processDesignUpdate = onDocumentUpdated(
         await log('Analyzing views and generating plan...', 60);
 
         logger.info(`Design job ${jobId}: generating build plan from composite views`);
-        const { result, usedFallbackModel } = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView);
+        const onProgress = async (msg: string) => {
+          await jobRef.update({ logs: FieldValue.arrayUnion(msg), updatedAt: FieldValue.serverTimestamp() });
+        };
+        const { result, usedFallbackModel } = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView, onProgress);
 
-        if (usedFallbackModel) {
-          await log('Switched to fallback model (primary unavailable)', 75);
+        // Save voxel grid to Storage (too deeply nested for Firestore)
+        let voxelGridPath: string | undefined;
+        if (result.buildPlan.voxelGrid) {
+          voxelGridPath = `designs/${jobId}/voxel-grid.json`;
+          await bucket.file(voxelGridPath).save(JSON.stringify(result.buildPlan.voxelGrid), { contentType: 'application/json' });
+          delete result.buildPlan.voxelGrid;
         }
-
-        await log('Validating physics...', 80);
 
         // Generate LEGO-style preview image (non-blocking — failure is OK)
         await log('Generating preview image...', 90);
@@ -309,6 +324,7 @@ export const processDesignUpdate = onDocumentUpdated(
           status: 'completed',
           result,
           ...(usedFallbackModel && { usedFallbackModel: true }),
+          ...(voxelGridPath && { voxelGridPath }),
           progress: 100,
           updatedAt: FieldValue.serverTimestamp(),
         });

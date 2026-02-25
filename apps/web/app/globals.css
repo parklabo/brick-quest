@@ -68,6 +68,15 @@ body {
   animation: toast-in 0.2s ease-out;
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @keyframes stud-pulse {
   0%,
   100% {
