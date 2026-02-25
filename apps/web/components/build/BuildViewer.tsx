@@ -80,6 +80,22 @@ export function BuildViewer({ initialPlan }: BuildViewerProps) {
             placeholder={t('buildPlaceholder')}
             className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2"
           />
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {(['airplane', 'castle', 'car', 'rocket', 'robot', 'animal'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setPrompt(t(`sample_${key}`))}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  prompt === t(`sample_${key}`)
+                    ? 'bg-lego-yellow/20 text-lego-yellow ring-1 ring-lego-yellow/30'
+                    : 'bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-300 ring-1 ring-white/[0.06]'
+                }`}
+              >
+                {t(`sampleChip_${key}`)}
+              </button>
+            ))}
+          </div>
         </div>
         {error && <p className="text-red-400 text-sm">{error}</p>}
         <Button onClick={handleGenerate} disabled={submitting} className="w-full">

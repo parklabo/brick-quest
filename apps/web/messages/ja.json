@@ -209,7 +209,19 @@
     "delete": "削除",
     "deleting": "削除中...",
     "deleteTitle": "組み立てを削除",
-    "deleteConfirm": "この組み立ては完全に削除されます。元に戻せません。"
+    "deleteConfirm": "この組み立ては完全に削除されます。元に戻せません。",
+    "sample_airplane": "飛行機",
+    "sample_castle": "お城",
+    "sample_car": "車",
+    "sample_rocket": "ロケット",
+    "sample_robot": "ロボット",
+    "sample_animal": "動物",
+    "sampleChip_airplane": "✈️ 飛行機",
+    "sampleChip_castle": "🏰 お城",
+    "sampleChip_car": "🚗 車",
+    "sampleChip_rocket": "🚀 ロケット",
+    "sampleChip_robot": "🤖 ロボット",
+    "sampleChip_animal": "🐕 動物"
   },
   "create": {
     "title": "デザインスタジオ",
