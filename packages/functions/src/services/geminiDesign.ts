@@ -421,14 +421,12 @@ export async function generateDesignFromPhoto(
     const currentPrompt = feedbackPrompt ? `${prompt}\n\n${feedbackPrompt}` : prompt;
 
     // Inner parse-retry loop
-    const PARSE_RETRIES = 3;
-    const PER_CALL_TIMEOUT = 150_000;
+    const PARSE_RETRIES = 5;
+    const PER_CALL_TIMEOUT = 90_000;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
     let iterationVoxelGrid: VoxelGrid | null = null;
-    let hitRetryableError = false;
-
     for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
       const budgetRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
       if (budgetRemaining < 30_000) {
@@ -523,8 +521,18 @@ export async function generateDesignFromPhoto(
         logger.error(`  Parse attempt ${attempt} failed:`, error.message);
         lastError = error;
         if (isRetryableModelError(error)) {
-          hitRetryableError = true;
-          break;
+          // Switch model immediately instead of burning a full agent iteration
+          if (modelIndex < modelChain.length - 1) {
+            modelIndex++;
+            useModel = modelChain[modelIndex];
+            usedFallback = modelIndex > 0;
+            logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${modelChain.length})`);
+            if (onProgress) {
+              await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${modelChain.length})`);
+            }
+            continue;
+          }
+          break; // All models exhausted
         }
         if (attempt < PARSE_RETRIES) {
           await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
@@ -535,16 +543,6 @@ export async function generateDesignFromPhoto(
     // If all parse attempts failed, continue or use best
     if (!iterationSteps || !iterationMeta) {
       logger.warn(`Agent iteration ${iteration} failed to produce valid voxel grid`);
-
-      if (hitRetryableError && modelIndex < modelChain.length - 1) {
-        modelIndex++;
-        useModel = modelChain[modelIndex];
-        usedFallback = modelIndex > 0;
-        logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${modelChain.length})`);
-        if (onProgress) {
-          await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${modelChain.length})`);
-        }
-      }
 
       if (bestResult) break;
       if (iteration === AGENT_MAX_ITERATIONS) {

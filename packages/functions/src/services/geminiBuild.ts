@@ -100,14 +100,12 @@ export async function generateBuildPlan(parts: DetectedPart[], difficulty: Diffi
     const prompt = basePrompt;
 
     // Inner parse-retry loop
-    const PARSE_RETRIES = 3;
-    const PER_CALL_TIMEOUT = 150_000;
+    const PARSE_RETRIES = 5;
+    const PER_CALL_TIMEOUT = 90_000;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string } | null = null;
     let iterationVoxelGrid: VoxelGrid | null = null;
-    let hitRetryableError = false;
-
     for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
       const budgetRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
       if (budgetRemaining < 30_000) {
@@ -189,7 +187,16 @@ export async function generateBuildPlan(parts: DetectedPart[], difficulty: Diffi
         logger.error(`  Parse attempt ${attempt} failed:`, error.message);
         lastError = error;
         if (isRetryableModelError(error)) {
-          hitRetryableError = true;
+          if (modelIndex < modelChain.length - 1) {
+            modelIndex++;
+            useModel = modelChain[modelIndex];
+            usedFallback = modelIndex > 0;
+            logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${modelChain.length})`);
+            if (onProgress) {
+              await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${modelChain.length})`);
+            }
+            continue;
+          }
           break;
         }
         if (attempt < PARSE_RETRIES) {
@@ -201,16 +208,6 @@ export async function generateBuildPlan(parts: DetectedPart[], difficulty: Diffi
     // If all parse attempts failed, continue to next or use best
     if (!iterationSteps || !iterationMeta) {
       logger.warn(`Agent iteration ${iteration} failed to produce valid voxel grid`);
-
-      if (hitRetryableError && modelIndex < modelChain.length - 1) {
-        modelIndex++;
-        useModel = modelChain[modelIndex];
-        usedFallback = modelIndex > 0;
-        logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${modelChain.length})`);
-        if (onProgress) {
-          await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${modelChain.length})`);
-        }
-      }
 
       if (bestResult) break;
       if (iteration === AGENT_MAX_ITERATIONS) {

@@ -64,31 +64,6 @@ export interface BuildPlan {
   voxelGrid?: import('./voxel.js').VoxelGrid;
 }
 
-export interface PhysicsCorrectionEntry {
-  stepId: number;
-  partName: string;
-  originalPosition: { x: number; y: number; z: number };
-  size: { width: number; height: number; length: number };
-  action: 'dropped' | 'gravity_snapped' | 'nudged' | 'replaced';
-  reason: string;
-}
-
-export interface PhysicsValidationReport {
-  inputCount: number;
-  outputCount: number;
-  droppedCount: number;
-  gravitySnappedCount: number;
-  nudgedCount: number;
-  replacedCount: number;
-  droppedPercentage: number;
-  corrections: PhysicsCorrectionEntry[];
-}
-
-export interface PhysicsResult {
-  steps: BuildStepBlock[];
-  report: PhysicsValidationReport;
-}
-
 export type Difficulty = 'beginner' | 'normal' | 'expert';
 
 /** Detail level for AI design generation */
