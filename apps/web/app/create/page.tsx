@@ -44,15 +44,18 @@ function ProcessingLog({ job }: { job: TrackedJob }) {
           {logs.map((msg, i) => {
             const isLast = i === logs.length - 1;
             const isDone = !isLast || isComplete;
+            const isFallback = msg.startsWith('Switched to fallback');
             return (
               <div
                 key={i}
                 className={`flex items-center gap-2 text-xs transition-opacity duration-300 ${
-                  isDone ? 'text-slate-500' : 'text-lego-yellow'
+                  isFallback ? 'text-amber-400' : isDone ? 'text-slate-500' : 'text-lego-yellow'
                 }`}
                 style={{ animation: 'fadeIn 0.3s ease-out' }}
               >
-                {isDone ? (
+                {isFallback ? (
+                  <span className="text-amber-400">⚠</span>
+                ) : isDone ? (
                   <span className="text-emerald-400">✓</span>
                 ) : (
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-lego-yellow animate-pulse" />

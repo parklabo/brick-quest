@@ -82,6 +82,10 @@ export const processJob = onDocumentCreated(
         logger.info(`Processing build job ${jobId}`);
         const { plan: result, usedFallbackModel } = await generateBuildPlan(parts, difficulty, userPrompt);
 
+        if (usedFallbackModel) {
+          await log('Switched to fallback model (primary unavailable)', 95);
+        }
+
         await log('Complete', 100);
 
         await jobRef.update({
@@ -114,6 +118,10 @@ export const processJob = onDocumentCreated(
 
         logger.info(`Design job ${jobId}: generating composite views`);
         const compositeImage = await generateOrthographicViews(base64Image, mimeType, detail, userPrompt);
+
+        if (compositeImage.usedFallback) {
+          await log('Switched to fallback model (primary unavailable)', 35);
+        }
 
         await log('Uploading composite image...', 40);
 
@@ -198,6 +206,10 @@ export const processDesignUpdate = onDocumentUpdated(
         logger.info(`Regenerating composite views for job ${jobId}`);
         const compositeImage = await generateOrthographicViews(base64Image, mimeType, detail, userPrompt);
 
+        if (compositeImage.usedFallback) {
+          await log('Switched to fallback model (primary unavailable)', 35);
+        }
+
         await log('Uploading new views...', 40);
 
         const compositePath = `designs/${jobId}/views_composite.png`;
@@ -270,6 +282,10 @@ export const processDesignUpdate = onDocumentUpdated(
 
         logger.info(`Design job ${jobId}: generating build plan from composite views`);
         const { result, usedFallbackModel } = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView);
+
+        if (usedFallbackModel) {
+          await log('Switched to fallback model (primary unavailable)', 75);
+        }
 
         await log('Validating physics...', 80);
 
