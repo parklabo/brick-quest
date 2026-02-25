@@ -62,7 +62,7 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
         markSeen(job.id);
       }
       const plan = job.result as BuildPlan;
-      useWorkspaceStore.getState().loadPlan(plan);
+      useWorkspaceStore.getState().loadPlan(plan, '/builds');
       router.replace('/workspace');
     }
   }, [job?.status, job?.result, job?.id, job?.seen, markSeen, router]);

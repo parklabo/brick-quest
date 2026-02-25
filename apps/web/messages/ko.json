@@ -308,7 +308,16 @@
     "type": "타입:",
     "shape": "모양:",
     "size": "크기:",
-    "position": "위치:"
+    "position": "위치:",
+    "gallery": "갤러리",
+    "galleryTitle": "빌드 갤러리",
+    "galleryEmpty": "완료된 빌드가 없습니다",
+    "galleryEmptyDesc": "빌드나 디자인을 완료하면 여기에 표시됩니다.",
+    "filterAll": "전체",
+    "filterDesign": "디자인",
+    "filterBuild": "조립",
+    "stepsCount": "{count}단계",
+    "currentlyViewing": "보는 중"
   },
   "settings": {
     "title": "설정",

@@ -308,7 +308,16 @@
     "type": "タイプ:",
     "shape": "形状:",
     "size": "サイズ:",
-    "position": "位置:"
+    "position": "位置:",
+    "gallery": "ギャラリー",
+    "galleryTitle": "ビルドギャラリー",
+    "galleryEmpty": "完了したビルドがありません",
+    "galleryEmptyDesc": "ビルドやデザインを完了するとここに表示されます。",
+    "filterAll": "全て",
+    "filterDesign": "デザイン",
+    "filterBuild": "組み立て",
+    "stepsCount": "{count}ステップ",
+    "currentlyViewing": "表示中"
   },
   "settings": {
     "title": "設定",

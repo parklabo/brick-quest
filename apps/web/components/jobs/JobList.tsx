@@ -14,7 +14,7 @@ const CANCELLABLE = new Set(['pending', 'processing', 'generating_views', 'gener
 
 // --- Helpers ---
 
-function relativeTimeI18n(ms: number, tc: (key: string, values?: Record<string, number>) => string): string {
+export function relativeTimeI18n(ms: number, tc: (key: string, values?: Record<string, number>) => string): string {
   const diff = Date.now() - ms;
   const seconds = Math.floor(diff / 1000);
   if (seconds < 60) return tc('justNow');

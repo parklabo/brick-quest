@@ -40,8 +40,12 @@ interface WorkspaceStore {
   // Where to navigate when pressing Back in workspace
   returnPath: string;
 
+  // Source job tracking (for gallery highlight)
+  sourceJobId: string | null;
+  sourceJobType: 'build' | 'design' | null;
+
   // Load plan into workspace
-  loadPlan: (plan: BuildPlan, returnPath?: string) => void;
+  loadPlan: (plan: BuildPlan, returnPath?: string, sourceJobId?: string, sourceJobType?: 'build' | 'design') => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
@@ -72,9 +76,12 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
   mode: 'view',
   setMode: (mode) => set({ mode }),
 
-  returnPath: '/builds',
+  returnPath: '/home',
 
-  loadPlan: (plan, returnPath) => {
+  sourceJobId: null,
+  sourceJobType: null,
+
+  loadPlan: (plan, returnPath, sourceJobId, sourceJobType) => {
     const bricks: PlacedBrick[] = plan.steps.map((step, idx) => ({
       ...step,
       instanceId: `brick-${idx}-${step.stepId}`,
@@ -85,7 +92,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
       currentStep: 0,
       selectedBrickId: null,
       mode: 'view',
-      returnPath: returnPath ?? '/builds',
+      returnPath: returnPath ?? '/home',
+      sourceJobId: sourceJobId ?? null,
+      sourceJobType: sourceJobType ?? null,
     });
   },
 }));

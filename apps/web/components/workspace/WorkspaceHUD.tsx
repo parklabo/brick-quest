@@ -1,9 +1,12 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LayoutGrid } from 'lucide-react';
 import { useWorkspaceStore } from '../../lib/stores/workspace';
+import { GalleryPanel } from './GalleryPanel';
+import type { BuildPlan } from '@brick-quest/shared';
 
 export function WorkspaceHUD() {
   const t = useTranslations('workspace');
@@ -13,9 +16,16 @@ export function WorkspaceHUD() {
   const currentStep = useWorkspaceStore((s) => s.currentStep);
   const plan = useWorkspaceStore((s) => s.plan);
   const returnPath = useWorkspaceStore((s) => s.returnPath);
+  const [galleryOpen, setGalleryOpen] = useState(false);
 
   const selectedBrick = selectedBrickId ? placedBricks.find((b) => b.instanceId === selectedBrickId) : null;
   const currentStepData = plan && currentStep >= 0 && currentStep < plan.steps.length ? plan.steps[currentStep] : null;
+
+  const handleSelectPlan = useCallback((selectedPlan: BuildPlan, jobType: 'build' | 'design', jobId: string) => {
+    const currentReturnPath = useWorkspaceStore.getState().returnPath;
+    useWorkspaceStore.getState().loadPlan(selectedPlan, currentReturnPath, jobId, jobType);
+    setGalleryOpen(false);
+  }, []);
 
   return (
     <>
@@ -29,6 +39,22 @@ export function WorkspaceHUD() {
           {t('build')}
         </Link>
       </div>
+
+      {/* Gallery toggle — top right */}
+      <div className="absolute top-4 right-4 z-10">
+        <button
+          onClick={() => setGalleryOpen((o) => !o)}
+          className={`flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl px-4 py-2 text-sm transition-colors ${
+            galleryOpen ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          <LayoutGrid className="w-4 h-4" />
+          <span className="hidden sm:inline">{t('gallery')}</span>
+        </button>
+      </div>
+
+      {/* Gallery panel */}
+      <GalleryPanel open={galleryOpen} onClose={() => setGalleryOpen(false)} onSelectPlan={handleSelectPlan} />
 
       {/* Desktop: keyboard controls hint */}
       <div className="hidden sm:block absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">

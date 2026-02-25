@@ -308,7 +308,16 @@
     "type": "Type:",
     "shape": "Shape:",
     "size": "Size:",
-    "position": "Position:"
+    "position": "Position:",
+    "gallery": "Gallery",
+    "galleryTitle": "Build Gallery",
+    "galleryEmpty": "No completed builds yet",
+    "galleryEmptyDesc": "Complete a build or design to see it here.",
+    "filterAll": "All",
+    "filterDesign": "Design",
+    "filterBuild": "Build",
+    "stepsCount": "{count} steps",
+    "currentlyViewing": "Viewing"
   },
   "settings": {
     "title": "Settings",
