@@ -657,6 +657,96 @@ function InventoryDisplay() {
 }
 
 /* ═══════════════════════════════════════════
+   LEGO room decorations — studs, brick walls, accents
+   ═══════════════════════════════════════════ */
+
+const LEGO_COLORS = ['#dc2626', '#facc15', '#2563eb', '#16a34a'] as const;
+const BRICK_LINE_YS = [0.4, 0.8, 1.2, 1.6, 2.0];
+
+function LegoDecor() {
+  const studRef = useRef<THREE.InstancedMesh>(null);
+
+  // Floor stud positions (14×14 baseplate grid)
+  const studPositions = useMemo(() => {
+    const positions: [number, number, number][] = [];
+    for (let x = -6.5; x <= 6.5; x += 1) {
+      for (let z = -6.5; z <= 6.5; z += 1) {
+        positions.push([x, 0.02, z]);
+      }
+    }
+    return positions;
+  }, []);
+
+  useEffect(() => {
+    if (!studRef.current) return;
+    const dummy = new THREE.Object3D();
+    studPositions.forEach((pos, i) => {
+      dummy.position.set(...pos);
+      dummy.updateMatrix();
+      studRef.current!.setMatrixAt(i, dummy.matrix);
+    });
+    studRef.current.instanceMatrix.needsUpdate = true;
+  }, [studPositions]);
+
+  return (
+    <>
+      {/* ── Floor studs (LEGO baseplate) ── */}
+      <instancedMesh ref={studRef} args={[undefined, undefined, studPositions.length]} receiveShadow>
+        <cylinderGeometry args={[0.12, 0.12, 0.04, 8]} />
+        <meshStandardMaterial color="#CBB998" roughness={0.5} metalness={0.05} />
+      </instancedMesh>
+
+      {/* ── Wall brick grooves — back wall ── */}
+      {BRICK_LINE_YS.map((y) => (
+        <mesh key={`bwl-${y}`} position={[0, y, -6.99]}>
+          <boxGeometry args={[14.2, 0.02, 0.005]} />
+          <meshStandardMaterial color="#C4BAA8" roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* ── Wall brick grooves — left wall ── */}
+      {BRICK_LINE_YS.map((y) => (
+        <mesh key={`lwl-${y}`} position={[-6.99, y, 0]}>
+          <boxGeometry args={[0.005, 0.02, 14.2]} />
+          <meshStandardMaterial color="#C4BAA8" roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* ── Colored accent strip — back wall top ── */}
+      {LEGO_COLORS.map((color, i) => (
+        <mesh key={`bwt-${i}`} position={[-5.325 + i * 3.55, 2.42, -7.0]}>
+          <boxGeometry args={[3.55, 0.06, 0.12]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+      ))}
+
+      {/* ── Colored accent strip — left wall top ── */}
+      {LEGO_COLORS.map((color, i) => (
+        <mesh key={`lwt-${i}`} position={[-7.0, 2.42, -5.325 + i * 3.55]}>
+          <boxGeometry args={[0.12, 0.06, 3.55]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+      ))}
+
+      {/* ── Corner pillar (stacked LEGO bricks) ── */}
+      <group position={[-6.85, 0, -6.85]}>
+        {[0, 0.32, 0.64, 0.96, 1.28, 1.6, 1.92].map((y, i) => (
+          <mesh key={`cp-${i}`} position={[0, y + 0.16, 0]}>
+            <boxGeometry args={[0.3, 0.32, 0.3]} />
+            <meshStandardMaterial color={LEGO_COLORS[i % LEGO_COLORS.length]} roughness={0.4} />
+          </mesh>
+        ))}
+        {/* Stud on top */}
+        <mesh position={[0, 2.32, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.06, 8]} />
+          <meshStandardMaterial color={LEGO_COLORS[3]} roughness={0.4} />
+        </mesh>
+      </group>
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════
    Floor zone styling
    ═══════════════════════════════════════════ */
 
@@ -721,6 +811,9 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
 
       {/* ── Zone floor tints + center path ── */}
       <ZoneFloor />
+
+      {/* ── LEGO room decorations ── */}
+      <LegoDecor />
 
       {/* ── Walls (back + left, flush with floor edge) ── */}
       <mesh position={[0, 1.2, -7.05]}>
@@ -848,31 +941,49 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
       {/* ── Left wall: Notice board (clickable) ── */}
       <NoticeBoard />
 
-      {/* ── Portal floor labels (engraved text) ── */}
-      <Text
-        position={[-3.5, 0.02, 1.2]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.3}
-        color="#8B7355"
-        anchorX="center"
-        anchorY="middle"
-        letterSpacing={0.08}
-        fontWeight="bold"
-      >
-        {t('designZone')}
-      </Text>
-      <Text
-        position={[3.5, 0.02, 1.2]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={0.3}
-        color="#6B5B8D"
-        anchorX="center"
-        anchorY="middle"
-        letterSpacing={0.08}
-        fontWeight="bold"
-      >
-        {t('myBrickZone')}
-      </Text>
+      {/* ── Portal floor labels (nameplate style) ── */}
+      <group position={[-3.5, 0.01, 1.2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh>
+          <planeGeometry args={[2.8, 0.55]} />
+          <meshStandardMaterial color="#3A3020" roughness={0.6} />
+        </mesh>
+        <mesh position={[0, 0, 0.001]}>
+          <planeGeometry args={[2.6, 0.43]} />
+          <meshStandardMaterial color="#4A3D2E" roughness={0.5} />
+        </mesh>
+        <Text
+          position={[0, 0, 0.003]}
+          fontSize={0.26}
+          color="#fbbf24"
+          anchorX="center"
+          anchorY="middle"
+          letterSpacing={0.1}
+          fontWeight="bold"
+        >
+          {t('designZone')}
+        </Text>
+      </group>
+      <group position={[3.5, 0.01, 1.2]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh>
+          <planeGeometry args={[2.8, 0.55]} />
+          <meshStandardMaterial color="#2A2040" roughness={0.6} />
+        </mesh>
+        <mesh position={[0, 0, 0.001]}>
+          <planeGeometry args={[2.6, 0.43]} />
+          <meshStandardMaterial color="#362A50" roughness={0.5} />
+        </mesh>
+        <Text
+          position={[0, 0, 0.003]}
+          fontSize={0.26}
+          color="#c4b5fd"
+          anchorX="center"
+          anchorY="middle"
+          letterSpacing={0.1}
+          fontWeight="bold"
+        >
+          {t('myBrickZone')}
+        </Text>
+      </group>
 
       {/* ── Inventory display near mybrick portal ── */}
       <InventoryDisplay />
@@ -894,7 +1005,8 @@ function WorkshopContent({ keysRef }: { keysRef: React.RefObject<KeyState> }) {
         enableRotate
         enablePan
         minZoom={15}
-        maxZoom={90}
+        maxZoom={120}
+        zoomSpeed={1.2}
         maxPolarAngle={Math.PI / 2.2}
         panSpeed={0.5}
         rotateSpeed={0.5}
@@ -1008,7 +1120,7 @@ export default function WorkshopScene() {
         dpr={[1, isMobile ? 1 : 1.5]}
         orthographic
         camera={{
-          zoom: isMobile ? 40 : 55,
+          zoom: isMobile ? 50 : 70,
           position: [8, 8, 8],
           near: -1000,
           far: 1000,

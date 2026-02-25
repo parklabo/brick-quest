@@ -30,7 +30,7 @@ interface PlayerState {
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set) => ({
-      modelUrl: PLAYER_MODEL_PRESETS[0].modelUrl,
+      modelUrl: PLAYER_MODEL_PRESETS[3].modelUrl,
       bodyColor: PLAYER_COLOR_PRESETS[0].hex,
       updateModel: (modelUrl) => set({ modelUrl }),
       updateColor: (bodyColor) => set({ bodyColor }),
