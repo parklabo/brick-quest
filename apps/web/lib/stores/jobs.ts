@@ -3,8 +3,17 @@ import { collection, query, where, orderBy, onSnapshot, type Timestamp } from 'f
 import { firestore } from '../firebase';
 import type { JobType, JobStatus, DesignViews } from '@brick-quest/shared';
 
-const SEEN_IDS_KEY = 'brick-quest-seen-job-ids';
-const ADDED_IDS_KEY = 'brick-quest-added-job-ids';
+const SEEN_IDS_PREFIX = 'brick-quest-seen-job-ids';
+const ADDED_IDS_PREFIX = 'brick-quest-added-job-ids';
+
+let currentUid: string | null = null;
+
+function seenKey() {
+  return currentUid ? `${SEEN_IDS_PREFIX}:${currentUid}` : SEEN_IDS_PREFIX;
+}
+function addedKey() {
+  return currentUid ? `${ADDED_IDS_PREFIX}:${currentUid}` : ADDED_IDS_PREFIX;
+}
 
 function loadIdSet(key: string): Set<string> {
   if (typeof window === 'undefined') return new Set();
@@ -49,8 +58,8 @@ interface JobsStore {
   _initJobsListener: (uid: string) => () => void;
 }
 
-const seenIds = loadIdSet(SEEN_IDS_KEY);
-const addedIds = loadIdSet(ADDED_IDS_KEY);
+let seenIds = new Set<string>();
+let addedIds = new Set<string>();
 
 export const useJobsStore = create<JobsStore>()((set, get) => ({
   jobs: [],
@@ -67,9 +76,9 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   removeJob: (id) => {
     seenIds.delete(id);
-    saveIdSet(SEEN_IDS_KEY, seenIds);
+    saveIdSet(seenKey(), seenIds);
     addedIds.delete(id);
-    saveIdSet(ADDED_IDS_KEY, addedIds);
+    saveIdSet(addedKey(), addedIds);
     set((s) => ({
       jobs: s.jobs.filter((j) => j.id !== id),
     }));
@@ -77,7 +86,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   markSeen: (id) => {
     seenIds.add(id);
-    saveIdSet(SEEN_IDS_KEY, seenIds);
+    saveIdSet(seenKey(), seenIds);
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, seen: true } : j)),
     }));
@@ -85,7 +94,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   markAddedToInventory: (id) => {
     addedIds.add(id);
-    saveIdSet(ADDED_IDS_KEY, addedIds);
+    saveIdSet(addedKey(), addedIds);
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, addedToInventory: true } : j)),
     }));
@@ -93,7 +102,7 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
 
   unmarkAddedToInventory: (id) => {
     addedIds.delete(id);
-    saveIdSet(ADDED_IDS_KEY, addedIds);
+    saveIdSet(addedKey(), addedIds);
     set((s) => ({
       jobs: s.jobs.map((j) => (j.id === id ? { ...j, addedToInventory: false } : j)),
     }));
@@ -103,6 +112,12 @@ export const useJobsStore = create<JobsStore>()((set, get) => ({
   clearDesignJob: () => set({ selectedDesignJobId: null }),
 
   _initJobsListener: (uid: string) => {
+    // Reset store and reload per-user localStorage on user switch
+    currentUid = uid;
+    seenIds = loadIdSet(seenKey());
+    addedIds = loadIdSet(addedKey());
+    set({ jobs: [], selectedDesignJobId: null });
+
     const q = query(collection(firestore, 'jobs'), where('userId', '==', uid), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
