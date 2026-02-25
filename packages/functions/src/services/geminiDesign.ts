@@ -11,7 +11,7 @@ const DESIGN_TIMEOUT = 8 * 60 * 1000;
 /** Short timeout for image gen — Pro model either responds in ~30s or is overloaded */
 const IMAGE_GEN_TIMEOUT = 90_000;
 /** Total time budget for the agent loop — leaves margin for preview gen + Firestore writes */
-const AGENT_BUDGET_MS = 7 * 60 * 1000;
+const AGENT_BUDGET_MS = 500_000;
 const { AGENT_MAX_ITERATIONS } = LIMITS;
 
 /** Evaluation timeout — Flash model is fast, 30s is plenty */
