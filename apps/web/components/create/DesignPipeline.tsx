@@ -126,8 +126,8 @@ export function DesignPipeline({ activeJob }: { activeJob?: TrackedJob }) {
         })}
       </div>
 
-      {/* Active Job Card — only show when actionable (views_ready, completed), not during processing */}
-      {displayJob && !isProcessing && <ActiveJobCard job={displayJob} />}
+      {/* Active Job Card — only for completed/failed (views_ready review is inline on create page) */}
+      {displayJob && !isProcessing && displayJob.status !== 'views_ready' && <ActiveJobCard job={displayJob} />}
     </div>
   );
 }

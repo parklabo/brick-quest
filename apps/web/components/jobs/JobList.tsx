@@ -55,14 +55,14 @@ export function StatusBadge({ status }: { status: TrackedJob['status'] }) {
     case 'processing':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/20">
-          <Loader2 className="w-3 h-3 animate-spin" />
+          <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
           {status === 'pending' ? t('queued') : t('processing')}
         </span>
       );
     case 'generating_views':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-400 ring-1 ring-purple-500/20">
-          <Loader2 className="w-3 h-3 animate-spin" />
+          <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
           {t('generatingViews')}
         </span>
       );
@@ -76,7 +76,7 @@ export function StatusBadge({ status }: { status: TrackedJob['status'] }) {
     case 'generating_build':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-yellow-500/10 text-yellow-400 ring-1 ring-yellow-500/20">
-          <Loader2 className="w-3 h-3 animate-spin" />
+          <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
           {t('buildingPlan')}
         </span>
       );

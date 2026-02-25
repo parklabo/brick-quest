@@ -300,7 +300,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
 
   const handleOpenWorkspace = () => {
     if (!designResult) return;
-    useWorkspaceStore.getState().loadPlan(designResult.buildPlan);
+    useWorkspaceStore.getState().loadPlan(designResult.buildPlan, `/create/${jobId}/result`);
     router.push('/workspace');
   };
 

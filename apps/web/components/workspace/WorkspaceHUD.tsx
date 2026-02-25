@@ -12,16 +12,17 @@ export function WorkspaceHUD() {
   const placedBricks = useWorkspaceStore((s) => s.placedBricks);
   const currentStep = useWorkspaceStore((s) => s.currentStep);
   const plan = useWorkspaceStore((s) => s.plan);
+  const returnPath = useWorkspaceStore((s) => s.returnPath);
 
   const selectedBrick = selectedBrickId ? placedBricks.find((b) => b.instanceId === selectedBrickId) : null;
   const currentStepData = plan && currentStep >= 0 && currentStep < plan.steps.length ? plan.steps[currentStep] : null;
 
   return (
     <>
-      {/* Back to Build — top left */}
+      {/* Back — top left */}
       <div className="absolute top-4 left-4 z-10">
         <Link
-          href="/builds"
+          href={returnPath}
           className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

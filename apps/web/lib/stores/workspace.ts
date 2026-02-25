@@ -37,8 +37,11 @@ interface WorkspaceStore {
   mode: 'view' | 'edit';
   setMode: (mode: 'view' | 'edit') => void;
 
+  // Where to navigate when pressing Back in workspace
+  returnPath: string;
+
   // Load plan into workspace
-  loadPlan: (plan: BuildPlan) => void;
+  loadPlan: (plan: BuildPlan, returnPath?: string) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
@@ -69,7 +72,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
   mode: 'view',
   setMode: (mode) => set({ mode }),
 
-  loadPlan: (plan) => {
+  returnPath: '/builds',
+
+  loadPlan: (plan, returnPath) => {
     const bricks: PlacedBrick[] = plan.steps.map((step, idx) => ({
       ...step,
       instanceId: `brick-${idx}-${step.stepId}`,
@@ -80,6 +85,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
       currentStep: 0,
       selectedBrickId: null,
       mode: 'view',
+      returnPath: returnPath ?? '/builds',
     });
   },
 }));

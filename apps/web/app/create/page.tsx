@@ -191,14 +191,6 @@ function ViewsReviewInline({ job }: { job: TrackedJob }) {
           </button>
         </div>
 
-        {/* Link to full result page */}
-        <Link
-          href={`/create/${job.id}/result`}
-          className="flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500 hover:text-lego-yellow transition-colors py-1"
-        >
-          <ExternalLink className="w-3 h-3" />
-          {t('viewFullResult')}
-        </Link>
       </div>
 
       {showDeleteConfirm && (
