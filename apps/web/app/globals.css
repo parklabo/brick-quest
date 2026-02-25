@@ -11,6 +11,19 @@
   --color-lego-border: #2a2d35;
 }
 
+/* LEGO baseplate stud grid background */
+body {
+  background-image:
+    /* Vignette: subtly darker edges */
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 100%),
+    /* Warm accent glow from top-center */
+    radial-gradient(ellipse at 50% 0%, rgba(250, 204, 21, 0.03) 0%, transparent 50%),
+    /* LEGO stud grid */
+    radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px;
+  background-attachment: fixed;
+}
+
 /* Stud pattern for decorative elements */
 @utility stud {
   width: 10px;
