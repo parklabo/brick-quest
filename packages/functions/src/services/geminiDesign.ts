@@ -11,6 +11,10 @@ import {
   fixBuildPhysicsWithReport,
   COORDINATE_SYSTEM_PROMPT,
   CRITICAL_RULES_PROMPT,
+  PROPORTION_PLANNING_PROMPT,
+  SHAPE_USAGE_GUIDE_PROMPT,
+  ARCHITECTURAL_PATTERNS_PROMPT,
+  ADVANCED_WORKED_EXAMPLE_PROMPT,
 } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
@@ -468,10 +472,16 @@ DETAIL LEVEL: ${detail.toUpperCase()}
 ${complexityInstruction}
 TARGET: ${cfg.brickRange}. Do NOT generate fewer than ${cfg.minBricks} bricks.
 
+${PROPORTION_PLANNING_PROMPT}
+
+${SHAPE_USAGE_GUIDE_PROMPT}
+
 SHAPES (use exact shape IDs):
 ${getGeminiShapeDescriptions()}
 
 ${COORDINATE_SYSTEM_PROMPT}
+
+${ARCHITECTURAL_PATTERNS_PROMPT}
 
 ═══════════════════════════════════════
 LAYER-BY-LAYER BUILD METHOD (MANDATORY)
@@ -492,62 +502,14 @@ d) Use larger bricks (2x4, 2x3, 2x2) first, fill remaining gaps with 1x2 and 1x1
 TILING RULE: For each layer, mentally draw a grid of the footprint. EVERY cell must be covered by exactly one brick. If you can't fit a large brick, use smaller ones.
 
 STEP 3 — ADD DETAILS:
-- Eyes: use 1x1 plates or tiles at the correct Y height on the front face
+- Eyes: use 1x1 round bricks or plates at the correct Y height on the front face
 - Accessories: glasses, hair, hats, ears — add as extra bricks on the appropriate layer
 
-═══════════════════════════════════════
-COMPLETE WORKED EXAMPLE — 4×4 base, 3 layers
-═══════════════════════════════════════
-Model footprint: 4 wide (X: 0-3) × 4 deep (Z: 0-3)
-
-LAYER 0 (y=0.0) — fill entire 4×4 with blue bricks:
-  Grid:  [B B B B]   (B = blue, each cell = 1 stud)
-         [B B B B]
-         [B B B B]
-         [B B B B]
-  Tiling with 2x4 bricks:
-    step 1: 2x4 blue brick → x=0.5, y=0.0, z=1.5 (covers X:0-1, Z:0-3) ✓
-    step 2: 2x4 blue brick → x=2.5, y=0.0, z=1.5 (covers X:2-3, Z:0-3) ✓
-  CHECK: 2 bricks × 8 studs = 16 studs = 4×4 footprint ✓ No gaps ✓
-
-LAYER 1 (y=1.2) — fill 4×4 with blue, white face stripe:
-  Grid:  [B B B B]
-         [W W W W]   ← white face row at Z=1
-         [W W W W]   ← white face row at Z=2
-         [B B B B]
-  Tiling:
-    step 3: 1x4 blue brick → x=0.5, y=1.2, z=0 (covers X:0-1, Z:0) — WAIT, 1x4 means W=1,L=4 → x=integer, z=.5
-    CORRECT: step 3: 2x1 blue brick → x=0.5, y=1.2, z=0 (covers X:0-1, Z:0)
-    step 4: 2x1 blue brick → x=2.5, y=1.2, z=0 (covers X:2-3, Z:0)
-    step 5: 2x2 white brick → x=0.5, y=1.2, z=1.5 (covers X:0-1, Z:1-2)
-    step 6: 2x2 white brick → x=2.5, y=1.2, z=1.5 (covers X:2-3, Z:1-2)
-    step 7: 2x1 blue brick → x=0.5, y=1.2, z=3 (covers X:0-1, Z:3)
-    step 8: 2x1 blue brick → x=2.5, y=1.2, z=3 (covers X:2-3, Z:3)
-  CHECK: covers all 16 studs ✓ Colors match grid ✓
-
-LAYER 2 (y=2.4) — eyes on white face:
-  Grid:  [B B B B]
-         [B K B K]   ← K = black 1x1 eyes at (1,1) and (3,1)
-         [W W W W]
-         [B B B B]
-  Tiling:
-    step 9:  2x1 blue brick → x=0.5, y=2.4, z=0
-    step 10: 2x1 blue brick → x=2.5, y=2.4, z=0
-    step 11: 1x1 blue brick → x=0, y=2.4, z=1
-    step 12: 1x1 black brick → x=1, y=2.4, z=1 ← LEFT EYE
-    step 13: 1x1 blue brick → x=2, y=2.4, z=1
-    step 14: 1x1 black brick → x=3, y=2.4, z=1 ← RIGHT EYE
-    step 15: 2x2 white brick → x=0.5, y=2.4, z=2.5 — WAIT, Z:2-3 but row Z=3 should be blue
-    CORRECT:
-    step 15: 2x1 white brick → x=0.5, y=2.4, z=2
-    step 16: 2x1 white brick → x=2.5, y=2.4, z=2
-    step 17: 2x1 blue brick → x=0.5, y=2.4, z=3
-    step 18: 2x1 blue brick → x=2.5, y=2.4, z=3
-  CHECK: 10 bricks, all 16 studs covered ✓ Eyes placed correctly ✓
+${ADVANCED_WORKED_EXAMPLE_PROMPT}
 
 ${CRITICAL_RULES_PROMPT}
-8. MATCH THE REFERENCE: Colors and features must match the reference photo/views at each layer height.
-9. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
+11. MATCH THE REFERENCE: Colors and features must match the reference photo/views at each layer height.
+12. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
 
 BRICK COUNT: ${cfg.brickRange}
 You MUST generate at least ${cfg.minBricks} bricks.
@@ -707,7 +669,7 @@ Return ONLY valid JSON.`;
     logger.info(
       `Agent iteration ${iteration}: ${report.inputCount} input → ${report.outputCount} output ` +
         `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
-        `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged)`
+        `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged, ${report.replacedCount} replaced)`
     );
 
     // Build requiredParts from the final steps

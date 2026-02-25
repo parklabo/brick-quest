@@ -11,6 +11,10 @@ import {
   fixBuildPhysicsWithReport,
   COORDINATE_SYSTEM_PROMPT,
   CRITICAL_RULES_PROMPT,
+  PROPORTION_PLANNING_PROMPT,
+  SHAPE_USAGE_GUIDE_PROMPT,
+  ARCHITECTURAL_PATTERNS_PROMPT,
+  ADVANCED_WORKED_EXAMPLE_PROMPT,
 } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { needsAgentRetry, buildPhysicsFeedback } from '../utils/physics-feedback.js';
@@ -127,26 +131,16 @@ DIFFICULTY: ${difficulty.toUpperCase()}
 ${cfg.instruction}
 TARGET: Maximum ${cfg.maxSteps} build steps.
 
+${PROPORTION_PLANNING_PROMPT}
+
+${SHAPE_USAGE_GUIDE_PROMPT}
+
 SHAPES (use exact shape IDs in your response):
 ${getGeminiShapeDescriptions()}
 
-═══════════════════════════════════════
-STEP 1 — PLAN THE MODEL SHAPE
-═══════════════════════════════════════
-Before placing ANY bricks, you MUST mentally plan:
-- What is the subject? What are its KEY FEATURES that make it recognizable?
-- What is the bounding box? (width in X, depth in Z, height in layers)
-- What does each layer's SILHOUETTE look like from above?
-- Where do colors change? (e.g., body vs. head vs. eyes vs. accessories)
-
-Example for a CAT:
-- Bounding box: ~6 wide × 4 deep × 8 layers tall
-- Layers 0-1: feet/base (4 small legs or a flat base)
-- Layers 2-4: body (oval/rectangular, main body color)
-- Layers 5-7: head (wider than body, with ears poking up at layer 7)
-- Details: eyes (1x1 black on front of head), nose (1x1 pink), whiskers, tail extending from back
-
 ${COORDINATE_SYSTEM_PROMPT}
+
+${ARCHITECTURAL_PATTERNS_PROMPT}
 
 ═══════════════════════════════════════
 LAYER-BY-LAYER BUILD METHOD (MANDATORY)
@@ -162,58 +156,13 @@ e) Pick inventory parts by inventoryIndex — respect available counts
 
 TILING RULE: For each layer, mentally draw a grid of the footprint. EVERY cell must be covered by exactly one brick. If you can't fit a large brick, use smaller ones.
 
-═══════════════════════════════════════
-COMPLETE WORKED EXAMPLE — 4×4 base, 3 layers
-═══════════════════════════════════════
-Model footprint: 4 wide (X: 0-3) × 4 deep (Z: 0-3)
-
-LAYER 0 (y=0.0) — fill entire 4×4 with blue bricks:
-  Grid:  [B B B B]   (B = blue, each cell = 1 stud)
-         [B B B B]
-         [B B B B]
-         [B B B B]
-  Tiling with 2x4 bricks:
-    step 1: inventoryIndex=0, 2x4 blue brick → x=0.5, y=0.0, z=1.5 (covers X:0-1, Z:0-3) ✓
-    step 2: inventoryIndex=0, 2x4 blue brick → x=2.5, y=0.0, z=1.5 (covers X:2-3, Z:0-3) ✓
-  CHECK: 2 bricks × 8 studs = 16 studs = 4×4 footprint ✓ No gaps ✓
-
-LAYER 1 (y=1.2) — blue body with white face stripe:
-  Grid:  [B B B B]
-         [W W W W]   ← white face row at Z=1
-         [W W W W]   ← white face row at Z=2
-         [B B B B]
-  Tiling:
-    step 3: inventoryIndex=1, 2x1 blue brick → x=0.5, y=1.2, z=0
-    step 4: inventoryIndex=1, 2x1 blue brick → x=2.5, y=1.2, z=0
-    step 5: inventoryIndex=2, 2x2 white brick → x=0.5, y=1.2, z=1.5
-    step 6: inventoryIndex=2, 2x2 white brick → x=2.5, y=1.2, z=1.5
-    step 7: inventoryIndex=1, 2x1 blue brick → x=0.5, y=1.2, z=3
-    step 8: inventoryIndex=1, 2x1 blue brick → x=2.5, y=1.2, z=3
-  CHECK: covers all 16 studs ✓ Colors match grid ✓
-
-LAYER 2 (y=2.4) — eyes on white face:
-  Grid:  [B B B B]
-         [B K B K]   ← K = black 1x1 eyes at (1,1) and (3,1)
-         [W W W W]
-         [B B B B]
-  Tiling:
-    step 9:  inventoryIndex=1, 2x1 blue brick → x=0.5, y=2.4, z=0
-    step 10: inventoryIndex=1, 2x1 blue brick → x=2.5, y=2.4, z=0
-    step 11: inventoryIndex=3, 1x1 blue brick → x=0, y=2.4, z=1
-    step 12: inventoryIndex=4, 1x1 black brick → x=1, y=2.4, z=1 ← LEFT EYE
-    step 13: inventoryIndex=3, 1x1 blue brick → x=2, y=2.4, z=1
-    step 14: inventoryIndex=4, 1x1 black brick → x=3, y=2.4, z=1 ← RIGHT EYE
-    step 15: inventoryIndex=5, 2x1 white brick → x=0.5, y=2.4, z=2
-    step 16: inventoryIndex=5, 2x1 white brick → x=2.5, y=2.4, z=2
-    step 17: inventoryIndex=1, 2x1 blue brick → x=0.5, y=2.4, z=3
-    step 18: inventoryIndex=1, 2x1 blue brick → x=2.5, y=2.4, z=3
-  CHECK: 10 bricks, all 16 studs covered ✓ Eyes placed correctly ✓
+${ADVANCED_WORKED_EXAMPLE_PROMPT}
 
 ${CRITICAL_RULES_PROMPT}
-8. RECOGNIZABLE SHAPE: The model MUST look like the requested subject from multiple angles.
-9. COLOR GROUPING: Use colors intentionally — group same colors for body parts, use contrasting colors for details (eyes, nose, patterns).
-10. INVENTORY RESPECT: Only use parts from the inventory. Track counts — do NOT exceed available quantity per part.
-11. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
+11. RECOGNIZABLE SHAPE: The model MUST look like the requested subject from multiple angles.
+12. COLOR GROUPING: Use colors intentionally — group same colors for body parts, use contrasting colors for details (eyes, nose, patterns).
+13. INVENTORY RESPECT: Only use parts from the inventory. Track counts — do NOT exceed available quantity per part.
+14. SELF-CHECK: After mentally placing all bricks in a layer, verify total stud coverage = footprint area.
 
 Keep step descriptions SHORT (3-8 words).
 Return ONLY valid JSON.`;
@@ -363,7 +312,7 @@ Return ONLY valid JSON.`;
     logger.info(
       `Agent iteration ${iteration}: ${report.inputCount} input → ${report.outputCount} output ` +
         `(${report.droppedCount} dropped=${report.droppedPercentage.toFixed(1)}%, ` +
-        `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged)`
+        `${report.gravitySnappedCount} gravity-snapped, ${report.nudgedCount} nudged, ${report.replacedCount} replaced)`
     );
 
     // Track best result (most surviving bricks)

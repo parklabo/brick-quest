@@ -114,23 +114,58 @@ function hasOverlap(box: BoundingBox, placed: { box: BoundingBox }[]): boolean {
 }
 
 /**
- * Try nudging a brick by ±1 stud on X or Z to resolve an overlap.
+ * Nudge offsets: 8 directions (cardinal + diagonal) × 2 distances (1 and 2 studs) = 16 attempts.
+ * Sorted by Manhattan distance so we prefer smaller nudges.
+ */
+const NUDGE_OFFSETS = [
+  // Distance 1 — cardinal
+  { dx: 1, dz: 0 },
+  { dx: -1, dz: 0 },
+  { dx: 0, dz: 1 },
+  { dx: 0, dz: -1 },
+  // Distance 1 — diagonal
+  { dx: 1, dz: 1 },
+  { dx: 1, dz: -1 },
+  { dx: -1, dz: 1 },
+  { dx: -1, dz: -1 },
+  // Distance 2 — cardinal
+  { dx: 2, dz: 0 },
+  { dx: -2, dz: 0 },
+  { dx: 0, dz: 2 },
+  { dx: 0, dz: -2 },
+  // Distance 2 — diagonal
+  { dx: 2, dz: 1 },
+  { dx: 2, dz: -1 },
+  { dx: -2, dz: 1 },
+  { dx: -2, dz: -1 },
+  { dx: 1, dz: 2 },
+  { dx: 1, dz: -2 },
+  { dx: -1, dz: 2 },
+  { dx: -1, dz: -2 },
+  { dx: 2, dz: 2 },
+  { dx: 2, dz: -2 },
+  { dx: -2, dz: 2 },
+  { dx: -2, dz: -2 },
+];
+
+/**
+ * Try nudging a brick by up to ±2 studs on X/Z to resolve an overlap.
+ * 8 directions × 2 distances = up to 24 attempts, sorted by Manhattan distance.
+ * Nudged positions are re-snapped to the stud grid.
  * Returns true if a valid position was found and the step was modified.
  */
 function tryNudgeBrick(step: BuildStepBlock, placed: { box: BoundingBox }[]): boolean {
-  const offsets = [
-    { dx: 1, dz: 0 },
-    { dx: -1, dz: 0 },
-    { dx: 0, dz: 1 },
-    { dx: 0, dz: -1 },
-  ];
-
   const origX = step.position.x;
   const origZ = step.position.z;
 
-  for (const { dx, dz } of offsets) {
-    step.position.x = origX + dx;
-    step.position.z = origZ + dz;
+  const rotY = normalizeRotationY(step.rotation.y);
+  const swapped = rotY === 90 || rotY === 270;
+  const effectiveW = swapped ? step.size.length : step.size.width;
+  const effectiveL = swapped ? step.size.width : step.size.length;
+
+  for (const { dx, dz } of NUDGE_OFFSETS) {
+    step.position.x = snapAxis(origX + dx, effectiveW);
+    step.position.z = snapAxis(origZ + dz, effectiveL);
     const nudgedBox = getFootprint(step);
     if (!hasOverlap(nudgedBox, placed)) {
       return true;
@@ -144,11 +179,25 @@ function tryNudgeBrick(step: BuildStepBlock, placed: { box: BoundingBox }[]): bo
 }
 
 /**
+ * Find the support Y for a given brick position among placed bricks.
+ */
+function findSupportY(box: BoundingBox, placed: { box: BoundingBox }[]): number {
+  let supportY = 0;
+  for (const p of placed) {
+    if (xzOverlapArea(box, p.box) >= MIN_SUPPORT_OVERLAP) {
+      supportY = Math.max(supportY, p.box.maxY);
+    }
+  }
+  return supportY;
+}
+
+/**
  * Fix physics issues in a build plan with detailed correction reporting.
  * Phase 0: Snap dimensions and positions to the LEGO stud grid
  * Phase 1: Sort by Y ascending (bottom-up processing)
  * Phase 2: Gravity snap-down to nearest support surface
  * Phase 3: Overlap check with nudge fallback (try to preserve bricks)
+ * Phase 3.5: Re-placement pass — try to recover dropped bricks
  * Phase 4: Re-number stepIds sequentially
  */
 export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResult {
@@ -164,6 +213,7 @@ export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResul
         droppedCount: 0,
         gravitySnappedCount: 0,
         nudgedCount: 0,
+        replacedCount: 0,
         droppedPercentage: 0,
         corrections: [],
       },
@@ -180,6 +230,7 @@ export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResul
   const sorted = [...steps].sort((a, b) => a.position.y - b.position.y);
 
   const placed: { step: BuildStepBlock; box: BoundingBox }[] = [];
+  const droppedSteps: { step: BuildStepBlock; originalPos: { x: number; y: number; z: number } }[] = [];
 
   for (const step of sorted) {
     const originalPos = { ...step.position };
@@ -211,16 +262,11 @@ export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResul
 
     // Phase 3: Overlap check with nudge fallback
     if (hasOverlap(correctedBox, placed)) {
-      // Try nudging ±1 stud before giving up
+      // Try nudging before giving up
       if (tryNudgeBrick(step, placed)) {
         // Recalculate support after nudge (Y may need updating)
         const nudgedBox = getFootprint(step);
-        let nudgeSupportY = 0;
-        for (const p of placed) {
-          if (xzOverlapArea(nudgedBox, p.box) >= MIN_SUPPORT_OVERLAP) {
-            nudgeSupportY = Math.max(nudgeSupportY, p.box.maxY);
-          }
-        }
+        const nudgeSupportY = findSupportY(nudgedBox, placed);
         step.position.y = nudgeSupportY;
         corrections.push({
           stepId: step.stepId,
@@ -232,18 +278,101 @@ export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResul
         });
         placed.push({ step, box: getFootprint(step) });
       } else {
-        // Nudge failed — brick is dropped
+        // Nudge failed — collect for re-placement attempt
+        droppedSteps.push({ step, originalPos });
+      }
+    } else {
+      placed.push({ step, box: correctedBox });
+    }
+  }
+
+  // Phase 3.5: Re-placement pass — try to recover dropped bricks
+  let replacedCount = 0;
+  for (const { step, originalPos } of droppedSteps) {
+    let recovered = false;
+
+    const rotY = normalizeRotationY(step.rotation.y);
+    const swapped = rotY === 90 || rotY === 270;
+    const effectiveW = swapped ? step.size.length : step.size.width;
+    const effectiveL = swapped ? step.size.width : step.size.length;
+
+    // Strategy 1: Same XZ, try different Y levels (scan from ground up)
+    const origX = step.position.x;
+    const origZ = step.position.z;
+
+    // Collect all occupied Y levels to try gaps
+    const yLevels = new Set<number>();
+    yLevels.add(0);
+    for (const p of placed) {
+      yLevels.add(Math.round(p.box.maxY * 10) / 10);
+    }
+
+    for (const tryY of [...yLevels].sort((a, b) => a - b)) {
+      step.position.x = origX;
+      step.position.z = origZ;
+      step.position.y = tryY;
+      const tryBox = getFootprint(step);
+      if (!hasOverlap(tryBox, placed)) {
+        // Verify support
+        const supportY = findSupportY(tryBox, placed);
+        if (Math.abs(tryY - supportY) < EPSILON || tryY === 0) {
+          recovered = true;
+          corrections.push({
+            stepId: step.stepId,
+            partName: step.partName,
+            originalPosition: originalPos,
+            size: { ...step.size },
+            action: 'replaced',
+            reason: `recovered at same XZ, Y=${tryY.toFixed(1)}`,
+          });
+          placed.push({ step, box: tryBox });
+          replacedCount++;
+          break;
+        }
+      }
+    }
+
+    if (recovered) continue;
+
+    // Strategy 2: Nudge XZ at original Y level with gravity re-snap
+    step.position.x = origX;
+    step.position.z = origZ;
+    step.position.y = originalPos.y;
+
+    for (const { dx, dz } of NUDGE_OFFSETS) {
+      step.position.x = snapAxis(origX + dx, effectiveW);
+      step.position.z = snapAxis(origZ + dz, effectiveL);
+      const nudgedBox = getFootprint(step);
+      // Find support at this new XZ
+      const supportY = findSupportY(nudgedBox, placed);
+      step.position.y = supportY;
+      const finalBox = getFootprint(step);
+      if (!hasOverlap(finalBox, placed)) {
+        recovered = true;
         corrections.push({
           stepId: step.stepId,
           partName: step.partName,
           originalPosition: originalPos,
           size: { ...step.size },
-          action: 'dropped',
-          reason: 'overlap could not be resolved',
+          action: 'replaced',
+          reason: `recovered at (${step.position.x}, ${step.position.y.toFixed(1)}, ${step.position.z})`,
         });
+        placed.push({ step, box: finalBox });
+        replacedCount++;
+        break;
       }
-    } else {
-      placed.push({ step, box: correctedBox });
+    }
+
+    if (!recovered) {
+      // Truly dropped — no recovery possible
+      corrections.push({
+        stepId: step.stepId,
+        partName: step.partName,
+        originalPosition: originalPos,
+        size: { ...step.size },
+        action: 'dropped',
+        reason: 'overlap could not be resolved',
+      });
     }
   }
 
@@ -265,6 +394,7 @@ export function fixBuildPhysicsWithReport(steps: BuildStepBlock[]): PhysicsResul
       droppedCount,
       gravitySnappedCount,
       nudgedCount,
+      replacedCount,
       droppedPercentage: inputCount > 0 ? (droppedCount / inputCount) * 100 : 0,
       corrections,
     },

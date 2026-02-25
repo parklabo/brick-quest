@@ -14,7 +14,10 @@ export type BrickShape =
   | 'wedge_plate'
   | 'dome'
   | 'half_cylinder'
-  | 'technic_beam';
+  | 'technic_beam'
+  | 'cheese_slope'
+  | 'panel'
+  | 'plate_round';
 
 export type BrickType = 'brick' | 'plate' | 'tile' | 'slope' | 'technic' | 'minifig' | 'other';
 
@@ -64,7 +67,7 @@ export interface PhysicsCorrectionEntry {
   partName: string;
   originalPosition: { x: number; y: number; z: number };
   size: { width: number; height: number; length: number };
-  action: 'dropped' | 'gravity_snapped' | 'nudged';
+  action: 'dropped' | 'gravity_snapped' | 'nudged' | 'replaced';
   reason: string;
 }
 
@@ -74,6 +77,7 @@ export interface PhysicsValidationReport {
   droppedCount: number;
   gravitySnappedCount: number;
   nudgedCount: number;
+  replacedCount: number;
   droppedPercentage: number;
   corrections: PhysicsCorrectionEntry[];
 }

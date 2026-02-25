@@ -77,6 +77,18 @@ const LDRAW_PART_TABLE: Record<string, string> = {
   'wedge_plate:plate:2x3': '43722.dat',
   'wedge_plate:plate:2x4': '51739.dat',
 
+  // ── Cheese slope ─────────────────────────────
+  'cheese_slope:slope:1x1': '54200.dat',
+
+  // ── Panel ──────────────────────────────────
+  'panel:brick:1x2': '4865.dat',
+  'panel:brick:1x4': '30413.dat',
+
+  // ── Round plate ────────────────────────────
+  'plate_round:plate:1x1': '4073.dat',
+  'plate_round:tile:1x1': '98138.dat',
+  'plate_round:plate:2x2': '4032.dat',
+
   // ── Technic beam ────────────────────────────
   'technic_beam:technic:1x5': '32316.dat',
   'technic_beam:technic:1x7': '32524.dat',
