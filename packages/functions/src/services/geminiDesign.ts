@@ -235,13 +235,11 @@ DO NOT: smooth or rounded surfaces, organic curves, minifigure style, stickers, 
 STYLE: Official LEGO Brickheadz product photo — as if photographed for the LEGO.com product page. White/light gray background per quadrant. Soft studio lighting showing depth and shadows. High resolution, sharp brick edges and visible studs in ALL views.${userPrompt ? `\n\nUser note: "${userPrompt}"` : ''}`;
 }
 
-/** Returns true for server errors (503/429) where switching models helps.
- *  Timeouts are NOT retryable-by-model-switch — they mean the model is working
- *  but needs more time, so we should retry the same model with the remaining budget. */
+/** Returns true for errors where switching to a different model may help.
+ *  Includes server errors (503/429), network failures (fetch failed), and our timeouts. */
 function isRetryableModelError(error: any): boolean {
   const msg = String(error?.message || '');
-  if (/timed out/i.test(msg)) return false; // timeout ≠ broken model
-  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+  return /499|503|429|CANCELLED|UNAVAILABLE|RESOURCE_EXHAUSTED|timed out|fetch failed|ECONNRESET|ETIMEDOUT/i.test(msg);
 }
 
 /**
@@ -355,30 +353,25 @@ export async function generateDesignFromPhoto(
 ): Promise<{ result: DesignResult; usedFallbackModel: boolean }> {
   const ai = getAI();
 
-  // Voxel grid schema — much simpler than brick-placement schema
   const voxelSchema: Schema = {
     type: Type.OBJECT,
     properties: {
-      referenceDescription: { type: Type.STRING, description: 'Describe what you see in the photo (1-2 sentences)' },
-      title: { type: Type.STRING, description: 'Name of the LEGO creation' },
-      description: { type: Type.STRING, description: 'Short description of the model' },
-      lore: { type: Type.STRING, description: 'A creative backstory for this LEGO version' },
-      width: { type: Type.INTEGER, description: 'Grid width in studs (X axis)' },
-      depth: { type: Type.INTEGER, description: 'Grid depth in studs (Z axis)' },
+      referenceDescription: { type: Type.STRING },
+      title: { type: Type.STRING },
+      description: { type: Type.STRING },
+      lore: { type: Type.STRING },
+      width: { type: Type.INTEGER },
+      depth: { type: Type.INTEGER },
       layers: {
         type: Type.ARRAY,
         items: {
           type: Type.OBJECT,
           properties: {
-            y: { type: Type.INTEGER, description: 'Layer index (0 = ground)' },
-            heightType: { type: Type.STRING, enum: ['brick', 'plate'], description: 'brick=1.2 units, plate=0.4 units' },
+            y: { type: Type.INTEGER },
+            heightType: { type: Type.STRING, enum: ['brick', 'plate'] },
             grid: {
               type: Type.ARRAY,
-              items: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING, description: 'Hex color (e.g. "#FF0000") or "" for empty' },
-              },
-              description: 'grid[z][x] — rows front→back, columns left→right',
+              items: { type: Type.ARRAY, items: { type: Type.STRING } },
             },
           },
           required: ['y', 'heightType', 'grid'],
@@ -388,10 +381,12 @@ export async function generateDesignFromPhoto(
     required: ['referenceDescription', 'title', 'description', 'lore', 'width', 'depth', 'layers'],
   };
 
-  const outputConfig: Record<DesignDetail, { maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high' }> = {
-    simple: { maxOutput: 40000, thinkingLevel: 'low' },
-    standard: { maxOutput: 65000, thinkingLevel: 'low' },
-    detailed: { maxOutput: 100000, thinkingLevel: 'low' },
+  // maxOutput varies by model: Flash 3.x caps at 65K, Pro supports 100K+.
+  // We set a higher ceiling here — getThinkingConfig handles per-model constraints.
+  const outputConfig: Record<DesignDetail, { maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high'; minBricks: number }> = {
+    simple: { maxOutput: 40000, thinkingLevel: 'low', minBricks: 30 },
+    standard: { maxOutput: 100000, thinkingLevel: 'medium', minBricks: 80 },
+    detailed: { maxOutput: 100000, thinkingLevel: 'high', minBricks: 150 },
   };
 
   const cfg = outputConfig[detail];
@@ -400,9 +395,13 @@ export async function generateDesignFromPhoto(
   // Track best result across agent iterations
   let bestResult: { result: DesignResult; brickCount: number; qualityScore: number } | null = null;
   let feedbackPrompt = '';
-  const modelChain = config.gemini.modelChain;
+  // Voxel generation model chain: Pro first for quality, Flash as fallback.
+  // Pro models produce much better 3D structure understanding from composite views.
+  // Flash is fast but struggles with complex spatial reasoning → flat/featureless builds.
+  // If Pro times out (499/503), we fall back to Flash immediately.
+  const voxelModelChain = config.gemini.modelChain;
   let modelIndex = 0;
-  let useModel = modelChain[0];
+  let useModel = voxelModelChain[0];
   let usedFallback = false;
   let prevQualityScore = 0;
   const agentStart = Date.now();
@@ -424,8 +423,9 @@ export async function generateDesignFromPhoto(
 
     const currentPrompt = feedbackPrompt ? `${prompt}\n\n${feedbackPrompt}` : prompt;
 
-    // Inner parse-retry loop — give each attempt maximum time
-    const PARSE_RETRIES = 2;
+    // Inner parse-retry loop — one attempt per model in the chain
+    const PARSE_RETRIES = 4;
+    const PER_CALL_TIMEOUT = 240_000;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
@@ -451,8 +451,11 @@ export async function generateDesignFromPhoto(
         }
         contentParts.push({ text: currentPrompt });
 
-        // Give this attempt all remaining budget (minus safety margin)
-        const callTimeout = budgetRemaining - 10_000;
+        const callTimeout = Math.min(PER_CALL_TIMEOUT, budgetRemaining - 10_000);
+
+        // Flash models cap at 65K output tokens; Pro supports higher limits
+        const isFlash = useModel.includes('flash');
+        const maxOutput = isFlash ? Math.min(cfg.maxOutput, 65000) : cfg.maxOutput;
 
         const response = await withTimeout(
           ai.models.generateContent({
@@ -461,7 +464,7 @@ export async function generateDesignFromPhoto(
             config: {
               responseMimeType: 'application/json',
               responseSchema: voxelSchema,
-              maxOutputTokens: cfg.maxOutput,
+              maxOutputTokens: maxOutput,
               thinkingConfig: getThinkingConfig(useModel, cfg.thinkingLevel),
               systemInstruction:
                 'You are an award-winning LEGO Master Builder. Output a 3D color grid (voxel grid) representing the LEGO model. Each layer is a 2D array of hex color strings.',
@@ -472,6 +475,7 @@ export async function generateDesignFromPhoto(
         );
 
         if (!response.text) {
+          logger.warn(`  Attempt ${attempt}: empty response from model`);
           lastError = new Error('Empty response');
           continue;
         }
@@ -479,6 +483,7 @@ export async function generateDesignFromPhoto(
         const raw = JSON.parse(response.text);
 
         if (!Array.isArray(raw.layers) || raw.layers.length === 0) {
+          logger.warn(`  Attempt ${attempt}: no valid layers in response (keys: ${Object.keys(raw).join(', ')})`);
           lastError = new Error('No valid layers in voxel grid');
           continue;
         }
@@ -495,6 +500,7 @@ export async function generateDesignFromPhoto(
         });
 
         if (voxelGrid.layers.length === 0) {
+          logger.warn(`  Attempt ${attempt}: all layers empty after validation`);
           lastError = new Error('All layers empty after validation');
           continue;
         }
@@ -508,7 +514,15 @@ export async function generateDesignFromPhoto(
         );
 
         if (steps.length === 0) {
+          logger.warn(`  Attempt ${attempt}: voxel conversion produced 0 bricks`);
           lastError = new Error('Voxel conversion produced 0 bricks');
+          continue;
+        }
+
+        // Reject grids that are too sparse — the model sometimes returns nearly empty layers
+        if (steps.length < cfg.minBricks) {
+          logger.warn(`  Attempt ${attempt}: only ${steps.length} bricks (min: ${cfg.minBricks}), ${report.layerCount} layers, ${report.totalVoxels} voxels — retrying`);
+          lastError = new Error(`Too few bricks: ${steps.length} < ${cfg.minBricks}`);
           continue;
         }
 
@@ -526,13 +540,13 @@ export async function generateDesignFromPhoto(
         lastError = error;
         if (isRetryableModelError(error)) {
           // Switch model immediately instead of burning a full agent iteration
-          if (modelIndex < modelChain.length - 1) {
+          if (modelIndex < voxelModelChain.length - 1) {
             modelIndex++;
-            useModel = modelChain[modelIndex];
+            useModel = voxelModelChain[modelIndex];
             usedFallback = modelIndex > 0;
-            logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${modelChain.length})`);
+            logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${voxelModelChain.length})`);
             if (onProgress) {
-              await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${modelChain.length})`);
+              await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${voxelModelChain.length})`);
             }
             continue;
           }
@@ -588,7 +602,6 @@ export async function generateDesignFromPhoto(
 
     // --- Visual quality evaluation (Flash model) ---
     let qualityScore = 10;
-    let qualityFeedback = '';
     let evaluation: BuildEvaluation | null = null;
 
     if (compositeView) {
@@ -597,7 +610,6 @@ export async function generateDesignFromPhoto(
         try {
           evaluation = await evaluateBuildQuality(compositeView, iterationSteps);
           qualityScore = evaluation.overallScore;
-          qualityFeedback = evaluation.improvements;
 
           logger.info(
             `Agent iteration ${iteration} evaluation: ` +
@@ -646,12 +658,31 @@ export async function generateDesignFromPhoto(
       break;
     }
 
-    // Build quality feedback for next iteration (no physics feedback needed)
-    if (iteration < AGENT_MAX_ITERATIONS) {
-      if (qualityFeedback) {
-        const missingStr = evaluation?.missingFeatures.length ? `\nMISSING FEATURES: ${evaluation.missingFeatures.join(', ')}` : '';
-        feedbackPrompt = `QUALITY EVALUATION (score: ${qualityScore}/10):${missingStr}\n\n${qualityFeedback}\n\nFix the issues above in your next voxel grid. Keep the same grid format.`;
-        logger.info(`Agent iteration ${iteration}: quality ${qualityScore}/10, retrying with visual feedback`);
+    // Build quality feedback for next iteration — ADDITIVE only.
+    // Previous attempts showed that generic "make it bigger" feedback destroys the model.
+    // Only provide specific, actionable feedback from the evaluator.
+    if (iteration < AGENT_MAX_ITERATIONS && evaluation) {
+      const missing = evaluation.missingFeatures;
+      const feedbackParts: string[] = [];
+      if (missing.length > 0) {
+        feedbackParts.push(`ADD these missing features: ${missing.join(', ')}`);
+      }
+      if (evaluation.shapeAccuracy < 5) {
+        feedbackParts.push('FIX proportions — check head-to-body ratio against the composite views');
+      }
+      if (evaluation.colorAccuracy < 5) {
+        feedbackParts.push('FIX colors — compare your palette against the composite views more carefully');
+      }
+      if (feedbackParts.length > 0) {
+        feedbackPrompt =
+          `PREVIOUS ATTEMPT scored ${qualityScore}/10. Keep your current structure but make these specific fixes:\n` +
+          feedbackParts.map((p) => `• ${p}`).join('\n') +
+          `\n\nIMPORTANT: Do NOT reduce the model size. Keep at least ${iterationSteps.length} bricks and ${iterationVoxelGrid!.layers.length} layers.`;
+        logger.info(`Agent iteration ${iteration}: quality ${qualityScore}/10, retrying with specific feedback`);
+      } else {
+        // Evaluator gave low score but no actionable feedback — don't retry
+        logger.info(`Agent iteration ${iteration}: quality ${qualityScore}/10 but no actionable feedback, accepting`);
+        break;
       }
     } else {
       logger.info(

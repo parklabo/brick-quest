@@ -199,11 +199,10 @@ ${VOXEL_WORKED_EXAMPLE}
 ═══════════════════════════════════════
 FINAL CHECKLIST (verify before outputting)
 ═══════════════════════════════════════
-1. SIZE: Use MOST of the allowed grid space (≥80% of max layers). Scale up the model to fill the grid.
-   Max width: ${limits.maxW}, max depth: ${limits.maxD}, max layers: ${limits.maxLayers}. Use them!
-2. SOLID: ZERO empty cells inside the model silhouette. Scan every row: any gap between filled cells = error.
+1. SIZE: Use MOST of the grid. Aim for ${Math.ceil(limits.maxLayers * 0.8)}+ layers, width ~${limits.maxW}, depth ~${limits.maxD}. FILL the grid — bigger model = more detail = better.
+2. SOLID: Every row of every layer must be FULLY FILLED between the leftmost and rightmost colored cell. No holes.
 3. RECOGNIZABLE: Someone should look at this and immediately say "that's a [subject]!"
-4. FEATURES: ALL distinctive features present — eyes, ears, horns, tail, mane, glasses, hat, accessories, clothing details, held items. These are what make the model recognizable. Missing features = failed model.
+4. FEATURES: ALL distinctive features present — eyes, ears, horns, tail, mane, glasses, hat, accessories, clothing details, held items.
 5. COLORS: Consistent palette. Contrasting detail colors. Match the reference image's actual colors.
 6. PROPORTIONS: Match the composite views. Head-to-body ratio must be correct.
 7. PLATES: Use heightType="plate" for detail layers. A good model has ~40-60% plate layers.
