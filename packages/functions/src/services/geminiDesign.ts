@@ -235,9 +235,13 @@ DO NOT: smooth or rounded surfaces, organic curves, minifigure style, stickers, 
 STYLE: Official LEGO Brickheadz product photo — as if photographed for the LEGO.com product page. White/light gray background per quadrant. Soft studio lighting showing depth and shadows. High resolution, sharp brick edges and visible studs in ALL views.${userPrompt ? `\n\nUser note: "${userPrompt}"` : ''}`;
 }
 
+/** Returns true for server errors (503/429) where switching models helps.
+ *  Timeouts are NOT retryable-by-model-switch — they mean the model is working
+ *  but needs more time, so we should retry the same model with the remaining budget. */
 function isRetryableModelError(error: any): boolean {
   const msg = String(error?.message || '');
-  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|timed out/i.test(msg);
+  if (/timed out/i.test(msg)) return false; // timeout ≠ broken model
+  return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
 }
 
 /**
@@ -422,7 +426,7 @@ export async function generateDesignFromPhoto(
 
     // Inner parse-retry loop
     const PARSE_RETRIES = 5;
-    const PER_CALL_TIMEOUT = 90_000;
+    const PER_CALL_TIMEOUT = 180_000;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
