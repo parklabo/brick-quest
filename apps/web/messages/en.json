@@ -21,7 +21,12 @@
     "pcs": "pcs",
     "total": "total",
     "bricks": "bricks",
-    "submitError": "Failed to submit. Please try again."
+    "submitError": "Failed to submit. Please try again.",
+    "serverBusy": "The server is currently busy. Please try again in a moment.",
+    "rateLimited": "Too many requests. Please wait a moment and try again.",
+    "timedOut": "The request timed out. Please try again.",
+    "generationFailed": "Generation failed. Please try again.",
+    "unknownError": "Unknown error"
   },
   "nav": {
     "home": "Home",
@@ -221,7 +226,8 @@
     "sampleChip_car": "🚗 Car",
     "sampleChip_rocket": "🚀 Rocket",
     "sampleChip_robot": "🤖 Robot",
-    "sampleChip_animal": "🐕 Animal"
+    "sampleChip_animal": "🐕 Animal",
+    "fallbackModelNotice": "Generated with a faster model due to high server demand. Quality may vary."
   },
   "create": {
     "title": "Design Studio",
@@ -297,7 +303,10 @@
     "deleting": "Deleting...",
     "deleteTitle": "Delete Design",
     "deleteConfirm": "This design and its images will be permanently deleted. This cannot be undone.",
-    "fallbackModelNotice": "Generated with a faster model due to high server demand. Try regenerating if quality isn't satisfactory."
+    "fallbackModelNotice": "Generated with a faster model due to high server demand. Try regenerating if quality isn't satisfactory.",
+    "rebuildUnlock": "Unlock to regenerate build",
+    "rebuildButton": "Regenerate Build",
+    "rebuilding": "Regenerating..."
   },
   "inventory": {
     "title": "My Inventory",

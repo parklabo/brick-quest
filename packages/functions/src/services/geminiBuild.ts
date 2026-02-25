@@ -25,7 +25,7 @@ function isRetryableModelError(error: any): boolean {
   return /503|429|UNAVAILABLE|RESOURCE_EXHAUSTED|timed out/i.test(msg);
 }
 
-export async function generateBuildPlan(parts: DetectedPart[], difficulty: Difficulty = 'normal', userPrompt = ''): Promise<BuildPlan> {
+export async function generateBuildPlan(parts: DetectedPart[], difficulty: Difficulty = 'normal', userPrompt = ''): Promise<{ plan: BuildPlan; usedFallbackModel: boolean }> {
   const ai = getAI();
 
   const buildSchema: Schema = {
@@ -222,6 +222,7 @@ Return ONLY valid JSON.`;
   let bestResult: { plan: BuildPlan; survivingCount: number } | null = null;
   let feedbackPrompt = '';
   let useModel = config.gemini.model;
+  let usedFallback = false;
   const agentStart = Date.now();
 
   for (let iteration = 1; iteration <= AGENT_MAX_ITERATIONS; iteration++) {
@@ -346,6 +347,7 @@ Return ONLY valid JSON.`;
       if (hitRetryableError && useModel !== config.gemini.fallbackModel) {
         logger.info(`Switching to fallback model: ${config.gemini.fallbackModel}`);
         useModel = config.gemini.fallbackModel;
+        usedFallback = true;
       }
 
       if (bestResult) break; // use best from previous iteration
@@ -390,5 +392,5 @@ Return ONLY valid JSON.`;
   }
 
   logger.info(`Build plan generated: ${bestResult.plan.steps.length} steps (${bestResult.plan.agentIterations} agent iteration(s))`);
-  return bestResult.plan;
+  return { plan: bestResult.plan, usedFallbackModel: usedFallback };
 }

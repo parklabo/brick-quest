@@ -56,4 +56,10 @@ export const apiClient = {
     const { data } = await callable({ jobId });
     return data;
   },
+
+  async rebuildDesignBuild(jobId: string): Promise<{ success: boolean }> {
+    const callable = httpsCallable<{ jobId: string }, { success: boolean }>(functions, 'rebuildDesignBuild');
+    const { data } = await callable({ jobId });
+    return data;
+  },
 };

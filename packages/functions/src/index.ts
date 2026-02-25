@@ -14,4 +14,5 @@ export { regenerateDesignViews } from './callable/regenerateDesignViews.js';
 export { cancelJob } from './callable/cancelJob.js';
 export { retryJob } from './callable/retryJob.js';
 export { deleteJob } from './callable/deleteJob.js';
+export { rebuildDesignBuild } from './callable/rebuildDesignBuild.js';
 export { processJob, processDesignUpdate } from './triggers/processJob.js';

@@ -356,7 +356,7 @@ export async function generateDesignFromPhoto(
   detail: DesignDetail = 'standard',
   userPrompt = '',
   compositeView?: ImageData
-): Promise<DesignResult> {
+): Promise<{ result: DesignResult; usedFallbackModel: boolean }> {
   const ai = getAI();
 
   const designSchema: Schema = {
@@ -559,6 +559,7 @@ Return ONLY valid JSON.`;
   let bestResult: { result: DesignResult; survivingCount: number; qualityScore: number } | null = null;
   let feedbackPrompt = '';
   let useModel = config.gemini.model;
+  let usedFallback = false;
   let prevQualityScore = 0;
   const agentStart = Date.now();
 
@@ -690,6 +691,7 @@ Return ONLY valid JSON.`;
       if (hitRetryableError && useModel !== config.gemini.fallbackModel) {
         logger.info(`Switching to fallback model: ${config.gemini.fallbackModel}`);
         useModel = config.gemini.fallbackModel;
+        usedFallback = true;
       }
 
       if (bestResult) break;
@@ -826,7 +828,7 @@ Return ONLY valid JSON.`;
     `Design generated: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} unique parts ` +
       `(${result.buildPlan.agentIterations} iteration(s), quality ${finalScore}/10)`
   );
-  return result;
+  return { result, usedFallbackModel: usedFallback };
 }
 
 /**

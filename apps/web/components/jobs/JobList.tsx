@@ -9,6 +9,7 @@ import { ScanLine, Hammer, Sparkles, Loader2, CheckCircle, XCircle, Clock, Chevr
 import { PackageCheck } from 'lucide-react';
 import type { TrackedJob } from '../../lib/stores/jobs';
 import type { ScanResult, BuildPlan, DesignResult } from '@brick-quest/shared';
+import { formatError } from '../../lib/utils/format-error';
 
 const CANCELLABLE = new Set(['pending', 'processing', 'generating_views', 'generating_build']);
 
@@ -200,7 +201,7 @@ export const JobCard = memo(function JobCard({ job, onSelect }: { job: TrackedJo
               {relativeTimeI18n(job.createdAt, tc)}
             </span>
           </div>
-          {job.status === 'failed' && job.error && <p className="text-xs text-red-400/70 mt-1 truncate">{job.error}</p>}
+          {job.status === 'failed' && job.error && <p className="text-xs text-red-400/70 mt-1 truncate">{formatError(job.error, tc)}</p>}
         </div>
 
         {isCancellable && (

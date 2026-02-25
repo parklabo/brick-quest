@@ -80,13 +80,14 @@ export const processJob = onDocumentCreated(
         await log('Generating build plan...', 10);
 
         logger.info(`Processing build job ${jobId}`);
-        const result = await generateBuildPlan(parts, difficulty, userPrompt);
+        const { plan: result, usedFallbackModel } = await generateBuildPlan(parts, difficulty, userPrompt);
 
         await log('Complete', 100);
 
         await jobRef.update({
           status: 'completed',
           result,
+          ...(usedFallbackModel && { usedFallbackModel: true }),
           progress: 100,
           updatedAt: FieldValue.serverTimestamp(),
         });
@@ -268,7 +269,7 @@ export const processDesignUpdate = onDocumentUpdated(
         await log('Analyzing views and generating plan...', 60);
 
         logger.info(`Design job ${jobId}: generating build plan from composite views`);
-        const result = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView);
+        const { result, usedFallbackModel } = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView);
 
         await log('Validating physics...', 80);
 
@@ -291,6 +292,7 @@ export const processDesignUpdate = onDocumentUpdated(
         await jobRef.update({
           status: 'completed',
           result,
+          ...(usedFallbackModel && { usedFallbackModel: true }),
           progress: 100,
           updatedAt: FieldValue.serverTimestamp(),
         });

@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, ExternalLink, Box, Download, ArrowRight, CheckCircle, RefreshCw, Trash2 } from 'lucide-react';
+import { Loader2, ExternalLink, Box, Download, ArrowRight, CheckCircle, RefreshCw, Trash2, Lock } from 'lucide-react';
 import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { useJobsStore } from '../../../../lib/stores/jobs';
 import { useStorageUrl } from '../../../../lib/hooks/useStorageUrl';
@@ -13,6 +13,7 @@ import { apiClient } from '../../../../lib/api/client';
 import type { DesignResult, RequiredPart, DesignViews } from '@brick-quest/shared';
 import { resolveBrickLinkInfo, generateWantedListXml } from '@brick-quest/shared';
 import { BrickIcon } from '../../../../components/ui/BrickIcon';
+import { formatError } from '../../../../lib/utils/format-error';
 
 function PartCard({ part }: { part: RequiredPart }) {
   const info = resolveBrickLinkInfo(part.shape, part.type, part.dimensions.width, part.dimensions.length, part.color);
@@ -232,6 +233,8 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
   const [retrying, setRetrying] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [rebuildUnlocked, setRebuildUnlocked] = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
 
   const referenceUrl = useStorageUrl(`designs/${jobId}/reference.jpeg`);
   const compositeUrl = useStorageUrl(job?.views?.composite);
@@ -347,7 +350,7 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
         <div className="max-w-2xl mx-auto text-center py-20">
           {isNewPipeline && <DesignStepIndicator {...getStepState()} />}
           <p className="text-red-400 font-medium mb-2">{t('failed')}</p>
-          <p className="text-slate-400 text-sm">{job.error || t('unknownError')}</p>
+          <p className="text-slate-400 text-sm">{formatError(job.error, tc)}</p>
           <div className="flex items-center justify-center gap-3 mt-6">
             <button
               onClick={handleRetry}
@@ -474,6 +477,11 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
             &larr; {t('backToCreate')}
           </Link>
           {isNewPipeline && <DesignStepIndicator {...getStepState()} />}
+          {job.usedFallbackModel && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm">
+              {t('fallbackModelNotice')}
+            </div>
+          )}
           <h1 className="text-3xl font-extrabold text-white">{designResult.buildPlan.title}</h1>
           <p className="text-slate-400 mt-1">{designResult.referenceDescription}</p>
         </div>
@@ -569,6 +577,50 @@ export default function DesignResultPage({ params }: { params: Promise<{ jobId: 
             {t('open3D')}
           </span>
         </button>
+
+        {/* Rebuild button (locked by default) */}
+        {isNewPipeline && (
+          <div className="mt-3">
+            {!rebuildUnlocked ? (
+              <button
+                onClick={() => setRebuildUnlocked(true)}
+                className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-500 hover:text-slate-300"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <Lock className="w-3.5 h-3.5" />
+                  {t('rebuildUnlock')}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  setRebuilding(true);
+                  try {
+                    await apiClient.rebuildDesignBuild(jobId);
+                  } catch {
+                    setRebuilding(false);
+                  }
+                }}
+                disabled={rebuilding}
+                className="w-full px-4 py-2.5 rounded-lg text-sm font-medium transition-colors bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  {rebuilding ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {t('rebuilding')}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      {t('rebuildButton')}
+                    </>
+                  )}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </main>
   );

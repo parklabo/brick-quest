@@ -10,6 +10,7 @@ import { ConfirmModal } from '../../../../components/ui/ConfirmModal';
 import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import type { BuildPlan } from '@brick-quest/shared';
+import { formatError } from '../../../../lib/utils/format-error';
 
 export default function BuildViewPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
@@ -97,7 +98,7 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
       <main className="min-h-screen p-4 sm:p-8">
         <div className="max-w-2xl mx-auto text-center py-20">
           <p className="text-red-400 font-medium mb-2">{t('failed')}</p>
-          <p className="text-slate-400 text-sm">{job.error || t('unknownError')}</p>
+          <p className="text-slate-400 text-sm">{formatError(job.error, tc)}</p>
           <div className="flex items-center justify-center gap-3 mt-6">
             <button
               onClick={handleRetry}
@@ -141,6 +142,11 @@ export default function BuildViewPage({ params }: { params: Promise<{ jobId: str
   return (
     <main className="min-h-screen p-4 sm:p-8">
       <div className="max-w-2xl mx-auto flex flex-col items-center justify-center py-20">
+        {job.usedFallbackModel && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm max-w-md text-center">
+            {t('fallbackModelNotice')}
+          </div>
+        )}
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
         <p className="text-white font-medium">{t('loadingWorkspace')}</p>
       </div>

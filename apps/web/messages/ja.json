@@ -21,7 +21,12 @@
     "pcs": "個",
     "total": "合計",
     "bricks": "ブリック",
-    "submitError": "送信に失敗しました。もう一度お試しください。"
+    "submitError": "送信に失敗しました。もう一度お試しください。",
+    "serverBusy": "サーバーが混雑しています。しばらくしてから再試行してください。",
+    "rateLimited": "リクエストが多すぎます。しばらくしてから再試行してください。",
+    "timedOut": "リクエストがタイムアウトしました。再試行してください。",
+    "generationFailed": "生成に失敗しました。再試行してください。",
+    "unknownError": "不明なエラー"
   },
   "nav": {
     "home": "ホーム",
@@ -221,7 +226,8 @@
     "sampleChip_car": "🚗 車",
     "sampleChip_rocket": "🚀 ロケット",
     "sampleChip_robot": "🤖 ロボット",
-    "sampleChip_animal": "🐕 動物"
+    "sampleChip_animal": "🐕 動物",
+    "fallbackModelNotice": "サーバー混雑のため高速モデルで生成されました。品質が異なる場合があります。"
   },
   "create": {
     "title": "デザインスタジオ",
@@ -297,7 +303,10 @@
     "deleting": "削除中...",
     "deleteTitle": "デザインを削除",
     "deleteConfirm": "このデザインと画像は完全に削除されます。元に戻せません。",
-    "fallbackModelNotice": "サーバー混雑のため高速モデルで生成されました。品質にご不満の場合は再生成をお試しください。"
+    "fallbackModelNotice": "サーバー混雑のため高速モデルで生成されました。品質にご不満の場合は再生成をお試しください。",
+    "rebuildUnlock": "ビルド再生成のロックを解除",
+    "rebuildButton": "ビルドを再生成",
+    "rebuilding": "再生成中..."
   },
   "inventory": {
     "title": "マイコレクション",
