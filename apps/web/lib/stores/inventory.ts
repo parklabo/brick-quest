@@ -358,6 +358,10 @@ export const useInventoryStore = create<InventoryStore>()((set, get) => ({
   _initFirestoreSync: (uid: string) => {
     currentUid = uid;
 
+    // Reset parts on user switch (keep demo parts if demo mode is on)
+    const demoOnly = get().demoMode ? DEMO_PARTS : [];
+    set({ parts: demoOnly });
+
     // Migrate localStorage data if it exists
     const migrated = migrateFromLocalStorage();
     if (migrated) {
