@@ -24,11 +24,15 @@ function useZoneMenuItems(t: ReturnType<typeof useTranslations<'dashboard'>>) {
     () => ({
       design: {
         label: t('designZone'),
+        desc: t('designZoneDesc'),
+        example: t('designZoneExample'),
         color: '#fbbf24',
         items: [{ href: '/create', label: t('designStation'), desc: t('stationDesignDesc'), icon: Paintbrush, color: '#fbbf24' }],
       },
       mybrick: {
         label: t('myBrickZone'),
+        desc: t('myBrickZoneDesc'),
+        example: t('myBrickZoneExample'),
         color: '#a78bfa',
         items: [
           { href: '/scan', label: t('scanStation'), desc: t('stationScanDesc'), icon: Camera, color: '#60a5fa' },
@@ -73,8 +77,14 @@ function ZoneMenu() {
           </button>
         </div>
 
-        {/* Items */}
+        {/* Description + Items */}
         <div className="bg-black/70 backdrop-blur-md rounded-b-2xl p-3 flex flex-col gap-2">
+          {/* Zone description */}
+          <div className="px-3 py-2.5">
+            <p className="text-white/80 text-xs leading-relaxed">{zone.desc}</p>
+            <p className="text-white/40 text-[11px] mt-1.5 italic">{zone.example}</p>
+          </div>
+          <div className="h-px bg-white/10 mx-2" />
           {zone.items.map((item) => (
             <Link
               key={item.href}
