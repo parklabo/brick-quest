@@ -390,8 +390,8 @@ export async function generateDesignFromPhoto(
 
   const outputConfig: Record<DesignDetail, { maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high' }> = {
     simple: { maxOutput: 40000, thinkingLevel: 'low' },
-    standard: { maxOutput: 100000, thinkingLevel: 'medium' },
-    detailed: { maxOutput: 200000, thinkingLevel: 'high' },
+    standard: { maxOutput: 65000, thinkingLevel: 'low' },
+    detailed: { maxOutput: 100000, thinkingLevel: 'low' },
   };
 
   const cfg = outputConfig[detail];
@@ -424,9 +424,8 @@ export async function generateDesignFromPhoto(
 
     const currentPrompt = feedbackPrompt ? `${prompt}\n\n${feedbackPrompt}` : prompt;
 
-    // Inner parse-retry loop
-    const PARSE_RETRIES = 5;
-    const PER_CALL_TIMEOUT = 180_000;
+    // Inner parse-retry loop — give each attempt maximum time
+    const PARSE_RETRIES = 2;
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
@@ -452,7 +451,8 @@ export async function generateDesignFromPhoto(
         }
         contentParts.push({ text: currentPrompt });
 
-        const callTimeout = Math.min(PER_CALL_TIMEOUT, budgetRemaining - 5_000);
+        // Give this attempt all remaining budget (minus safety margin)
+        const callTimeout = budgetRemaining - 10_000;
 
         const response = await withTimeout(
           ai.models.generateContent({
