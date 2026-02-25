@@ -30,11 +30,18 @@ const BUDGET_MAP: Record<string, number> = {
 /**
  * Returns the correct thinkingConfig for a model.
  * - Gemini 3.x: uses `thinkingLevel` (enum)
+ *   - Pro models only support `low` and `high` (no `minimal` or `medium`)
  * - Gemini 2.5: uses `thinkingBudget` (token count)
  */
 export function getThinkingConfig(model: string, level: 'minimal' | 'low' | 'medium' | 'high'): ThinkingConfig {
   if (model.startsWith('gemini-3')) {
-    return { thinkingLevel: LEVEL_MAP[level] };
+    const isPro = model.includes('pro');
+    let resolved = level;
+    if (isPro) {
+      if (level === 'medium') resolved = 'high';
+      if (level === 'minimal') resolved = 'low';
+    }
+    return { thinkingLevel: LEVEL_MAP[resolved] };
   }
   return { thinkingBudget: BUDGET_MAP[level] };
 }
