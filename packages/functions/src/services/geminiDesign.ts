@@ -2,10 +2,17 @@ import { Type } from '@google/genai';
 import type { Schema } from '@google/genai';
 import { config, LIMITS } from '../config.js';
 import { logger } from 'firebase-functions';
-import type { DesignResult, DesignDetail, BuildStepBlock, VoxelGrid } from '@brick-quest/shared';
-import { validateVoxelGrid, voxelGridToBricks, buildVoxelDesignPrompt } from '@brick-quest/shared';
+import type { DesignResult, DesignDetail, DesignStrategy, BuildStepBlock, VoxelGrid } from '@brick-quest/shared';
+import { buildVoxelDesignPrompt } from '@brick-quest/shared';
 import { withTimeout } from '../utils/with-timeout.js';
 import { getAI, getThinkingConfig } from './gemini-client.js';
+import { generateFullGridVoxelGrid, type ModelChainState } from './strategies/full-grid.js';
+import { generateBuildCommands } from './strategies/build-commands.js';
+import { generateSilhouetteVoxelGrid } from './strategies/silhouette-carve.js';
+import { generateDirectVoxelGrid } from './strategies/direct-voxel.js';
+import { recognizeSubject, buildRecognitionContext } from './recognize-subject.js';
+import { saveDesignDebug } from './design-debug.js';
+import type { PixelExtractionResult } from './strategies/pixel-extract.js';
 
 const DESIGN_TIMEOUT = 8 * 60 * 1000;
 /** Short timeout for image gen — Pro model either responds in ~30s or is overloaded */
@@ -162,25 +169,32 @@ export interface ImageData {
 
 function compositeViewPrompt(detail: DesignDetail, userPrompt: string): string {
   const detailInstructions: Record<DesignDetail, string> = {
-    simple: 'Use large bricks (2x4, 2x6). Simplified blocky shape, about 25-50 bricks total.',
-    standard: 'Mix of standard bricks, plates, and slopes. About 80-150 bricks total.',
-    detailed: 'Use small bricks (1x1, 1x2) for fine pixel detail. About 150-300 bricks total.',
+    simple: 'Use 1x1 and 1x2 bricks/plates. About 12 studs wide, 16 layers tall. Simple chunky shape.',
+    standard: 'Use 1x1, 1x2, 2x2 bricks/plates. About 16-20 studs wide, 24 layers tall. Clear features.',
+    detailed: 'Use mostly 1x1 bricks/plates for maximum pixel detail. About 20-28 studs wide, 28-36 layers tall. Every feature visible.',
   };
 
   return `STEP 1 — ANALYZE THE REFERENCE PHOTO:
-Before generating anything, carefully study the reference photo and identify:
-- The character/subject's EXACT colors (hair, skin, clothing, accessories)
-- Distinctive features (glasses, hat, ears, tail, wings, logos, patterns, facial expression)
-- Body proportions (head-to-body ratio, limb positions)
-- Key accessories or held items
-- Color palette — list the top 5 colors and where they appear
+Study the reference photo and identify:
+- What the subject IS (be specific: "golden retriever", "red sports car", "Mario")
+- The subject's EXACT colors (map each to a LEGO color)
+- Distinctive features that make it recognizable (ears, tail, horn, glasses, hat, etc.)
+- Body proportions (height:width:depth ratio)
+- Body sections from bottom to top (feet → legs → body → head → top features)
 
-STEP 2 — DESIGN A SINGLE 3D LEGO MODEL:
-Design ONE definitive LEGO Brickheadz model that captures ALL the distinctive features identified above. This model must be fully resolved in 3D — every brick placement is decided BEFORE rendering any view. Think of it as a real physical LEGO model sitting on a table.
+STEP 2 — DESIGN A 3D VOXEL-ART LEGO MODEL:
+Design a 3D PIXEL ART / VOXEL ART sculpture using ONLY rectangular bricks and plates.
+Think of it as a 3D Minecraft build or a LEGO Brickheadz set — EVERY surface is a staircase of flat rectangular steps. NO curves, NO slopes, NO rounded pieces.
+
+The model is built on a STRICT STUD GRID:
+- Every brick sits on an integer grid position
+- All surfaces are STEPPED/PIXELATED — curved shapes are approximated by staircase steps
+- You can literally count the studs in each row to know exact dimensions
+- This is 3D PIXEL ART, not a realistic sculpture
 
 STEP 3 — RENDER 4 VIEWS of that SINGLE model into a 2×2 grid image:
 
-LAYOUT — 2×2 grid, each quadrant clearly separated by a thin white gap:
+LAYOUT — 2×2 grid, each quadrant clearly separated:
 ┌──────────────────┬──────────────────┐
 │    TOP-LEFT      │    TOP-RIGHT     │
 │    3/4 Hero      │    Front View    │
@@ -191,48 +205,41 @@ LAYOUT — 2×2 grid, each quadrant clearly separated by a thin white gap:
 │   View           │                  │
 └──────────────────┴──────────────────┘
 
-VIEW DESCRIPTIONS:
-• TOP-LEFT (Hero): Classic LEGO box art 3/4 angle — camera slightly above and to the left. Shows front + top + left side. This is the "money shot."
-• TOP-RIGHT (Front): Straight-on front view, camera at eye level. ALL facial features, chest details, and front colors must be sharp and detailed — this view is just as important as the hero shot.
-• BOTTOM-LEFT (Side): 90° to the right of front. Profile/silhouette must show correct depth, arm positions, and side details with EQUAL quality to the hero shot.
-• BOTTOM-RIGHT (Back): 180° from front. Must show rear details (back of head, clothing back, tail if any) with EQUAL quality and detail.
+VIEW REQUIREMENTS:
+• TOP-LEFT (Hero): 3/4 angle from above-left. Shows the 3D blocky shape clearly. You can see the stud grid on top and the stepped surfaces on two sides.
+• TOP-RIGHT (Front): Straight-on front view. This is the MOST IMPORTANT view — it will be used as a pixel map. Each stud column = 1 grid position. Eyes, face, chest details must be clearly visible as distinct colored studs/plates.
+• BOTTOM-LEFT (Right Side): 90° from front. Shows profile depth. Must be EQUALLY DETAILED — you can count the studs from front to back.
+• BOTTOM-RIGHT (Back): 180° from front. Shows rear details with EQUAL quality.
 
-ABSOLUTE REQUIREMENTS — CONSISTENCY:
-All 4 quadrants show the EXACT SAME physical LEGO model. Imagine one real LEGO model on a turntable, photographed from 4 angles under identical studio lighting.
-- SAME brick colors in EVERY view (a red brick on the front must be red from the side too)
-- SAME proportions and silhouette from all angles
-- SAME level of brick detail and stud visibility in ALL 4 views
-- SAME lighting, shadows, and background across all quadrants
-- If the character has asymmetric features (e.g., a logo on one side), they must appear in the correct views
+ABSOLUTE REQUIREMENTS:
+- All 4 views show the EXACT SAME model from different angles
+- SAME colors, proportions, and details in every view
+- Every view must be EQUALLY sharp and detailed
+- Studs must be visible and countable in ALL views
+- Views must be usable as a PIXEL MAP — each stud position corresponds to a grid cell
 
-QUALITY RULE: Views 2, 3, and 4 must have IDENTICAL rendering quality to the hero view. Do NOT reduce detail, blur, or simplify any view. Every view is a hero shot from a different angle.
+BRICK RULES (CRITICAL — STRICTLY FOLLOW):
+✅ ONLY USE: Standard rectangular bricks (1x1, 1x2, 1x3, 1x4, 2x2, 2x3, 2x4) and plates (same sizes, thinner)
+✅ Every surface must be FLAT and STEPPED — like staircase steps
+✅ All bricks aligned to a regular stud grid
+✅ Visible cylindrical studs on top surfaces
+✅ Sharp 90° edges everywhere
+✅ Seams between bricks clearly visible
 
-CHARACTER FIDELITY:
-- The LEGO model must be INSTANTLY RECOGNIZABLE as the character in the reference photo
-- Capture the character's most iconic features FIRST (e.g., if they wear glasses → glasses must be prominent)
-- Match the reference photo's color palette as closely as possible using LEGO brick colors
-- Preserve the character's personality and expression in the blocky LEGO style
+❌ ABSOLUTELY NO: slopes, curved slopes, arches, round bricks, cones, domes, half-cylinders, wedges, or ANY non-rectangular piece
+❌ NO smooth surfaces — ALL curves must be STAIRCASE-STEPPED
+❌ NO organic shapes — everything is BLOCKY and PIXELATED
+❌ NO printed/stickered tiles
+❌ NO minifigure style
 
-REAL LEGO BUILDABILITY (CRITICAL):
-This model must look like it could ACTUALLY BE BUILT with real LEGO parts you can buy.
-- Use ONLY real LEGO brick types: standard bricks (1x1, 1x2, 1x3, 1x4, 2x2, 2x3, 2x4, 2x6), plates, tiles, slopes (25°, 33°, 45°, 65°), curved slopes, arches, round bricks/plates, cones, domes
-- Every brick must be a standard LEGO size — NO custom-cut or impossible shapes
-- Bricks must connect via standard LEGO stud-and-tube connections — NO floating parts, NO glue
-- Colors must be real LEGO production colors (bright red, blue, white, black, tan, dark bluish gray, light bluish gray, bright green, yellow, orange, dark red, dark blue, dark green, medium nougat, reddish brown, etc.)
-- Visible connection points: cylindrical studs on top of bricks, anti-studs (tubes) underneath
-- Brick seams and stud patterns must follow a consistent grid — all bricks aligned to the same stud grid
+Think: Minecraft build, NOT a realistic LEGO MOC.
 
-BUILD STYLE:
-- Brickheadz / nanoblock style — a chunky, blocky 3D sculpture made by stacking real LEGO bricks
-- Individual bricks must be clearly distinguishable — you can count the studs
-- Sharp, crisp brick edges with visible seams between every brick
-- Stepped/pixelated surfaces like 3D pixel art — NOT smooth, NOT rounded
-- Studs must be uniform cylindrical bumps on a regular grid
-- ${detailInstructions[detail]}
+A turtle shell? → Stepped dome made of flat rectangular layers, each slightly smaller than the one below.
+A round head? → Stepped cube/cylinder made of rectangular layers.
+Ears? → Small rectangular columns sticking up from the top layers.
 
-DO NOT: smooth or rounded surfaces, organic curves, minifigure style, stickers, printed tiles, non-LEGO parts, flat 2D look, lower quality on any view, invented/impossible brick shapes, bricks floating without connection, custom colors not in LEGO palette
-
-STYLE: Official LEGO Brickheadz product photo — as if photographed for the LEGO.com product page. White/light gray background per quadrant. Soft studio lighting showing depth and shadows. High resolution, sharp brick edges and visible studs in ALL views.${userPrompt ? `\n\nUser note: "${userPrompt}"` : ''}`;
+STYLE: ${detailInstructions[detail]}
+Render as a product photo on a clean white/light gray background. Soft studio lighting. High resolution showing every individual stud and brick seam.${userPrompt ? `\n\nUser note: "${userPrompt}"` : ''}`;
 }
 
 /** Returns true for errors where switching to a different model may help.
@@ -349,60 +356,57 @@ export async function generateDesignFromPhoto(
   detail: DesignDetail = 'standard',
   userPrompt = '',
   compositeView?: ImageData,
-  onProgress?: (msg: string) => Promise<void>
+  onProgress?: (msg: string) => Promise<void>,
+  strategy: DesignStrategy = 'full-grid',
+  jobId?: string
 ): Promise<{ result: DesignResult; usedFallbackModel: boolean }> {
   const ai = getAI();
 
-  const voxelSchema: Schema = {
-    type: Type.OBJECT,
-    properties: {
-      referenceDescription: { type: Type.STRING },
-      title: { type: Type.STRING },
-      description: { type: Type.STRING },
-      lore: { type: Type.STRING },
-      width: { type: Type.INTEGER },
-      depth: { type: Type.INTEGER },
-      layers: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            y: { type: Type.INTEGER },
-            heightType: { type: Type.STRING, enum: ['brick', 'plate'] },
-            grid: {
-              type: Type.ARRAY,
-              items: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-          },
-          required: ['y', 'heightType', 'grid'],
-        },
-      },
-    },
-    required: ['referenceDescription', 'title', 'description', 'lore', 'width', 'depth', 'layers'],
-  };
-
   // maxOutput varies by model: Flash 3.x caps at 65K, Pro supports 100K+.
   // We set a higher ceiling here — getThinkingConfig handles per-model constraints.
+  // minBricks raised proportionally to expected grid volume to reject sparse outputs.
   const outputConfig: Record<DesignDetail, { maxOutput: number; thinkingLevel: 'low' | 'medium' | 'high'; minBricks: number }> = {
-    simple: { maxOutput: 40000, thinkingLevel: 'low', minBricks: 30 },
-    standard: { maxOutput: 100000, thinkingLevel: 'medium', minBricks: 80 },
-    detailed: { maxOutput: 100000, thinkingLevel: 'high', minBricks: 150 },
+    simple: { maxOutput: 40000, thinkingLevel: 'low', minBricks: 50 },
+    standard: { maxOutput: 100000, thinkingLevel: 'medium', minBricks: 150 },
+    detailed: { maxOutput: 100000, thinkingLevel: 'high', minBricks: 250 },
   };
 
   const cfg = outputConfig[detail];
-  const prompt = buildVoxelDesignPrompt(detail, userPrompt, !!compositeView);
+
+  // --- Object Recognition Pre-step (Flash model, ~2-5s) ---
+  // Research shows pre-identifying the subject improves voxel generation quality by 20-30%
+  // (VoT NeurIPS 2024, SPP, 3DAxisPrompt ICLR 2025, LEGO-Maker ICCV 2025)
+  let recognitionContext: string | undefined;
+  let recognitionResult: Awaited<ReturnType<typeof recognizeSubject>> = null;
+  if (strategy === 'full-grid' || strategy === 'direct-voxel') {
+    if (onProgress) await onProgress('Analyzing subject...');
+    recognitionResult = await recognizeSubject(ai, base64Image, mimeType, userPrompt);
+    if (recognitionResult) {
+      recognitionContext = buildRecognitionContext(recognitionResult);
+      logger.info(`Subject pre-analysis: "${recognitionResult.subject}" (${recognitionResult.category}), features: ${recognitionResult.keyFeatures.join(', ')}`);
+      logger.info(`  Proportions: widthToHeight=${recognitionResult.proportions.widthToHeight}, depthToWidth=${recognitionResult.proportions.depthToWidth}`);
+      if (onProgress) await onProgress(`Identified: ${recognitionResult.subject}`);
+    }
+  }
 
   // Track best result across agent iterations
   let bestResult: { result: DesignResult; brickCount: number; qualityScore: number } | null = null;
   let feedbackPrompt = '';
+  // Track pixel extraction for debug artifacts
+  let pixelExtraction: PixelExtractionResult | undefined;
+  let winningStrategy: 'sharp' | 'flash' | 'build-commands' | 'full-grid' | 'direct-voxel' = 'full-grid';
+  // Once direct-voxel fails, skip it on subsequent agent iterations (fallback is deterministic)
+  let directVoxelFailed = false;
   // Voxel generation model chain: Pro first for quality, Flash as fallback.
   // Pro models produce much better 3D structure understanding from composite views.
   // Flash is fast but struggles with complex spatial reasoning → flat/featureless builds.
   // If Pro times out (499/503), we fall back to Flash immediately.
   const voxelModelChain = config.gemini.modelChain;
-  let modelIndex = 0;
-  let useModel = voxelModelChain[0];
-  let usedFallback = false;
+  const modelState: ModelChainState = {
+    modelIndex: 0,
+    useModel: voxelModelChain[0],
+    usedFallback: false,
+  };
   let prevQualityScore = 0;
   const agentStart = Date.now();
 
@@ -415,145 +419,242 @@ export async function generateDesignFromPhoto(
       break;
     }
 
-    logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS} (model: ${useModel}, ${Math.round(remaining / 1000)}s remaining)`);
+    logger.info(`Agent iteration ${iteration}/${AGENT_MAX_ITERATIONS} (model: ${modelState.useModel}, ${Math.round(remaining / 1000)}s remaining)`);
 
     if (onProgress && iteration > 1) {
       await onProgress(`Improving build (attempt ${iteration}/${AGENT_MAX_ITERATIONS})...`);
     }
 
+    // On retry iterations, omit the worked example to save ~400 tokens
+    const prompt = buildVoxelDesignPrompt(detail, userPrompt, !!compositeView, iteration > 1);
     const currentPrompt = feedbackPrompt ? `${prompt}\n\n${feedbackPrompt}` : prompt;
 
-    // Inner parse-retry loop — one attempt per model in the chain
-    const PARSE_RETRIES = 4;
-    const PER_CALL_TIMEOUT = 240_000;
+    // --- Generate VoxelGrid using chosen strategy ---
     let lastError: Error | null = null;
     let iterationSteps: BuildStepBlock[] | null = null;
     let iterationMeta: { title: string; description: string; lore: string; referenceDescription: string } | null = null;
     let iterationVoxelGrid: VoxelGrid | null = null;
-    for (let attempt = 1; attempt <= PARSE_RETRIES; attempt++) {
-      const budgetRemaining = AGENT_BUDGET_MS - (Date.now() - agentStart);
-      if (budgetRemaining < 30_000) {
-        logger.warn(`  Skipping attempt ${attempt} — only ${Math.round(budgetRemaining / 1000)}s remaining`);
-        break;
-      }
 
-      try {
-        logger.info(`  Parse attempt ${attempt}/${PARSE_RETRIES}`);
-
-        const contentParts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [
-          { inlineData: { mimeType, data: base64Image } },
-        ];
-        if (compositeView) {
-          contentParts.push(
-            { text: '[Composite Views: hero 3/4, front, right side, back — 2×2 grid]' },
-            { inlineData: { mimeType: compositeView.mimeType, data: compositeView.data } }
-          );
-        }
-        contentParts.push({ text: currentPrompt });
-
-        const callTimeout = Math.min(PER_CALL_TIMEOUT, budgetRemaining - 10_000);
-
-        // Flash models cap at 65K output tokens; Pro supports higher limits
-        const isFlash = useModel.includes('flash');
-        const maxOutput = isFlash ? Math.min(cfg.maxOutput, 65000) : cfg.maxOutput;
-
-        const response = await withTimeout(
-          ai.models.generateContent({
-            model: useModel,
-            contents: contentParts,
-            config: {
-              responseMimeType: 'application/json',
-              responseSchema: voxelSchema,
-              maxOutputTokens: maxOutput,
-              thinkingConfig: getThinkingConfig(useModel, cfg.thinkingLevel),
-              systemInstruction:
-                'You are an award-winning LEGO Master Builder. Output a 3D color grid (voxel grid) representing the LEGO model. Each layer is a 2D array of hex color strings.',
-            },
-          }),
-          callTimeout,
-          'Voxel grid generation'
-        );
-
-        if (!response.text) {
-          logger.warn(`  Attempt ${attempt}: empty response from model`);
-          lastError = new Error('Empty response');
-          continue;
-        }
-
-        const raw = JSON.parse(response.text);
-
-        if (!Array.isArray(raw.layers) || raw.layers.length === 0) {
-          logger.warn(`  Attempt ${attempt}: no valid layers in response (keys: ${Object.keys(raw).join(', ')})`);
-          lastError = new Error('No valid layers in voxel grid');
-          continue;
-        }
-
-        // Validate and normalize the voxel grid
-        const voxelGrid: VoxelGrid = validateVoxelGrid({
-          title: raw.title || 'LEGO Creation',
-          description: raw.description || 'A LEGO recreation',
-          lore: raw.lore || 'Inspired by real life.',
-          referenceDescription: raw.referenceDescription,
-          width: raw.width || 8,
-          depth: raw.depth || 8,
-          layers: raw.layers,
+    if (strategy === 'direct-voxel') {
+      // Direct-voxel strategy: flat {x,y,z,color}[] array (voxel-toy-box approach)
+      // Only attempt on first iteration — if it failed before, go straight to fallback.
+      if (!directVoxelFailed) {
+        const dvResult = await generateDirectVoxelGrid({
+          ai,
+          base64Image,
+          mimeType,
+          compositeView,
+          detail,
+          userPrompt,
+          feedbackPrompt,
+          cfg: { ...cfg, recognitionContext, recognizedSubject: recognitionResult?.subject },
+          agentStart,
+          agentBudgetMs: AGENT_BUDGET_MS,
         });
 
-        if (voxelGrid.layers.length === 0) {
-          logger.warn(`  Attempt ${attempt}: all layers empty after validation`);
-          lastError = new Error('All layers empty after validation');
-          continue;
+        if (dvResult.result) {
+          winningStrategy = 'direct-voxel';
+          logger.info(`  ★ Direct-voxel succeeded — ${dvResult.result.steps.length} bricks`);
+          if (onProgress) await onProgress(`Direct voxel: ${dvResult.result.steps.length} bricks`);
+          iterationSteps = dvResult.result.steps;
+          iterationVoxelGrid = dvResult.result.voxelGrid;
+          iterationMeta = dvResult.result.meta;
+        } else {
+          directVoxelFailed = true;
+          logger.info(`  ✗ Direct-voxel failed (${dvResult.lastError?.message}), falling back to full-grid cascade`);
+          lastError = dvResult.lastError;
         }
+      }
 
-        // Convert voxel grid to brick placements — deterministic, no physics needed
-        const { steps, report } = voxelGridToBricks(voxelGrid);
+      // Fallback: full-grid 3-tier cascade (always if direct-voxel failed or was skipped)
+      if (!iterationSteps) {
+        if (onProgress) await onProgress('Falling back to standard strategy...');
 
-        logger.info(
-          `  Voxel conversion: ${report.totalVoxels} voxels → ${report.totalBricks} bricks ` +
-            `(avg size ${report.averageBrickSize.toFixed(1)}, ${report.layerCount} layers)`
-        );
-
-        if (steps.length === 0) {
-          logger.warn(`  Attempt ${attempt}: voxel conversion produced 0 bricks`);
-          lastError = new Error('Voxel conversion produced 0 bricks');
-          continue;
-        }
-
-        // Reject grids that are too sparse — the model sometimes returns nearly empty layers
-        if (steps.length < cfg.minBricks) {
-          logger.warn(`  Attempt ${attempt}: only ${steps.length} bricks (min: ${cfg.minBricks}), ${report.layerCount} layers, ${report.totalVoxels} voxels — retrying`);
-          lastError = new Error(`Too few bricks: ${steps.length} < ${cfg.minBricks}`);
-          continue;
-        }
-
-        iterationSteps = steps;
-        iterationVoxelGrid = voxelGrid;
-        iterationMeta = {
-          title: voxelGrid.title,
-          description: voxelGrid.description,
-          lore: voxelGrid.lore,
-          referenceDescription: voxelGrid.referenceDescription || 'An object from the photo.',
-        };
-        break;
-      } catch (error: any) {
-        logger.error(`  Parse attempt ${attempt} failed:`, error.message);
-        lastError = error;
-        if (isRetryableModelError(error)) {
-          // Switch model immediately instead of burning a full agent iteration
-          if (modelIndex < voxelModelChain.length - 1) {
-            modelIndex++;
-            useModel = voxelModelChain[modelIndex];
-            usedFallback = modelIndex > 0;
-            logger.info(`Switching to next model in chain: ${useModel} (${modelIndex + 1}/${voxelModelChain.length})`);
-            if (onProgress) {
-              await onProgress(`Switched to ${useModel} (model ${modelIndex + 1}/${voxelModelChain.length})`);
-            }
-            continue;
+        if (compositeView) {
+          const silResult = await generateSilhouetteVoxelGrid({
+            ai,
+            compositeView,
+            detail,
+            userPrompt,
+            feedbackPrompt,
+            cfg: { ...cfg, recognitionContext },
+            recognition: recognitionResult ?? undefined,
+            isRetry: iteration > 1,
+            agentStart,
+            agentBudgetMs: AGENT_BUDGET_MS,
+            onProgress,
+          });
+          if (silResult.pixelExtraction) pixelExtraction = silResult.pixelExtraction;
+          if (silResult.result) {
+            winningStrategy = silResult.pixelExtraction && !silResult.lastError ? 'sharp' : 'flash';
+            iterationSteps = silResult.result.steps;
+            iterationVoxelGrid = silResult.result.voxelGrid;
+            iterationMeta = silResult.result.meta;
           }
-          break; // All models exhausted
         }
-        if (attempt < PARSE_RETRIES) {
-          await new Promise((r) => setTimeout(r, Math.min(1000 * 2 ** (attempt - 1), 5000)));
+
+        if (!iterationSteps) {
+          const cmdResult = await generateBuildCommands({
+            ai,
+            base64Image,
+            mimeType,
+            compositeView,
+            detail,
+            userPrompt,
+            feedbackPrompt,
+            cfg: { ...cfg, recognitionContext },
+            modelChain: voxelModelChain,
+            modelState,
+            agentStart,
+            agentBudgetMs: AGENT_BUDGET_MS,
+            isRetry: iteration > 1,
+            onProgress,
+          });
+          if (cmdResult.result) {
+            winningStrategy = 'build-commands';
+            iterationSteps = cmdResult.result.steps;
+            iterationVoxelGrid = cmdResult.result.voxelGrid;
+            iterationMeta = cmdResult.result.meta;
+          }
+        }
+
+        if (!iterationSteps) {
+          const genResult = await generateFullGridVoxelGrid({
+            ai,
+            base64Image,
+            mimeType,
+            compositeView,
+            prompt: currentPrompt,
+            cfg: { ...cfg, recognitionContext },
+            modelChain: voxelModelChain,
+            modelState,
+            agentStart,
+            agentBudgetMs: AGENT_BUDGET_MS,
+            onProgress,
+          });
+          lastError = genResult.lastError;
+          if (genResult.result) {
+            winningStrategy = 'full-grid';
+            iterationSteps = genResult.result.steps;
+            iterationVoxelGrid = genResult.result.voxelGrid;
+            iterationMeta = genResult.result.meta;
+          }
+        }
+      }
+    } else if (strategy === '2d-slice' && compositeView) {
+      // 2D slice strategy: analyze views → generate 2D faces → code assembly
+      try {
+        const { generate2DSliceVoxelGrid } = await import('./strategies/slice2d.js');
+        const sliceResult = await generate2DSliceVoxelGrid({
+          ai,
+          compositeView,
+          base64Image,
+          mimeType,
+          detail,
+          userPrompt,
+          feedbackPrompt,
+          budgetMs: remaining,
+          agentStart,
+          onProgress,
+        });
+        iterationSteps = sliceResult.steps;
+        iterationVoxelGrid = sliceResult.voxelGrid;
+        iterationMeta = sliceResult.meta;
+      } catch (error: any) {
+        logger.error(`  2D-slice generation failed:`, error.message);
+        lastError = error;
+      }
+    } else {
+      // Full-grid strategy: 3-tier cascade
+      //   1. Silhouette carving (if composite views available) — deterministic 3D from 2D grids
+      //   2. Build commands DSL — token-efficient 3D generation
+      //   3. Raw JSON grid — original fallback
+
+      // Tier 1: Silhouette carving (primary when composite views exist)
+      if (compositeView) {
+        const silResult = await generateSilhouetteVoxelGrid({
+          ai,
+          compositeView,
+          detail,
+          userPrompt,
+          feedbackPrompt,
+          cfg: { ...cfg, recognitionContext },
+          recognition: recognitionResult ?? undefined,
+          isRetry: iteration > 1,
+          agentStart,
+          agentBudgetMs: AGENT_BUDGET_MS,
+          onProgress,
+        });
+
+        // Capture pixel extraction for debug regardless of success
+        if (silResult.pixelExtraction) pixelExtraction = silResult.pixelExtraction;
+
+        if (silResult.result) {
+          // Determine if sharp or flash produced the result
+          winningStrategy = silResult.pixelExtraction && !silResult.lastError ? 'sharp' : 'flash';
+          logger.info(`  ★ Silhouette carving succeeded (${winningStrategy}) — ${silResult.result.steps.length} bricks`);
+          if (onProgress) await onProgress(`Silhouette carving (${winningStrategy}): ${silResult.result.steps.length} bricks`);
+          iterationSteps = silResult.result.steps;
+          iterationVoxelGrid = silResult.result.voxelGrid;
+          iterationMeta = silResult.result.meta;
+        } else {
+          logger.info(`  ✗ Silhouette carving failed (${silResult.lastError?.message}), trying build commands...`);
+        }
+      }
+
+      // Tier 2: Build commands DSL (if silhouette failed or no composite views)
+      if (!iterationSteps) {
+        const cmdResult = await generateBuildCommands({
+          ai,
+          base64Image,
+          mimeType,
+          compositeView,
+          detail,
+          userPrompt,
+          feedbackPrompt,
+          cfg: { ...cfg, recognitionContext },
+          modelChain: voxelModelChain,
+          modelState,
+          agentStart,
+          agentBudgetMs: AGENT_BUDGET_MS,
+          isRetry: iteration > 1,
+          onProgress,
+        });
+
+        if (cmdResult.result) {
+          winningStrategy = 'build-commands';
+          logger.info(`  ★ Build commands succeeded — ${cmdResult.result.steps.length} bricks`);
+          if (onProgress) await onProgress(`Build commands: ${cmdResult.result.steps.length} bricks`);
+          iterationSteps = cmdResult.result.steps;
+          iterationVoxelGrid = cmdResult.result.voxelGrid;
+          iterationMeta = cmdResult.result.meta;
+        } else {
+          logger.info(`  ✗ Build commands failed (${cmdResult.lastError?.message}), falling back to raw grid`);
+        }
+      }
+
+      // Tier 3: Raw JSON grid (last resort)
+      if (!iterationSteps) {
+        if (onProgress) await onProgress('Falling back to raw grid strategy...');
+        const genResult = await generateFullGridVoxelGrid({
+          ai,
+          base64Image,
+          mimeType,
+          compositeView,
+          prompt: currentPrompt,
+          cfg: { ...cfg, recognitionContext },
+          modelChain: voxelModelChain,
+          modelState,
+          agentStart,
+          agentBudgetMs: AGENT_BUDGET_MS,
+          onProgress,
+        });
+        lastError = genResult.lastError;
+        if (genResult.result) {
+          winningStrategy = 'full-grid';
+          iterationSteps = genResult.result.steps;
+          iterationVoxelGrid = genResult.result.voxelGrid;
+          iterationMeta = genResult.result.meta;
         }
       }
     }
@@ -647,7 +748,8 @@ export async function generateDesignFromPhoto(
 
     // --- Decide whether to retry (quality-only, no physics check needed) ---
     const qualityAcceptable = qualityScore >= QUALITY_ACCEPT_THRESHOLD;
-    const scorePlateau = iteration > 1 && qualityScore - prevQualityScore < 1;
+    // Only accept plateau if score is at least passable (4/10) — prevents accepting garbage
+    const scorePlateau = iteration > 1 && qualityScore >= 4 && qualityScore - prevQualityScore < 1;
     prevQualityScore = qualityScore;
 
     if (qualityAcceptable || scorePlateau) {
@@ -661,6 +763,7 @@ export async function generateDesignFromPhoto(
     // Build quality feedback for next iteration — ADDITIVE only.
     // Previous attempts showed that generic "make it bigger" feedback destroys the model.
     // Only provide specific, actionable feedback from the evaluator.
+    // Include previous build summary as context so the model can refine rather than restart.
     if (iteration < AGENT_MAX_ITERATIONS && evaluation) {
       const missing = evaluation.missingFeatures;
       const feedbackParts: string[] = [];
@@ -673,11 +776,18 @@ export async function generateDesignFromPhoto(
       if (evaluation.colorAccuracy < 5) {
         feedbackParts.push('FIX colors — compare your palette against the composite views more carefully');
       }
+      if (evaluation.completeness < 5) {
+        feedbackParts.push('ADD MORE DETAIL — use plate layers for fine features (eyes, mouth, accessories)');
+      }
       if (feedbackParts.length > 0) {
+        // Include previous build spatial summary so model can refine instead of starting from scratch
+        const prevSummary = summarizeBuildPlan(iterationSteps);
         feedbackPrompt =
-          `PREVIOUS ATTEMPT scored ${qualityScore}/10. Keep your current structure but make these specific fixes:\n` +
+          `PREVIOUS ATTEMPT scored ${qualityScore}/10 (shape: ${evaluation.shapeAccuracy}, color: ${evaluation.colorAccuracy}, completeness: ${evaluation.completeness}).\n\n` +
+          `PREVIOUS BUILD SUMMARY (use as starting point — refine, don't restart):\n${prevSummary}\n\n` +
+          `SPECIFIC FIXES NEEDED:\n` +
           feedbackParts.map((p) => `• ${p}`).join('\n') +
-          `\n\nIMPORTANT: Do NOT reduce the model size. Keep at least ${iterationSteps.length} bricks and ${iterationVoxelGrid!.layers.length} layers.`;
+          `\n\nIMPORTANT: Do NOT reduce the model size. Keep at least ${iterationSteps.length} bricks and ${iterationVoxelGrid!.layers.length} layers. Build on the previous attempt's structure.`;
         logger.info(`Agent iteration ${iteration}: quality ${qualityScore}/10, retrying with specific feedback`);
       } else {
         // Evaluator gave low score but no actionable feedback — don't retry
@@ -700,7 +810,21 @@ export async function generateDesignFromPhoto(
     `Design generated: ${result.buildPlan.steps.length} steps, ${result.requiredParts.length} unique parts ` +
       `(${result.buildPlan.agentIterations} iteration(s), quality ${finalScore}/10)`
   );
-  return { result, usedFallbackModel: usedFallback };
+
+  // Save debug artifacts (non-blocking — fire and forget)
+  if (jobId) {
+    saveDesignDebug({
+      jobId,
+      pixelExtraction,
+      voxelGrid: result.buildPlan.voxelGrid,
+      strategy: winningStrategy,
+      totalMs: Date.now() - agentStart,
+      qualityScore: finalScore,
+      recognizedSubject: recognitionResult?.subject,
+    }).catch(() => {});
+  }
+
+  return { result, usedFallbackModel: modelState.usedFallback };
 }
 
 /**

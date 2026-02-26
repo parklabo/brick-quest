@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import type { DesignDetail } from '@brick-quest/shared';
+import type { DesignDetail, DesignStrategy } from '@brick-quest/shared';
 import { LIMITS } from '../config.js';
 
 export const submitDesign = onCall({ maxInstances: 10, region: 'asia-northeast1' }, async (request) => {
@@ -16,11 +16,13 @@ export const submitDesign = onCall({ maxInstances: 10, region: 'asia-northeast1'
     mimeType = 'image/jpeg',
     detail = 'detailed',
     userPrompt = '',
+    strategy = 'full-grid',
   } = request.data as {
     image: string;
     mimeType?: string;
     detail?: DesignDetail;
     userPrompt?: string;
+    strategy?: DesignStrategy;
   };
 
   if (!image || typeof image !== 'string') {
@@ -38,6 +40,11 @@ export const submitDesign = onCall({ maxInstances: 10, region: 'asia-northeast1'
   const validDetails: DesignDetail[] = ['simple', 'standard', 'detailed'];
   if (!validDetails.includes(detail)) {
     throw new HttpsError('invalid-argument', 'Invalid detail level');
+  }
+
+  const validStrategies: DesignStrategy[] = ['full-grid', '2d-slice', 'direct-voxel'];
+  if (!validStrategies.includes(strategy)) {
+    throw new HttpsError('invalid-argument', 'Invalid design strategy');
   }
 
   const db = getFirestore();
@@ -67,6 +74,7 @@ export const submitDesign = onCall({ maxInstances: 10, region: 'asia-northeast1'
       mimeType,
       detail,
       userPrompt,
+      strategy,
     },
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),

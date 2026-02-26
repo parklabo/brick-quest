@@ -62,8 +62,8 @@ export default function WorkspaceScene() {
   return (
     <div className="w-full h-full relative">
       <Canvas shadows camera={{ position: [12, 10, 12], fov: 50 }} dpr={[1, 2]} onPointerMissed={handleMissClick}>
-        <color attach="background" args={['#0c0c14']} />
-        <fog attach="fog" args={['#0c0c14', 25, 50]} />
+        <color attach="background" args={['#e8ecf1']} />
+        <fog attach="fog" args={['#e8ecf1', 40, 80]} />
 
         <WorkspaceLighting />
         <WorkspaceCamera keysRef={keysRef} />

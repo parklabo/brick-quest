@@ -1,6 +1,6 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
-import type { DetectedPart, Difficulty, DesignDetail } from '@brick-quest/shared';
+import type { DetectedPart, Difficulty, DesignDetail, DesignStrategy } from '@brick-quest/shared';
 
 export const apiClient = {
   async submitScan(image: string): Promise<{ jobId: string }> {
@@ -18,12 +18,12 @@ export const apiClient = {
     return data;
   },
 
-  async submitDesign(image: string, detail: DesignDetail = 'detailed', userPrompt = ''): Promise<{ jobId: string }> {
-    const callable = httpsCallable<{ image: string; mimeType?: string; detail: DesignDetail; userPrompt: string }, { jobId: string }>(
+  async submitDesign(image: string, detail: DesignDetail = 'detailed', userPrompt = '', strategy: DesignStrategy = 'full-grid'): Promise<{ jobId: string }> {
+    const callable = httpsCallable<{ image: string; mimeType?: string; detail: DesignDetail; userPrompt: string; strategy: DesignStrategy }, { jobId: string }>(
       functions,
       'submitDesign'
     );
-    const { data } = await callable({ image, detail, userPrompt });
+    const { data } = await callable({ image, detail, userPrompt, strategy });
     return data;
   },
 

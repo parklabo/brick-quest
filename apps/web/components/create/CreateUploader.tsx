@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Upload, Loader2, Camera, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Card } from '../ui/Card';
+import type { DesignStrategy } from '@brick-quest/shared';
 import { apiClient } from '../../lib/api/client';
 import { useJobsStore } from '../../lib/stores/jobs';
 import { useToastStore } from '../../lib/stores/toasts';
@@ -16,6 +17,7 @@ export function CreateUploader() {
   const [image, setImage] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [userPrompt, setUserPrompt] = useState('');
+  const [strategy, setStrategy] = useState<DesignStrategy>('full-grid');
   const [error, setError] = useState<string | null>(null);
 
   const addJob = useJobsStore((s) => s.addJob);
@@ -50,7 +52,7 @@ export function CreateUploader() {
     setPhase('submitting');
     setError(null);
     try {
-      const { jobId } = await apiClient.submitDesign(image, 'detailed', userPrompt);
+      const { jobId } = await apiClient.submitDesign(image, 'detailed', userPrompt, strategy);
       addJob(jobId, 'design');
       useToastStore.getState().addToast({
         message: t('queued'),
@@ -179,6 +181,46 @@ export function CreateUploader() {
               placeholder={t('notesPlaceholder')}
               className="w-full px-4 py-3 rounded-lg bg-lego-surface border border-lego-border text-white placeholder:text-slate-600 focus:outline-none focus:border-lego-yellow/50 transition-colors"
             />
+          </div>
+
+          {/* Strategy toggle */}
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 block">Strategy</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setStrategy('full-grid')}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  strategy === 'full-grid'
+                    ? 'bg-lego-yellow text-slate-900 shadow-[0_2px_0_0_rgba(0,0,0,0.3)]'
+                    : 'bg-lego-surface border border-lego-border text-slate-400 hover:text-slate-200 hover:border-lego-yellow/30'
+                }`}
+              >
+                Standard
+              </button>
+              <button
+                type="button"
+                onClick={() => setStrategy('direct-voxel')}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  strategy === 'direct-voxel'
+                    ? 'bg-lego-yellow text-slate-900 shadow-[0_2px_0_0_rgba(0,0,0,0.3)]'
+                    : 'bg-lego-surface border border-lego-border text-slate-400 hover:text-slate-200 hover:border-lego-yellow/30'
+                }`}
+              >
+                Direct (Beta)
+              </button>
+              <button
+                type="button"
+                onClick={() => setStrategy('2d-slice')}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  strategy === '2d-slice'
+                    ? 'bg-lego-yellow text-slate-900 shadow-[0_2px_0_0_rgba(0,0,0,0.3)]'
+                    : 'bg-lego-surface border border-lego-border text-slate-400 hover:text-slate-200 hover:border-lego-yellow/30'
+                }`}
+              >
+                Slice (Beta)
+              </button>
+            </div>
           </div>
 
           {/* Submit button */}

@@ -69,6 +69,9 @@ export type Difficulty = 'beginner' | 'normal' | 'expert';
 /** Detail level for AI design generation */
 export type DesignDetail = 'simple' | 'standard' | 'detailed';
 
+/** Strategy for converting a photo into a VoxelGrid */
+export type DesignStrategy = 'full-grid' | '2d-slice' | 'direct-voxel';
+
 /** A LEGO part required for a design (shopping list item) */
 export interface RequiredPart {
   name: string;

@@ -265,7 +265,7 @@ export const processDesignUpdate = onDocumentUpdated(
       }, 520_000); // 520s = 8m40s, 20s safety margin before 540s timeout
 
       try {
-        const { imageStoragePath, mimeType, detail, userPrompt } = after.input;
+        const { imageStoragePath, mimeType, detail, userPrompt, strategy } = after.input;
         const viewPaths = after.views as { composite: string };
 
         await log('Generating build instructions...', 50);
@@ -294,7 +294,7 @@ export const processDesignUpdate = onDocumentUpdated(
         const onProgress = async (msg: string) => {
           await jobRef.update({ logs: FieldValue.arrayUnion(msg), updatedAt: FieldValue.serverTimestamp() });
         };
-        const { result, usedFallbackModel } = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView, onProgress);
+        const { result, usedFallbackModel } = await generateDesignFromPhoto(base64Image, mimeType, detail, userPrompt, compositeView, onProgress, strategy || 'full-grid', jobId);
 
         // Save voxel grid to Storage (too deeply nested for Firestore)
         let voxelGridPath: string | undefined;

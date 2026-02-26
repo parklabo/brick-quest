@@ -140,8 +140,9 @@ Result: 16 layers, ~800+ voxels → ~200+ bricks. The cat is recognizable with g
 /**
  * Build the voxel grid prompt for the DESIGN flow (photo → LEGO).
  * The AI receives composite views and outputs a VoxelGrid.
+ * When isRetry=true, omits the worked example to save ~400 tokens.
  */
-export function buildVoxelDesignPrompt(detail: DesignDetail, userPrompt: string, hasCompositeView: boolean): string {
+export function buildVoxelDesignPrompt(detail: DesignDetail, userPrompt: string, hasCompositeView: boolean, isRetry = false): string {
   const limits = DESIGN_GRID_LIMITS[detail];
 
   const viewsInstruction = hasCompositeView
@@ -193,9 +194,7 @@ width (X) ≤ ${limits.maxW}, depth (Z) ≤ ${limits.maxD}, layers ≤ ${limits.
 ${VOXEL_GRID_CORE_PROMPT}
 
 ${VOXEL_DESIGN_PROCESS}
-
-${VOXEL_WORKED_EXAMPLE}
-
+${isRetry ? '' : `\n${VOXEL_WORKED_EXAMPLE}\n`}
 ═══════════════════════════════════════
 FINAL CHECKLIST (verify before outputting)
 ═══════════════════════════════════════
