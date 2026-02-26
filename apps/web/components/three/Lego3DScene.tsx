@@ -67,7 +67,7 @@ function CameraFitter({
     // Update orbit controls target
     if (controls && 'target' in controls) {
       (controls.target as THREE.Vector3).copy(center);
-      (controls as any).update();
+      (controls as unknown as { update: () => void }).update();
     }
   }, [camera, controls, center, size]);
 

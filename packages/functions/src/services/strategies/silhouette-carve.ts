@@ -612,7 +612,8 @@ export async function generateSilhouetteVoxelGrid(params: {
 
     pixelExtraction = await extractGridsFromComposite(compositeView.data, compositeView.mimeType, detail, recognition);
 
-    let { frontGrid, sideGrid, width, depth, totalLayers } = pixelExtraction;
+    const { width, depth } = pixelExtraction;
+    let { frontGrid, sideGrid, totalLayers } = pixelExtraction;
 
     const rawFrontFilled = countFilled(frontGrid);
     const rawSideFilled = countFilled(sideGrid);
