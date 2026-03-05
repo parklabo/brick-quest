@@ -27,27 +27,48 @@ Turborepo + pnpm monorepo with Firebase backend:
 1. Web App → `httpsCallable('submitScan')`, `httpsCallable('submitBuild')`, or `httpsCallable('submitDesign')`
 2. Callable function → Firestore `jobs/{jobId}` document created (status: pending)
 3. `processJob` (onDocumentCreated) trigger fires → calls Gemini API
-4. **Agent loop** (build jobs): Gemini generates → physics validation → feedback → re-generate (up to 3 iterations)
+4. **Build jobs**: Gemini generates VoxelGrid → `voxelGridToBricks()` converts to BuildStepBlock[] (up to `AGENT_MAX_ITERATIONS=3` with model chain fallback)
 5. Trigger updates document (status: completed, result: ...)
 6. Web App `onSnapshot` receives real-time update → UI renders result
 
 ### Agent Iteration Flow (Build Jobs)
 
-The `generateBuildPlan()` function implements a self-improving loop:
+The `generateBuildPlan()` function implements a model-chain retry loop:
 
-1. Gemini generates a build plan (with inner parse-retry of up to 3 attempts)
-2. `fixBuildPhysicsWithReport()` validates physics (snap, gravity, overlap, nudge)
-3. If >15% bricks dropped OR >5 absolute bricks dropped → `buildPhysicsFeedback()` creates spatial feedback
-4. Gemini re-generates with feedback prompt appended (up to `AGENT_MAX_ITERATIONS=3`)
-5. Best result (most surviving bricks) is tracked across all iterations
+1. Gemini generates a VoxelGrid (with inner parse-retry of up to 5 attempts)
+2. `voxelGridToBricks()` converts voxel grid to BuildStepBlock[] via greedy rectangle packing
+3. No physics correction needed — voxel conversion produces valid placements
+4. Accepts on first successful iteration; tracks best result by brick count
+5. Model chain fallback on errors: gemini-3.1-pro → gemini-3-pro → gemini-3-flash
 
-### Design Flow (2-stage pipeline)
+### Design Flow (Multi-strategy pipeline)
 
-1. `submitDesign` → job created (status: `pending`)
-2. `processJob` → generates composite orthographic views → status: `views_ready`
+1. `submitDesign` → job created with `strategy` parameter (status: `pending`)
+2. `processJob` → **Phase 0**: Subject recognition (Flash model) → **Phase 1**: generates composite orthographic views (2×2 grid) → status: `views_ready`
 3. User approves → `approveDesignViews` → status: `generating_build`
-4. `processDesignUpdate` (onDocumentUpdated) → generates build plan from views → status: `completed`
+4. `processDesignUpdate` (onDocumentUpdated) → **Phase 3**: generates build plan using strategy cascade → **Phase 4**: quality evaluation (Flash model, score 1-10) → status: `completed`
 5. **Regeneration**: User can request re-generation → `regenerateDesignViews` → status: `generating_views` → `processDesignUpdate` regenerates views → status: `views_ready`
+6. **Rebuild**: User can rebuild from existing views → `rebuildDesignBuild` → status: `generating_build`
+
+### Design Strategy Cascade
+
+Three strategies available (`DesignStrategy` type): `direct-voxel` (default), `full-grid`, `2d-slice`
+
+**direct-voxel** (primary): Flat `{x,y,z,color}[]` array → falls back to full-grid cascade on failure
+
+**full-grid cascade** (tiered fallback):
+1. **Tier 1 — Silhouette Carving**: Front/side view intersection → 3D grid (pixel extraction via Sharp)
+2. **Tier 2 — Build Commands DSL**: Token-efficient structured commands
+3. **Tier 3 — Raw JSON Grid**: Full grid JSON output (last resort)
+
+**2d-slice** (experimental): Analyzes views → generates 2D faces → code assembly
+
+### Quality Evaluation (Design Jobs)
+
+Flash model evaluates each build iteration:
+- Scores: shapeAccuracy, colorAccuracy, completeness, overallScore (1-10)
+- Accept if score ≥ 7; accept plateau if score ≥ 4 AND change < 1 point
+- Retry with specific feedback otherwise (up to 3 iterations)
 
 ## Monorepo Structure
 
@@ -63,18 +84,19 @@ brick-quest/
 ├── packages/
 │   ├── shared/           # @brick-quest/shared - types, constants, utils, shape registry, prompts, catalog
 │   │   └── src/
-│   │       ├── types/        # BrickShape, BuildPlan, JobState, DetectedPart, etc.
-│   │       ├── registry/     # SHAPE_REGISTRY (16 shapes)
+│   │       ├── types/        # BrickShape, BuildPlan, JobState, VoxelGrid, SubjectRecognition, UserProfile, etc.
+│   │       ├── registry/     # SHAPE_REGISTRY (19 shapes)
 │   │       ├── catalog/      # BrickLink parts, colors, URL generator
-│   │       ├── utils/        # build-physics.ts (physics validation pipeline)
-│   │       └── prompts/      # Gemini prompt templates
+│   │       ├── utils/        # voxel-to-bricks.ts (greedy rectangle packing conversion)
+│   │       └── prompts/      # Gemini prompt templates (voxel-grid, build-commands, slice-2d)
 │   └── functions/        # Firebase Cloud Functions (2nd gen)
 │       └── src/
 │           ├── config.ts       # Environment config + LIMITS constants
-│           ├── callable/       # submitScan, submitBuild, submitDesign, cancelJob, setAdminRole, approveDesignViews, regenerateDesignViews
-│           ├── services/       # geminiScan, geminiBuild, geminiDesign, gemini-client
+│           ├── callable/       # submitScan, submitBuild, submitDesign, cancelJob, retryJob, deleteJob, setAdminRole, approveDesignViews, regenerateDesignViews, rebuildDesignBuild
+│           ├── services/       # geminiScan, geminiBuild, geminiDesign, gemini-client, recognize-subject, design-debug
+│           │   └── strategies/ # direct-voxel, full-grid, silhouette-carve, build-commands, pixel-extract, slice2d
 │           ├── triggers/       # processJob (onCreate), processDesignUpdate (onUpdate)
-│           └── utils/          # physics-feedback, with-timeout
+│           └── utils/          # with-timeout
 ├── scripts/
 │   ├── prepare-functions-deploy.js   # Predeploy: bundle shared into functions
 │   └── cleanup-functions-deploy.js   # Postdeploy: restore workspace:* dep
@@ -89,17 +111,20 @@ brick-quest/
 
 ## Cloud Functions
 
-| Function                | Type    | Trigger                           | Description                                                              |
-| ----------------------- | ------- | --------------------------------- | ------------------------------------------------------------------------ |
-| `submitScan`            | onCall  | HTTP                              | Upload image → create scan job                                           |
-| `submitBuild`           | onCall  | HTTP                              | Parts + difficulty → create build job                                    |
-| `submitDesign`          | onCall  | HTTP                              | Reference image → create design job                                      |
-| `cancelJob`             | onCall  | HTTP                              | Cancel a pending/processing job                                          |
-| `setAdminRole`          | onCall  | HTTP                              | Set admin custom claim                                                   |
-| `approveDesignViews`    | onCall  | HTTP                              | Approve views → trigger build generation                                 |
-| `regenerateDesignViews` | onCall  | HTTP                              | Re-generate orthographic views                                           |
-| `processJob`            | trigger | document.created (`jobs/{jobId}`) | Process new scan/build/design jobs (build jobs run agent iteration loop) |
-| `processDesignUpdate`   | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions: view regeneration + build generation    |
+| Function                | Type    | Trigger                           | Description                                                         |
+| ----------------------- | ------- | --------------------------------- | ------------------------------------------------------------------- |
+| `submitScan`            | onCall  | HTTP                              | Upload image → create scan job                                      |
+| `submitBuild`           | onCall  | HTTP                              | Parts + difficulty → create build job                               |
+| `submitDesign`          | onCall  | HTTP                              | Reference image + strategy → create design job                      |
+| `cancelJob`             | onCall  | HTTP                              | Cancel a pending/processing job                                     |
+| `retryJob`              | onCall  | HTTP                              | Retry a failed job (creates new job from failed input)              |
+| `deleteJob`             | onCall  | HTTP                              | Delete a completed/failed job and its storage                       |
+| `setAdminRole`          | onCall  | HTTP                              | Set admin custom claim                                              |
+| `approveDesignViews`    | onCall  | HTTP                              | Approve views → trigger build generation                            |
+| `regenerateDesignViews` | onCall  | HTTP                              | Re-generate orthographic views                                      |
+| `rebuildDesignBuild`    | onCall  | HTTP                              | Re-generate build plan from existing views                          |
+| `processJob`            | trigger | document.created (`jobs/{jobId}`) | Process new scan/build/design jobs                                  |
+| `processDesignUpdate`   | trigger | document.updated (`jobs/{jobId}`) | Handle design state transitions: view regeneration + build generation |
 
 **Region**: All functions deployed to `asia-northeast1`
 **Trigger config**: `memory: 1GiB`, `timeoutSeconds: 540`, secrets: `GEMINI_API_KEY` via `defineSecret`
@@ -165,8 +190,11 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...
 **packages/functions/.env** (deployed to cloud):
 
 ```
-GEMINI_MODEL=gemini-3-pro-preview
+GEMINI_MODEL=gemini-3.1-pro-preview
+GEMINI_FAST_MODEL=gemini-3-flash-preview
+GEMINI_FALLBACK_MODEL=gemini-3-flash-preview
 GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview
+GEMINI_FALLBACK_IMAGE_MODEL=gemini-2.5-flash-image
 GCLOUD_STORAGE_BUCKET=brick-quest.firebasestorage.app
 ```
 
@@ -181,13 +209,22 @@ GEMINI_API_KEY=your_api_key
 ## Key Constants (packages/functions/src/config.ts)
 
 ```ts
+config = {
+  gemini: {
+    model: 'gemini-3.1-pro-preview',           // Primary reasoning model
+    fastModel: 'gemini-3-flash-preview',        // Fast model for scan, recognition, evaluation
+    fallbackModel: 'gemini-3-flash-preview',    // Text fallback on 503/429 errors
+    modelChain: ['gemini-3.1-pro-preview', 'gemini-3-pro-preview', 'gemini-3-flash-preview'],
+    imageModel: 'gemini-3-pro-image-preview',   // Composite view generation
+    fallbackImageModel: 'gemini-2.5-flash-image', // Image fallback on 503/429 errors
+  },
+};
+
 LIMITS = {
   IMAGE_SIZE_BYTES: 15_000_000, // ~10 MB base64 image size
-  PROMPT_MAX_CHARS: 500, // Max user prompt length
-  PARTS_MAX_COUNT: 500, // Max parts in a build request
+  PROMPT_MAX_CHARS: 2000, // Max user prompt length
+  PARTS_MAX_COUNT: 2000, // Max parts in a build request
   AGENT_MAX_ITERATIONS: 3, // Max agent loop attempts
-  DROP_THRESHOLD_PCT: 15, // Physics drop %: retry if exceeded
-  DROP_THRESHOLD_ABS: 5, // Physics drop count: retry if exceeded
 };
 ```
 
@@ -195,16 +232,17 @@ LIMITS = {
 
 ### Core Brick Types
 
-- `BrickShape` — Union of 16 shape IDs: `rectangle`, `corner`, `round`, `slope_25`, `slope_33`, `slope_45`, `slope_65`, `slope_75`, `slope_inverted`, `curved_slope`, `arch`, `cone`, `dome`, `half_cylinder`, `wedge_plate`, `technic_beam`
+- `BrickShape` — Union of 19 shape IDs: `rectangle`, `corner`, `round`, `slope_25`, `slope_33`, `slope_45`, `slope_65`, `slope_75`, `slope_inverted`, `curved_slope`, `arch`, `cone`, `wedge_plate`, `dome`, `half_cylinder`, `technic_beam`, `cheese_slope`, `panel`, `plate_round`
 - `BrickType` — Union of 7 type IDs: `brick`, `plate`, `tile`, `slope`, `technic`, `minifig`, `other`
 - `Difficulty` — `'beginner' | 'normal' | 'expert'`
 - `DesignDetail` — `'simple' | 'standard' | 'detailed'`
+- `DesignStrategy` — `'full-grid' | '2d-slice' | 'direct-voxel'`
 
 ### Part & Build Types
 
 - `DetectedPart` — Scanned brick: id, name, color, hexColor, count, type, shape, dimensions, tags?
 - `BuildStepBlock` — Single 3D assembly step: stepId, partName, color, hexColor, type, shape, position, rotation, size, description
-- `BuildPlan` — Full build: title, description, lore, steps[], agentIterations?
+- `BuildPlan` — Full build: title, description, lore, steps[], voxelGrid?, agentIterations?
 - `ScanResult` — Scan output: parts[], aiInsight
 
 ### Design Types
@@ -213,44 +251,49 @@ LIMITS = {
 - `DesignViews` — Storage paths: composite (single composite image path)
 - `DesignResult` — Full design output: buildPlan, requiredParts[], referenceDescription, previewImageStoragePath?
 
+### Voxel Types
+
+- `VoxelGrid` — 3D color grid: title, description, lore, referenceDescription?, width, depth, layers[]
+- `VoxelLayer` — Single layer: y, heightType, grid[][] (2D color array)
+- `VoxelConversionReport` — Conversion metrics: totalVoxels, totalBricks, averageBrickSize, sizeDistribution, layerCount
+
 ### Job Types
 
 - `JobType` — `'scan' | 'build' | 'design'`
 - `JobStatus` — `'pending' | 'processing' | 'generating_views' | 'views_ready' | 'generating_build' | 'completed' | 'failed'`
-- `JobState<T>` — Async job tracking: id, type, userId, status, progress (0-100), result?, error?, createdAt, updatedAt
+- `JobState<T>` — Async job tracking: id, type, userId, status, progress (0-100), logs?, result?, error?, createdAt, updatedAt
 
-### Physics Types
+### Recognition Types
 
-- `PhysicsResult` — Return type of `fixBuildPhysicsWithReport()`: `{ steps, report }`
-- `PhysicsValidationReport` — Validation summary: inputCount, outputCount, droppedCount, gravitySnappedCount, nudgedCount, droppedPercentage, corrections[]
-- `PhysicsCorrectionEntry` — Per-brick record: stepId, partName, originalPosition, size, action (`dropped` | `gravity_snapped` | `nudged`), reason
+- `SubjectRecognition` — Pre-analysis output: subject, category, keyFeatures, colorMap, proportions, bodySections
 
 ### Registry & Catalog
 
 - `ShapeDefinition` — Full shape metadata: geometry, studs, heights, gemini aliases, icon2d
-- `SHAPE_REGISTRY` — `ReadonlyMap<BrickShape, ShapeDefinition>` with 16 entries
+- `SHAPE_REGISTRY` — `ReadonlyMap<BrickShape, ShapeDefinition>` with 19 entries
 - BrickLink catalog: parts data, colors data, URL generator
 
-## Build Physics (packages/shared/src/utils/build-physics.ts)
+## Voxel-to-Bricks Conversion (packages/shared/src/utils/voxel-to-bricks.ts)
 
-Post-processing pipeline for AI-generated LEGO build steps:
+Greedy rectangle packing algorithm that converts VoxelGrid to BuildStepBlock[]:
 
-1. **Phase 0 — Snap**: `snapDimensions` + `snapToStudGrid` for all steps
-2. **Phase 1 — Sort**: Sort by Y position (bottom-up)
-3. **Phase 2 — Gravity**: Snap bricks down to nearest support
-4. **Phase 3 — Overlap**: Check overlaps, nudge before removing (`tryNudgeBrick`)
-5. **Phase 4 — Renumber**: Sequential step IDs
+1. Iterate layers bottom-up (by Y position)
+2. For each occupied voxel, try largest brick sizes first (4×6 → 1×1)
+3. Both orientations tried (WxL and LxW)
+4. Inventory constraint support (passed as `Map<"WxL", count>`)
+5. Direct 3D positioning with center calculation (even/odd stud grid rules)
+6. Generates `VoxelConversionReport` with conversion metrics
 
 ## Part System
 
 Parts have:
 
 - **type**: brick | plate | tile | slope | technic | minifig | other
-- **shape**: 16 shapes defined in `SHAPE_REGISTRY` (packages/shared/src/registry/shape-registry.ts)
-  - Basic: rectangle, corner, round
-  - Slopes: slope_25, slope_33, slope_45, slope_65, slope_75, slope_inverted
+- **shape**: 19 shapes defined in `SHAPE_REGISTRY` (packages/shared/src/registry/shape-registry.ts)
+  - Basic: rectangle, corner, round, plate_round
+  - Slopes: slope_25, slope_33, slope_45, slope_65, slope_75, slope_inverted, cheese_slope
   - Curved: curved_slope, arch, cone, dome, half_cylinder
-  - Special: wedge_plate
+  - Special: wedge_plate, panel
   - Technic: technic_beam
 - **dimensions**: width/length in studs
 - **height rules**: use `getBrickHeight(shape, type)` — brick = 1.2 units, plate/tile = 0.4 units
@@ -283,7 +326,8 @@ Parts have:
 - **Frontend**: Next.js 16.1.6 (pinned), React 19, Tailwind CSS v4, Three.js, Zustand
 - **3D**: Three.js 0.182, @react-three/fiber 9, @react-three/drei 10
 - **Backend**: Firebase Functions (2nd gen, v7), Firebase Admin 13, Firestore, Cloud Storage, Secret Manager
-- **AI**: Google Gemini via @google/genai (gemini-3-pro-preview + gemini-3-pro-image-preview)
+- **AI**: Google Gemini via @google/genai — model chain: gemini-3.1-pro-preview → gemini-3-pro-preview → gemini-3-flash-preview, image: gemini-3-pro-image-preview
+- **Image Processing**: Sharp (pixel extraction for silhouette carving)
 - **i18n**: next-intl (en, ko, ja)
 - **UI**: Lucide React (icons), Framer Motion (landing animations)
 - **Hosting**: Firebase App Hosting (web, console), Firebase Hosting (landing)
