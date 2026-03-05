@@ -8,7 +8,7 @@ export function Button({ variant = 'primary', className = '', children, ...props
   const base =
     'px-4 py-2 rounded-lg font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_2px_0_0_rgba(0,0,0,0.3)] active:shadow-none active:translate-y-[2px]';
   const variants = {
-    primary: 'bg-lego-red hover:bg-red-700 text-white',
+    primary: 'bg-lego-yellow hover:bg-yellow-500 text-slate-900',
     secondary: 'bg-lego-surface hover:bg-slate-700 text-white border border-lego-border',
     danger: 'bg-red-900 hover:bg-red-800 text-red-300 border border-red-800',
   };

@@ -32,7 +32,7 @@
     "home": "Home",
     "create": "Design",
     "myBricks": "My Bricks",
-    "scanBricks": "Scan Bricks",
+    "scanBricks": "Scan",
     "build": "Build",
     "inventory": "Inventory",
     "workspace": "Workspace",
@@ -74,7 +74,7 @@
     "quickActions": "Quick Actions",
     "createFromPhoto": "Design from Photo",
     "createFromPhotoDesc": "Turn any photo into LEGO instructions",
-    "scanBricks": "Scan Bricks",
+    "scanBricks": "Scan",
     "scanBricksDesc": "Photograph your bricks to identify them",
     "build": "Build",
     "buildDesc": "Get AI build plans from your inventory",
@@ -90,7 +90,7 @@
     "pressEnter": "Press Enter",
     "tapToEnter": "Tap to enter",
     "designStation": "Design Studio",
-    "scanStation": "Brick Scanner",
+    "scanStation": "Scanner",
     "buildStation": "Build Planner",
     "inventoryStation": "Inventory",
     "stationDesignDesc": "Create LEGO from photos",
@@ -127,8 +127,7 @@
     "demoBricks": "Demo Bricks"
   },
   "scan": {
-    "title": "Scan Bricks",
-    "description": "Upload a photo of your LEGO bricks to identify them with AI.",
+    "title": "Scan",
     "history": "Scan History",
     "failed": "Scan Failed",
     "selected": "Selected",
@@ -185,8 +184,7 @@
     "deleteConfirm": "This scan and its image will be permanently deleted. This cannot be undone."
   },
   "build": {
-    "title": "3D Build Viewer",
-    "description": "Watch your creation come together step by step.",
+    "title": "Build",
     "history": "Build History",
     "emptyState": "Scan some bricks first to build something.",
     "difficulty": "Difficulty",
@@ -195,7 +193,7 @@
     "expert": "Expert (100-150+ parts)",
     "whatToBuild": "What to build? (optional)",
     "buildPlaceholder": "A small castle, A spaceship...",
-    "generateButton": "Generate Build Plan",
+    "generateButton": "Generate 3D Build Guide",
     "submitting": "Submitting...",
     "queued": "Build queued! We'll notify you when it's ready.",
     "viewBuilds": "View builds",
@@ -231,7 +229,6 @@
   },
   "create": {
     "title": "Design Studio",
-    "description": "Photograph anything and get AI-generated LEGO building instructions.",
     "history": "History",
     "failed": "Design Failed",
     "selected": "Selected",
@@ -309,8 +306,7 @@
     "rebuilding": "Regenerating..."
   },
   "inventory": {
-    "title": "My Inventory",
-    "description": "Your scanned brick collection.",
+    "title": "Inventory",
     "empty": "No bricks yet",
     "emptyDesc": "Scan some bricks to start building.",
     "startScanning": "Start Scanning",
@@ -368,7 +364,7 @@
     "buildingPlan": "Building Plan",
     "complete": "Complete",
     "failed": "Failed",
-    "scanType": "Brick Scan",
+    "scanType": "Scan",
     "designType": "LEGO Design",
     "buildType": "Build Plan",
     "scanSubtitle": "AI brick detection",

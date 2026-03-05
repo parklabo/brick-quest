@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useInventoryStore } from '../../lib/stores/inventory';
 import { apiClient } from '../../lib/api/client';
@@ -8,11 +8,67 @@ import { useJobsStore } from '../../lib/stores/jobs';
 import { useToastStore } from '../../lib/stores/toasts';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import type { BuildPlan, Difficulty } from '@brick-quest/shared';
 
 const Lego3DScene = dynamic(() => import('../three/Lego3DScene'), { ssr: false });
+
+const DIFFICULTY_OPTIONS: Difficulty[] = ['beginner', 'normal', 'expert'];
+
+function DifficultySelect({
+  value,
+  onChange,
+  t,
+}: {
+  value: Difficulty;
+  onChange: (v: Difficulty) => void;
+  t: ReturnType<typeof useTranslations<'build'>>;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm text-slate-400 mb-2">{t('difficulty')}</label>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-800/80 border border-white/8 hover:border-white/15 transition-colors text-left"
+      >
+        <span className="font-medium">{t(value)}</span>
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-20 mt-2 w-full rounded-xl bg-slate-800 border border-white/8 shadow-xl shadow-black/40 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+          {DIFFICULTY_OPTIONS.map((level) => (
+            <button
+              key={level}
+              type="button"
+              onClick={() => { onChange(level); setOpen(false); }}
+              className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${
+                value === level
+                  ? 'bg-lego-yellow/10 text-lego-yellow'
+                  : 'text-slate-300 hover:bg-white/4'
+              }`}
+            >
+              <span className="font-medium">{t(level)}</span>
+              {value === level && <Check className="w-4 h-4" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface BuildViewerProps {
   initialPlan?: BuildPlan;
@@ -39,7 +95,7 @@ export function BuildViewer({ initialPlan }: BuildViewerProps) {
       useToastStore.getState().addToast({
         message: t('queued'),
         variant: 'info',
-        action: { label: t('viewBuilds'), href: '/build' },
+        action: { label: t('viewBuilds'), href: '/builds' },
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('submitError'));
@@ -59,18 +115,7 @@ export function BuildViewer({ initialPlan }: BuildViewerProps) {
   if (!plan) {
     return (
       <Card className="space-y-4">
-        <div>
-          <label className="block text-sm text-slate-400 mb-2">{t('difficulty')}</label>
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2"
-          >
-            <option value="beginner">{t('beginner')}</option>
-            <option value="normal">{t('normal')}</option>
-            <option value="expert">{t('expert')}</option>
-          </select>
-        </div>
+        <DifficultySelect value={difficulty} onChange={setDifficulty} t={t} />
         <div>
           <label className="block text-sm text-slate-400 mb-2">{t('whatToBuild')}</label>
           <input

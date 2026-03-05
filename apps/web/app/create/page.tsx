@@ -255,13 +255,12 @@ export default function CreatePage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-lego-yellow/15 ring-1 ring-lego-yellow/25 flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5 text-lego-yellow" />
             </div>
             <h1 className="text-xl font-bold">{t('title')}</h1>
           </div>
-          <p className="text-sm text-slate-500 ml-[38px]">{t('description')}</p>
         </div>
 
         {/* Pipeline Stepper */}
